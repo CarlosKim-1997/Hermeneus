@@ -102,6 +102,19 @@ describe("OpenAI extraction adapter edge cases", () => {
     });
   });
 
+  it("O5 — invalid parsed payload maps to MODEL_OUTPUT_INVALID", async () => {
+    const { client } = fakeClient(async () =>
+      minimalResponse({
+        output_parsed: { candidates: [{ type: "NOT_A_REAL_TYPE", statement: "", priority: "CORE", sources: [] }] },
+      }),
+    );
+
+    const extractor = createOpenAiHandoffExtractor(config, { client });
+    await expect(extractor.extract(conversation)).rejects.toMatchObject({
+      code: "MODEL_OUTPUT_INVALID",
+    });
+  });
+
   it("O4 — provider exception maps to MODEL_PROVIDER_ERROR", async () => {
     const { client } = fakeClient(async () => {
       throw new Error("network down");

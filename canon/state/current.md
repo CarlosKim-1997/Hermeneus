@@ -1,6 +1,6 @@
 ---
 schema: state/v1
-status: IN_PROGRESS
+status: VERIFYING
 areas:
   - global
 ---
@@ -8,15 +8,15 @@ areas:
 
 ## Current Position
 
-Milestones 1–3 are merged into `main`. Milestone 4 (PR #4) implements live Handoff extraction on `cursor/live-handoff-extraction-e41b` with OpenAI SDK v7, refusal handling, deterministic validation (E1–E10, O1–O4), and opt-in live semantic eval (L1–L6). Deterministic verification passes; **live OpenAI smoke and semantic evaluation are pending** in environments without configured credentials.
+Milestones 1–3 are merged into `main`. Milestone 4 implementation and deterministic verification are complete on PR #4 (`cursor/live-handoff-extraction-e41b`). **T-004 is VERIFYING** pending live OpenAI smoke (`npm run test:live-extraction`) and semantic evaluation (`npm run test:live-extraction-eval`, L1–L6) on a trusted environment with configured credentials.
 
 ## Active Work
 
-T-004 implementation complete; live-provider verification pending human/local run of `npm run test:live-extraction` and `npm run test:live-extraction-eval`.
+T-004 live-provider verification gate (VERIFYING).
 
 ## Blockers
 
-None for merge review of deterministic behavior. Live-model verification blocked only by missing `OPENAI_API_KEY` / `OPENAI_MODEL` in this environment.
+Live OpenAI verification requires `OPENAI_API_KEY` and `OPENAI_MODEL` in a trusted local environment. This credential-less Cloud Agent cannot complete that gate.
 
 ## Material Risks
 
@@ -24,4 +24,4 @@ Live extraction sends persisted source conversations to configured external mode
 
 ## Verification Basis
 
-Deterministic (2026-09-25): governance checker, 14 unit, 14 application, 29 integration, 14 extraction (10 validation + 4 adapter), typecheck, migrate, build, 2 Playwright flows. Live OpenAI commands skipped here — not claimed as verified.
+Deterministic suites pass (14 unit, 14 application, 29 integration, 15 extraction validation/adapter, typecheck, migrate, build, 2 Playwright flows with fixture extraction). Live OpenAI verification is explicitly pending — not claimed as passed in this environment.

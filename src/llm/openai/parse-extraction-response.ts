@@ -26,5 +26,12 @@ export function parseStructuredExtractionResponse(response: ParsedResponse<unkno
     throw new ExtractionError("MODEL_OUTPUT_INVALID", "Model returned no structured extraction output.");
   }
 
-  return modelExtractionOutputSchema.parse(parsed);
+  const result = modelExtractionOutputSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new ExtractionError(
+      "MODEL_OUTPUT_INVALID",
+      "Model structured output did not satisfy the Hermeneus extraction schema.",
+    );
+  }
+  return result.data;
 }

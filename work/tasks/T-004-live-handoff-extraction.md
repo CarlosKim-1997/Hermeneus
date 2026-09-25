@@ -1,7 +1,7 @@
 ---
 schema: task/v1
 id: T-004
-status: COMPLETE
+status: VERIFYING
 areas:
   - handoff
 depends_on:
@@ -27,7 +27,7 @@ In scope:
 - ExtractionProposal domain separate from DraftHandoff authority
 - provider-neutral HandoffExtractor returning proposals
 - OpenAI Responses API adapter (SDK v7) with Structured Outputs (`store: false`) and refusal handling
-- deterministic post-model provenance validation (E1–E10) and adapter edge tests (O1–O4)
+- deterministic post-model provenance validation (E1–E10) and adapter edge tests (O1–O5)
 - opt-in live smoke (`test:live-extraction`) and live semantic evaluation (`test:live-extraction-eval`, L1–L6)
 - Creator UI: explicit Generate AI suggestions, non-authoritative suggestion panel, accept/edit/save flow
 
@@ -44,24 +44,28 @@ C-001 through C-004 remain binding. Model output is proposal-only. Extraction mu
 
 ## Verification
 
-Deterministic (2026-09-25, PostgreSQL 16):
+### Deterministic verification
+
+Observed 2026-09-25 with local PostgreSQL 16 (after O5):
 
 - `node tooling/governance/check.mjs` — PASS
 - `npm test` — 14 passed
 - `npm run test:application` — 14 passed
 - `npm run test:integration` — 29 passed
-- `npm run test:extraction` — 14 passed (10 deterministic validation E1–E10 + 4 adapter O1–O4)
+- `npm run test:extraction` — 15 passed (E1–E10 + O1–O5)
 - `npm run typecheck` — PASS
 - `npm run migrate` — OK
 - `npm run build` — PASS
 - `npm run test:e2e` — 2 passed (fixture-backed extraction UI)
 
-Live OpenAI (requires `OPENAI_API_KEY` + `OPENAI_MODEL`):
+### Live OpenAI verification
 
-- `npm run test:live-extraction` — **pending in agent environment** (skipped)
-- `npm run test:live-extraction-eval` (L1–L6) — **pending in agent environment** (skipped)
+Pending trusted local run with `OPENAI_API_KEY` and `OPENAI_MODEL`:
 
-Implementation is complete; live-provider verification remains for a human/local run before treating Milestone 4 as fully live-verified.
+- `npm run test:live-extraction`
+- `npm run test:live-extraction-eval` (L1–L6)
+
+Do not mark this Task COMPLETE until both live commands pass against a real configured model.
 
 ## Stop Conditions
 
@@ -69,4 +73,4 @@ Stop if Milestone 3 is not on `main`, if implementation requires new normative C
 
 ## Completion Criteria
 
-A Creator can explicitly request AI extraction, review evidence-backed suggestions separately from the persisted draft, accept and curate items, save, and publish under the existing approval-revision boundary. The model cannot publish or silently overwrite drafts.
+A Creator can explicitly request AI extraction, review evidence-backed suggestions separately from the persisted draft, accept and curate items, save, and publish under the existing approval-revision boundary. The model cannot publish or silently overwrite drafts. Live OpenAI smoke and semantic evaluation must pass before closure.
