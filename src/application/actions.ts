@@ -38,10 +38,10 @@ export async function saveDraftAction(input: {
   }
 }
 
-export async function publishHandoffAction(handoffId: string) {
+export async function publishHandoffAction(handoffId: string, expectedDraftRevision: number) {
   try {
     const repos = getRepositories();
-    const published = await publishHandoff(repos, handoffId);
+    const published = await publishHandoff(repos, handoffId, expectedDraftRevision);
     redirect(`/handoffs/${handoffId}/published/${published.version}`);
   } catch (error) {
     if (isRedirectError(error)) throw error;

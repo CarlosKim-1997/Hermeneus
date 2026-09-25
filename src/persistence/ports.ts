@@ -18,7 +18,7 @@ export interface DraftRepository {
 }
 
 export interface PublishedHandoffRepository {
-  publish(handoffId: string, publishedAt: string): Promise<PublishedHandoff>;
+  publish(handoffId: string, publishedAt: string, expectedDraftRevision: number): Promise<PublishedHandoff>;
   get(handoffId: string, version: number): Promise<PublishedHandoff | undefined>;
   listVersions(handoffId: string): Promise<Array<{ version: number; publishedAt: string }>>;
 }

@@ -88,9 +88,13 @@ export function ReviewEditor({ handoffId, initialRevision, initialItems, sourceC
         setPublishError(save.error.message);
         return;
       }
-      setRevision(save.revision);
-      const published = await publishHandoffAction(handoffId);
-      if (published && "error" in published) setPublishError(published.error.message);
+      const approvedRevision = save.revision;
+      setRevision(approvedRevision);
+      const published = await publishHandoffAction(handoffId, approvedRevision);
+      if (published && "error" in published) {
+        if (published.error.code === "CONFLICT") setConflict(true);
+        setPublishError(published.error.message);
+      }
     });
   }
 

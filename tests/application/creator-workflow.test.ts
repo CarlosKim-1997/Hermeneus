@@ -24,6 +24,12 @@ function item(partial: Pick<HandoffItem, "id" | "type" | "statement"> & Partial<
   };
 }
 
+async function publishCurrentDraft(repos: ReturnType<typeof getRepositories>, handoffId: string) {
+  const revision = await repos.drafts.getRevision(handoffId);
+  if (revision === undefined) throw new Error(`Missing draft revision for ${handoffId}`);
+  return publishHandoff(repos, handoffId, revision);
+}
+
 if (!url) {
   describe.skip("Creator application workflow", () => {});
 } else {
@@ -103,7 +109,7 @@ if (!url) {
         ],
         1,
       );
-      const published = await publishHandoff(repos, imported.handoffId);
+      const published = await publishCurrentDraft(repos, imported.handoffId);
       expect(published.version).toBe(1);
     });
 
@@ -124,7 +130,7 @@ if (!url) {
         ],
         1,
       );
-      await expect(publishHandoff(repos, imported.handoffId)).rejects.toBeInstanceOf(ProvenanceValidationError);
+      await expect(publishCurrentDraft(repos, imported.handoffId)).rejects.toBeInstanceOf(ProvenanceValidationError);
       expect(await loadPublishedHandoff(repos, imported.handoffId, 1)).toBeUndefined();
     });
 
@@ -154,7 +160,7 @@ if (!url) {
         [item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." })],
         1,
       );
-      const v1 = await publishHandoff(repos, imported.handoffId);
+      const v1 = await publishCurrentDraft(repos, imported.handoffId);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -174,17 +180,37 @@ if (!url) {
         [item({ id: "web", type: "CONFIRMED", statement: "Web-first v1." })],
         1,
       );
-      const v1 = await publishHandoff(repos, imported.handoffId);
+      const v1 = await publishCurrentDraft(repos, imported.handoffId);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
         [item({ id: "web", type: "CONFIRMED", statement: "Web-first v2." })],
         2,
       );
-      const v2 = await publishHandoff(repos, imported.handoffId);
+      const v2 = await publishCurrentDraft(repos, imported.handoffId);
       expect(v1.version).toBe(1);
       expect(v2.version).toBe(2);
       expect((await loadPublishedHandoff(repos, imported.handoffId, 1))?.items[0]?.statement).toBe("Web-first v1.");
+    });
+
+    it("U9 — approval cannot publish an intervening edit", async () => {
+      const imported = await importAndCreateHandoff(repos, transcript);
+      const approved = await saveCreatorDraft(
+        repos,
+        imported.handoffId,
+        [item({ id: "web", type: "CONFIRMED", statement: "Creator A approved content." })],
+        1,
+      );
+      await saveCreatorDraft(
+        repos,
+        imported.handoffId,
+        [item({ id: "web", type: "CONFIRMED", statement: "Creator B intervening edit." })],
+        approved.revision,
+      );
+      await expect(publishHandoff(repos, imported.handoffId, approved.revision)).rejects.toBeInstanceOf(
+        PersistenceConflictError,
+      );
+      expect(await loadPublishedHandoff(repos, imported.handoffId, 1)).toBeUndefined();
     });
   });
 }

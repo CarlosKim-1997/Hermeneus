@@ -28,6 +28,7 @@ In scope:
 - application use cases for import, draft edit/save, and publication
 - Creator-only full source conversation reads separate from Receiver boundaries
 - explicit Save with optimistic draft revision and conflict surfacing
+- publication bound to an expected draft revision verified under row lock
 - Playwright smoke path when the environment supports it
 
 Out of scope:
@@ -45,10 +46,10 @@ C-001 through C-004 remain binding. UI must not duplicate publication or provena
 
 Observed on 2026-09-25 with local PostgreSQL 16:
 
-- `node tooling/governance/check.mjs` — PASS (after completion)
+- `node tooling/governance/check.mjs` — PASS
 - `npm test` — 14 passed
-- `npm run test:application` — 8 passed (U1–U8)
-- `npm run test:integration` — 27 passed
+- `npm run test:application` — 9 passed (U1–U9)
+- `npm run test:integration` — 29 passed (P1–P25)
 - `npm run typecheck` — PASS
 - `npm run migrate` — OK
 - `npm run build` — PASS
@@ -60,4 +61,4 @@ Stop if Milestone 2 is not on `main`, if implementation requires new normative C
 
 ## Completion Criteria
 
-A human can paste a generic transcript, manually curate a Handoff with provenance, publish v1/v2, and inspect immutable published artifacts in a browser locally.
+A human can paste a generic transcript, manually curate a Handoff with provenance, publish v1/v2, and inspect immutable published artifacts in a browser locally. Publication publishes only the draft revision the Creator explicitly approved at publish time.

@@ -7,6 +7,13 @@ export type CreatorFacingError = {
 
 export function toCreatorFacingError(error: unknown): CreatorFacingError {
   if (error instanceof PersistenceConflictError) {
+    if (error.message.includes("revision conflict at publication")) {
+      return {
+        code: "CONFLICT",
+        message:
+          "The draft changed after you approved it. Nothing was published. Reload and review the current draft before publishing.",
+      };
+    }
     return {
       code: "CONFLICT",
       message: error.message.includes("revision")

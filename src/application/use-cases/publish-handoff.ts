@@ -3,8 +3,12 @@ import type { getRepositories } from "../runtime.js";
 
 type Repos = ReturnType<typeof getRepositories>;
 
-export async function publishHandoff(repos: Repos, handoffId: string): Promise<PublishedHandoff> {
-  return repos.published.publish(handoffId, new Date().toISOString());
+export async function publishHandoff(
+  repos: Repos,
+  handoffId: string,
+  expectedDraftRevision: number,
+): Promise<PublishedHandoff> {
+  return repos.published.publish(handoffId, new Date().toISOString(), expectedDraftRevision);
 }
 
 export async function loadPublishedHandoff(
