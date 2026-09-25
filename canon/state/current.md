@@ -10,11 +10,11 @@ areas:
 
 Repository Governance 1.0.0 is adopted. D-001 through D-004 and C-001 through C-003 record the product direction the human owner ratified on 2026-09-25.
 
-Milestone 1 is implemented on `cursor/hermeneus-milestone-1-e41b`: generic text import, draft publication, and a deterministic receiver. There is no production UI and no live-model integration.
+Milestone 1 is merged into `main`. Milestone 2 adds PostgreSQL persistence for normalized conversations, drafts, and immutable published Handoff versions on `cursor/postgres-persistence-e41b`. The deterministic receiver and epistemic fixtures remain. There is no production UI and no live-model integration.
 
 ## Active Work
 
-No task is in progress. T-001 is complete.
+No task is in progress. T-002 is complete.
 
 ## Blockers
 
@@ -28,4 +28,4 @@ Privacy controls listed in the README are not implemented.
 
 ## Verification Basis
 
-`node tooling/governance/check.mjs`, `npm test`, and `npm run typecheck` passed on 2026-09-25 for the milestone 1 tree. The test suite does not call a live model.
+On 2026-09-25, `node tooling/governance/check.mjs`, `npm test`, `npm run typecheck`, `npm run migrate`, and `npm run test:integration` passed against local PostgreSQL 16. Unit tests do not call a live model.

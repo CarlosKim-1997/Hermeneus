@@ -13,6 +13,23 @@ export { genericTextAdapter } from "./import/generic-text-adapter.js";
 export { importConversation, registeredAdapterIds } from "./import/registry.js";
 export type { ConversationAdapter, ImportInput, NormalizedConversation, NormalizedMessage } from "./import/types.js";
 export { unavailableModel, type ModelOperation, type TextModel } from "./llm/port.js";
+export type {
+  ConversationRepository,
+  DraftRepository,
+  HandoffRootRepository,
+  PublishedHandoffRepository,
+  ReceiverReadRepository,
+} from "./persistence/ports.js";
+export {
+  toReceiverItems,
+  type ProvenanceBundle,
+  type ProvenanceMessage,
+  type PublishedReceiverView,
+  type ReceiverItem,
+} from "./persistence/receiver-types.js";
+export { createPostgresRepositories } from "./persistence/postgres/create-repositories.js";
+export { createPool } from "./persistence/postgres/pool.js";
+export { publishedForInterpretation } from "./persistence/postgres/receiver-read-repository.js";
 export { MemoryStore } from "./persistence/memory-store.js";
 export { interpretWithModel, type AnswerModel, type ModelProposal } from "./receiver/grounding.js";
 export { interpretPublished, UNKNOWN_ANSWER, type Answerability, type Interpretation } from "./receiver/interpret.js";

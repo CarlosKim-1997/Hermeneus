@@ -23,6 +23,8 @@ Implemented now:
 - generic text import (`creator:` / `assistant:` / `other:` lines)
 - normalized conversation
 - draft edits and immutable publication
+- PostgreSQL persistence for conversations, drafts, and published versions
+- receiver views without automatic source excerpts; explicit provenance lookup
 - deterministic answerability and grounding
 - fixtures for superseded exploration, unknown facts, explicit open questions, unsupported implications, transcript conflicts, creator edits, and published immutability
 
@@ -51,6 +53,10 @@ Secrets do not belong in source, Canon, tasks, or reports. Do not treat this mil
 node tooling/governance/check.mjs
 npm test
 npm run typecheck
+npm run migrate
+npm run test:integration
 ```
 
-The test suite does not need an API key.
+Set `TEST_DATABASE_URL` to a real PostgreSQL database before integration tests. See `.env.example` for placeholder variable names only.
+
+The unit test suite does not need an API key.

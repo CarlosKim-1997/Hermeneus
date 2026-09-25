@@ -1,13 +1,8 @@
 import type { PublishedHandoff } from "../handoff/schema.js";
 import type { NormalizedConversation } from "../import/types.js";
+import { toReceiverItems, type PublishedReceiverView } from "./receiver-types.js";
 
-export type ReceiverView = {
-  handoffId: string;
-  version: number;
-  items: PublishedHandoff["items"];
-};
-
-/** In-memory stand-in for the persistence boundary. Receiver reads do not return raw transcripts. */
+/** In-memory stand-in for the persistence boundary. Receiver reads omit source excerpts. */
 export class MemoryStore {
   private readonly conversations = new Map<string, NormalizedConversation>();
   private readonly published = new Map<string, PublishedHandoff>();
@@ -25,10 +20,15 @@ export class MemoryStore {
     return found ? structuredClone(found) : undefined;
   }
 
-  receiverView(handoffId: string, version: number): ReceiverView | undefined {
+  receiverView(handoffId: string, version: number): PublishedReceiverView | undefined {
     const found = this.getPublished(handoffId, version);
     if (!found) return undefined;
-    return { handoffId: found.handoffId, version: found.version, items: found.items };
+    return {
+      handoffId: found.handoffId,
+      version: found.version,
+      publishedAt: found.publishedAt,
+      items: toReceiverItems(found.items),
+    };
   }
 }
 
