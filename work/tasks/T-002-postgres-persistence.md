@@ -1,7 +1,7 @@
 ---
 schema: task/v1
 id: T-002
-status: IN_PROGRESS
+status: COMPLETE
 areas:
   - handoff
 depends_on:
@@ -62,10 +62,11 @@ C-001, C-002, and C-003 remain binding. Domain code must not import PostgreSQL c
 Observed on 2026-09-25 against local PostgreSQL 16 with `TEST_DATABASE_URL`:
 
 - `node tooling/governance/check.mjs` — PASS
-- `npm test` — 14 passed (Milestone 1 fixtures preserved)
+- `npm test` — 14 passed (Milestone 1 fixtures A–G preserved)
 - `npm run typecheck` — PASS
 - `npm run migrate` — applied `001_initial_persistence.sql`
-- `npm run test:integration` — P1 through P10 passed
+- `npm run test:integration` — P1 through P14 plus handoff-root, draft concurrency, and provenance isolation cases passed (18 total)
+- pre-merge correction: immutable conversation import (C-004), optimistic draft revision, minimal receiver provenance, `InterpretationAuthority` interpreter boundary
 
 ## Stop Conditions
 

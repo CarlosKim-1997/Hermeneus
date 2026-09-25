@@ -6,3 +6,12 @@ export class PersistenceConflictError extends Error {
     this.name = "PersistenceConflictError";
   }
 }
+
+export class ProvenanceValidationError extends Error {
+  readonly code = "PROVENANCE_VALIDATION";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "ProvenanceValidationError";
+  }
+}

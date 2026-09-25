@@ -8,13 +8,13 @@ areas:
 
 ## Current Position
 
-Repository Governance 1.0.0 is adopted. D-001 through D-004 and C-001 through C-003 record the product direction the human owner ratified on 2026-09-25.
+Repository Governance 1.0.0 is adopted. D-001 through D-004 and C-001 through C-004 record the product direction and persistence boundaries the human owner ratified on 2026-09-25.
 
 Milestone 1 is merged into `main`. Milestone 2 adds PostgreSQL persistence for normalized conversations, drafts, and immutable published Handoff versions on `cursor/postgres-persistence-e41b`. The deterministic receiver and epistemic fixtures remain. There is no production UI and no live-model integration.
 
 ## Active Work
 
-T-002 pre-merge integrity correction is in progress on PR #2.
+T-002 final pre-merge integrity pass is in progress on PR #2.
 
 ## Blockers
 

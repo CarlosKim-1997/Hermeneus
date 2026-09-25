@@ -2,6 +2,7 @@ import type { Pool } from "pg";
 import { draftHandoffSchema, publishedHandoffSchema, type PublishedHandoff } from "../../handoff/schema.js";
 import type { PublishedHandoffRepository } from "../ports.js";
 import type { Queryable } from "./pool.js";
+import { validatePublicationProvenance } from "./validate-publication-provenance.js";
 
 export class PostgresPublishedHandoffRepository implements PublishedHandoffRepository {
   constructor(private readonly pool: Pool) {}
@@ -20,6 +21,7 @@ export class PostgresPublishedHandoffRepository implements PublishedHandoffRepos
         throw new Error(`No draft exists for handoff ${handoffId}`);
       }
       const draft = draftHandoffSchema.parse(draftResult.rows[0].snapshot_json);
+      await validatePublicationProvenance(client, handoffId, draft);
 
       const versionResult = await client.query<{ next_version: number }>(
         `SELECT COALESCE(MAX(version), 0) + 1 AS next_version

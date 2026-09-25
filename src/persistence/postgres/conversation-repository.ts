@@ -11,21 +11,23 @@ export class PostgresConversationRepository implements ConversationRepository {
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
-      const existingConversation = await client.query<{
-        id: string;
-        provider: string;
-        imported_at: Date;
-      }>("SELECT id, provider, imported_at FROM source_conversations WHERE id = $1 FOR UPDATE", [conversation.id]);
+      const inserted = await client.query<{ id: string }>(
+        `INSERT INTO source_conversations (id, provider, imported_at)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (id) DO NOTHING
+         RETURNING id`,
+        [conversation.id, conversation.source.provider, conversation.source.importedAt],
+      );
 
-      if (existingConversation.rowCount === 0) {
-        await this.insertConversation(client, conversation);
+      if (inserted.rowCount && inserted.rowCount > 0) {
+        await this.insertMessages(client, conversation);
         await client.query("COMMIT");
         return;
       }
 
       const loaded = await this.loadConversation(client, conversation.id);
       if (!loaded) {
-        throw new Error(`Conversation ${conversation.id} disappeared during import`);
+        throw new Error(`Conversation ${conversation.id} conflict without persisted row`);
       }
       if (!conversationsEqual(loaded, conversation)) {
         throw new PersistenceConflictError(
@@ -50,12 +52,7 @@ export class PostgresConversationRepository implements ConversationRepository {
     }
   }
 
-  private async insertConversation(client: Queryable, conversation: NormalizedConversation): Promise<void> {
-    await client.query(
-      `INSERT INTO source_conversations (id, provider, imported_at)
-       VALUES ($1, $2, $3)`,
-      [conversation.id, conversation.source.provider, conversation.source.importedAt],
-    );
+  private async insertMessages(client: Queryable, conversation: NormalizedConversation): Promise<void> {
     for (const [index, message] of conversation.messages.entries()) {
       await client.query(
         `INSERT INTO source_messages

@@ -52,4 +52,6 @@ Tables:
 
 Publication runs in a transaction: lock the handoff row, validate the draft, compute the next version, insert only.
 
-Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without `sources`. Provenance is fetched separately through `getProvenance`.
+Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without `sources`. Provenance is fetched separately through `getProvenance` and returns receiver-safe excerpts only, never full source message content.
+
+Conversation import uses `ConversationRepository.create`: identical re-imports are idempotent; conflicting re-imports for the same ID fail. Draft saves require an expected revision after the first write.

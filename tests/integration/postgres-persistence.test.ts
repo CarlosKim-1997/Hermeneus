@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createDraft, updateItem } from "../../src/handoff/draft.js";
 import type { DraftHandoff, HandoffItem } from "../../src/handoff/schema.js";
-import { PersistenceConflictError } from "../../src/persistence/errors.js";
+import { PersistenceConflictError, ProvenanceValidationError } from "../../src/persistence/errors.js";
 import { createPostgresRepositories } from "../../src/persistence/postgres/create-repositories.js";
 import { createPool } from "../../src/persistence/postgres/pool.js";
 import { authorityFromReceiverView } from "../../src/receiver/interpretation-authority.js";
@@ -16,7 +16,7 @@ function item(partial: Pick<HandoffItem, "id" | "type" | "statement"> & Partial<
   return {
     priority: "CORE",
     createdBy: "CREATOR",
-    sources: [{ messageId: "m1" }],
+    sources: [],
     ...partial,
   };
 }
@@ -393,6 +393,231 @@ if (!url) {
       expect(JSON.stringify(provenance)).toMatch(/relevant approved sentence/);
       expect(JSON.stringify(provenance)).not.toMatch(/SECRET PRIVATE MATERIAL/);
       expect(provenance.items[0]?.references[0]).not.toHaveProperty("content");
+    });
+
+    it("P15 — concurrent identical conversation create", async () => {
+      const payload = {
+        ...conversation,
+        id: "conv-p15",
+        messages: conversation.messages.map((message) => ({
+          ...message,
+          id: message.id.replace("conv-p:", "conv-p15:"),
+        })),
+      };
+      const [first, second] = await Promise.allSettled([
+        repos.conversations.create(payload),
+        repos.conversations.create(payload),
+      ]);
+      expect(first.status).toBe("fulfilled");
+      expect(second.status).toBe("fulfilled");
+      const loaded = await repos.conversations.get("conv-p15");
+      expect(loaded).toEqual(payload);
+      const count = await pool.query("SELECT COUNT(*)::int AS count FROM source_messages WHERE conversation_id = $1", [
+        "conv-p15",
+      ]);
+      expect(count.rows[0].count).toBe(payload.messages.length);
+    });
+
+    it("P16 — concurrent conflicting conversation create", async () => {
+      const base = {
+        ...conversation,
+        id: "conv-p16",
+        messages: conversation.messages.map((message) => ({
+          ...message,
+          id: message.id.replace("conv-p:", "conv-p16:"),
+        })),
+      };
+      const conflicting = {
+        ...base,
+        messages: base.messages.map((message) =>
+          message.id.endsWith(":m3") ? { ...message, content: "Native mobile is confirmed." } : message,
+        ),
+      };
+      const results = await Promise.allSettled([
+        repos.conversations.create(base),
+        repos.conversations.create(conflicting),
+      ]);
+      const fulfilled = results.filter((result) => result.status === "fulfilled");
+      const rejected = results.filter(
+        (result): result is PromiseRejectedResult =>
+          result.status === "rejected" && result.reason instanceof PersistenceConflictError,
+      );
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
+      const loaded = await repos.conversations.get("conv-p16");
+      expect([base, conflicting].some((candidate) => JSON.stringify(candidate) === JSON.stringify(loaded))).toBe(true);
+      const count = await pool.query("SELECT COUNT(*)::int AS count FROM source_messages WHERE conversation_id = $1", [
+        "conv-p16",
+      ]);
+      expect(count.rows[0].count).toBe(base.messages.length);
+    });
+
+    it("P17 — concurrent identical handoff root create", async () => {
+      await repos.conversations.create(conversation);
+      const [first, second] = await Promise.allSettled([
+        repos.handoffs.create("handoff-p17", "conv-p"),
+        repos.handoffs.create("handoff-p17", "conv-p"),
+      ]);
+      expect(first.status).toBe("fulfilled");
+      expect(second.status).toBe("fulfilled");
+    });
+
+    it("P18 — concurrent conflicting handoff root binding", async () => {
+      await repos.conversations.create(conversation);
+      const other = {
+        ...conversation,
+        id: "conv-p18-other",
+        messages: conversation.messages.map((message) => ({
+          ...message,
+          id: message.id.replace("conv-p:", "conv-p18-other:"),
+        })),
+      };
+      await repos.conversations.create(other);
+      const results = await Promise.allSettled([
+        repos.handoffs.create("handoff-p18", "conv-p"),
+        repos.handoffs.create("handoff-p18", "conv-p18-other"),
+      ]);
+      const fulfilled = results.filter((result) => result.status === "fulfilled");
+      const rejected = results.filter(
+        (result): result is PromiseRejectedResult =>
+          result.status === "rejected" && result.reason instanceof PersistenceConflictError,
+      );
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
+    });
+
+    it("P19 — concurrent initial draft writers", async () => {
+      await repos.conversations.create(conversation);
+      await repos.handoffs.create("handoff-p19", "conv-p");
+      const firstDraft = createDraft("handoff-p19", [
+        item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
+      ]);
+      const secondDraft = createDraft("handoff-p19", [
+        item({ id: "web", type: "CONFIRMED", statement: "Alternate draft candidate." }),
+      ]);
+      const results = await Promise.allSettled([
+        repos.drafts.save(firstDraft),
+        repos.drafts.save(secondDraft),
+      ]);
+      const fulfilled = results.filter((result) => result.status === "fulfilled");
+      const rejected = results.filter(
+        (result): result is PromiseRejectedResult =>
+          result.status === "rejected" && result.reason instanceof PersistenceConflictError,
+      );
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
+      expect(await repos.drafts.get("handoff-p19")).toBeDefined();
+    });
+
+    it("P20 — nonexistent source message rejected at publication", async () => {
+      await repos.conversations.create(conversation);
+      await repos.handoffs.create("handoff-p20", "conv-p");
+      await saveInitialDraft(
+        repos,
+        createDraft("handoff-p20", [
+          item({
+            id: "web",
+            type: "CONFIRMED",
+            statement: "Web-first is confirmed.",
+            sources: [{ messageId: "missing-message" }],
+          }),
+        ]),
+      );
+      await expect(repos.published.publish("handoff-p20", "2026-09-25T00:00:00.000Z")).rejects.toBeInstanceOf(
+        ProvenanceValidationError,
+      );
+      expect(await repos.published.get("handoff-p20", 1)).toBeUndefined();
+    });
+
+    it("P21 — cross-conversation source reference rejected at publication", async () => {
+      await repos.conversations.create(conversation);
+      const other = {
+        ...conversation,
+        id: "conv-p21-other",
+        messages: conversation.messages.map((message) => ({
+          ...message,
+          id: message.id.replace("conv-p:", "conv-p21-other:"),
+        })),
+      };
+      await repos.conversations.create(other);
+      await repos.handoffs.create("handoff-p21", "conv-p");
+      await saveInitialDraft(
+        repos,
+        createDraft("handoff-p21", [
+          item({
+            id: "web",
+            type: "CONFIRMED",
+            statement: "Web-first is confirmed.",
+            sources: [{ messageId: "conv-p21-other:m3" }],
+          }),
+        ]),
+      );
+      await expect(repos.published.publish("handoff-p21", "2026-09-25T00:00:00.000Z")).rejects.toBeInstanceOf(
+        ProvenanceValidationError,
+      );
+      expect(await repos.published.get("handoff-p21", 1)).toBeUndefined();
+    });
+
+    it("P22 — fabricated excerpt rejected at publication", async () => {
+      const excerptConversation = {
+        ...conversation,
+        id: "conv-p22",
+        messages: [
+          {
+            id: "conv-p22:m1",
+            role: "creator" as const,
+            content: "We decided web-first.",
+            source: { provider: "generic-text" },
+          },
+        ],
+      };
+      await repos.conversations.create(excerptConversation);
+      await repos.handoffs.create("handoff-p22", "conv-p22");
+      await saveInitialDraft(
+        repos,
+        createDraft("handoff-p22", [
+          item({
+            id: "web",
+            type: "CONFIRMED",
+            statement: "Web-first is confirmed.",
+            sources: [{ messageId: "conv-p22:m1", excerpt: "Mobile-first was approved." }],
+          }),
+        ]),
+      );
+      await expect(repos.published.publish("handoff-p22", "2026-09-25T00:00:00.000Z")).rejects.toBeInstanceOf(
+        ProvenanceValidationError,
+      );
+      expect(await repos.published.get("handoff-p22", 1)).toBeUndefined();
+    });
+
+    it("P23 — valid excerpt accepted at publication", async () => {
+      const excerptConversation = {
+        ...conversation,
+        id: "conv-p23",
+        messages: [
+          {
+            id: "conv-p23:m1",
+            role: "creator" as const,
+            content: "We decided web-first.",
+            source: { provider: "generic-text" },
+          },
+        ],
+      };
+      await repos.conversations.create(excerptConversation);
+      await repos.handoffs.create("handoff-p23", "conv-p23");
+      await saveInitialDraft(
+        repos,
+        createDraft("handoff-p23", [
+          item({
+            id: "web",
+            type: "CONFIRMED",
+            statement: "Web-first is confirmed.",
+            sources: [{ messageId: "conv-p23:m1", excerpt: "We decided web-first." }],
+          }),
+        ]),
+      );
+      const published = await repos.published.publish("handoff-p23", "2026-09-25T00:00:00.000Z");
+      expect(published.version).toBe(1);
     });
   });
 }
