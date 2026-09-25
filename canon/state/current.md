@@ -1,6 +1,6 @@
 ---
 schema: state/v1
-status: IN_PROGRESS
+status: READY
 areas:
   - global
 ---
@@ -10,11 +10,11 @@ areas:
 
 Repository Governance 1.0.0 is adopted. D-001 through D-004 and C-001 through C-004 record the product direction and persistence boundaries the human owner ratified on 2026-09-25.
 
-Milestone 1 is merged into `main`. Milestone 2 adds PostgreSQL persistence for normalized conversations, drafts, and immutable published Handoff versions on `cursor/postgres-persistence-e41b`. The deterministic receiver and epistemic fixtures remain. There is no production UI and no live-model integration.
+Milestone 1 is merged into `main`. Milestone 2 is complete on PR #2 (`cursor/postgres-persistence-e41b`) but not yet merged into `main`. PostgreSQL persistence covers normalized conversations, drafts, and immutable published Handoff versions. The deterministic receiver and epistemic fixtures remain. There is no production UI and no live-model integration.
 
 ## Active Work
 
-T-002 final pre-merge integrity pass is in progress on PR #2.
+No task is in progress. T-002 is complete.
 
 ## Blockers
 
@@ -28,4 +28,4 @@ Privacy controls listed in the README are not implemented.
 
 ## Verification Basis
 
-On 2026-09-25, `node tooling/governance/check.mjs`, `npm test`, `npm run typecheck`, `npm run migrate`, and `npm run test:integration` passed against local PostgreSQL 16. Unit tests do not call a live model.
+On 2026-09-25, local verification passed: `node tooling/governance/check.mjs`, `npm test` (14), `npm run typecheck`, `npm run migrate`, and `npm run test:integration` (27) against PostgreSQL 16. No hosted CI PostgreSQL run is claimed. Unit tests do not call a live model.

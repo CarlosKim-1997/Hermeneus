@@ -30,7 +30,7 @@ In scope:
 - database immutability protection for published snapshots
 - receiver read boundary without automatic source excerpts
 - explicit provenance retrieval
-- PostgreSQL integration tests P1 through P10
+- PostgreSQL integration coverage through P23, including root rebinding, draft concurrency, receiver provenance isolation, concurrent create safety, and publication-time provenance validation
 
 Out of scope:
 - UI, Next.js, authentication, share links
@@ -55,18 +55,18 @@ Not authorized:
 
 ## Constraints
 
-C-001, C-002, and C-003 remain binding. Domain code must not import PostgreSQL client libraries. Do not weaken Milestone 1 tests.
+C-001, C-002, C-003, and C-004 remain binding. Domain code must not import PostgreSQL client libraries. Do not weaken Milestone 1 tests.
 
 ## Verification
 
 Observed on 2026-09-25 against local PostgreSQL 16 with `TEST_DATABASE_URL`:
 
-- `node tooling/governance/check.mjs` — PASS
-- `npm test` — 14 passed (Milestone 1 fixtures A–G preserved)
+- `node tooling/governance/check.mjs` — PASS (including after T-002 and Current State completion)
+- `npm test` — 14 passed (Milestone 1 epistemic fixtures A–G preserved)
 - `npm run typecheck` — PASS
 - `npm run migrate` — applied `001_initial_persistence.sql`
-- `npm run test:integration` — P1 through P14 plus handoff-root, draft concurrency, and provenance isolation cases passed (18 total)
-- pre-merge correction: immutable conversation import (C-004), optimistic draft revision, minimal receiver provenance, `InterpretationAuthority` interpreter boundary
+- `npm run test:integration` — 27 passed: P1–P23 plus handoff-root rebinding, draft stale/concurrent writes, and provenance secret-isolation cases
+- C-004 immutable/idempotent conversation import, optimistic draft revision, minimal receiver provenance (`excerpt` only), `InterpretationAuthority` interpreter boundary, publication-time provenance validation (message existence, conversation binding, exact excerpt support)
 
 ## Stop Conditions
 
