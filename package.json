@@ -4,18 +4,30 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:application": "vitest run --config vitest.application.config.ts",
+    "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "governance": "node tooling/governance/check.mjs",
     "migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
+    "next": "^15.5.3",
     "pg": "^8.16.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^24.3.1",
     "@types/pg": "^8.15.5",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }

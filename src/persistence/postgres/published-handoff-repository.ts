@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import { draftHandoffSchema, publishedHandoffSchema, type PublishedHandoff } from "../../handoff/schema.js";
+import { PersistenceConflictError } from "../errors.js";
 import type { PublishedHandoffRepository } from "../ports.js";
 import type { Queryable } from "./pool.js";
 import { validatePublicationProvenance } from "./validate-publication-provenance.js";
@@ -7,20 +8,34 @@ import { validatePublicationProvenance } from "./validate-publication-provenance
 export class PostgresPublishedHandoffRepository implements PublishedHandoffRepository {
   constructor(private readonly pool: Pool) {}
 
-  async publish(handoffId: string, publishedAt: string): Promise<PublishedHandoff> {
+  async publish(
+    handoffId: string,
+    publishedAt: string,
+    expectedDraftRevision: number,
+  ): Promise<PublishedHandoff> {
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
       await client.query("SELECT id FROM handoffs WHERE id = $1 FOR UPDATE", [handoffId]);
 
-      const draftResult = await client.query<{ snapshot_json: unknown }>(
-        "SELECT snapshot_json FROM handoff_drafts WHERE handoff_id = $1",
+      const draftResult = await client.query<{ revision: number; snapshot_json: unknown }>(
+        `SELECT revision, snapshot_json
+         FROM handoff_drafts
+         WHERE handoff_id = $1
+         FOR UPDATE`,
         [handoffId],
       );
       if (draftResult.rowCount === 0) {
         throw new Error(`No draft exists for handoff ${handoffId}`);
       }
-      const draft = draftHandoffSchema.parse(draftResult.rows[0].snapshot_json);
+      const draftRow = draftResult.rows[0];
+      if (draftRow.revision !== expectedDraftRevision) {
+        throw new PersistenceConflictError(
+          `Draft ${handoffId} revision conflict at publication: expected ${expectedDraftRevision}, found ${draftRow.revision}`,
+        );
+      }
+
+      const draft = draftHandoffSchema.parse(draftRow.snapshot_json);
       await validatePublicationProvenance(client, handoffId, draft);
 
       const versionResult = await client.query<{ next_version: number }>(

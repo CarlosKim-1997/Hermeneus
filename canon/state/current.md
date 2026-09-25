@@ -8,13 +8,11 @@ areas:
 
 ## Current Position
 
-Repository Governance 1.0.0 is adopted. D-001 through D-004 and C-001 through C-004 record the product direction and persistence boundaries the human owner ratified on 2026-09-25.
-
-Milestone 1 is merged into `main`. Milestone 2 is complete on PR #2 (`cursor/postgres-persistence-e41b`) but not yet merged into `main`. PostgreSQL persistence covers normalized conversations, drafts, and immutable published Handoff versions. The deterministic receiver and epistemic fixtures remain. There is no production UI and no live-model integration.
+Milestones 1 and 2 are merged into `main`. Milestone 3 Creator review UI is implemented on `cursor/creator-review-milestone-3-e41b` (PR #3 pending merge). A local Next.js Creator workflow supports generic-text import, manual Handoff editing with provenance, explicit Save with revision conflicts, and immutable publication that requires the approved draft revision at publish time. There is no production UI deployment, no live-model integration, and no Receiver chat product surface.
 
 ## Active Work
 
-No task is in progress. T-002 is complete.
+None. T-003 is complete pending PR #3 merge review.
 
 ## Blockers
 
@@ -22,10 +20,8 @@ None.
 
 ## Material Risks
 
-`CarlosKim-1997/repository-governance` was not readable here (GitHub 404). The installed protocol is the Governance 1.0.0 snapshot vendored in CarlosLab at `d9d325857fdb61fd5979fc925514aebbc0c61df2`. See `work/reports/governance-adoption-v1.md`.
-
-Privacy controls listed in the README are not implemented.
+The Creator UI is local/development-only: no authentication, authorization, or production privacy controls. Do not deploy publicly.
 
 ## Verification Basis
 
-On 2026-09-25, local verification passed: `node tooling/governance/check.mjs`, `npm test` (14), `npm run typecheck`, `npm run migrate`, and `npm run test:integration` (27) against PostgreSQL 16. No hosted CI PostgreSQL run is claimed. Unit tests do not call a live model.
+On 2026-09-25, local verification passed: governance checker, 14 unit tests, 9 application tests (U1–U9), 29 PostgreSQL integration tests (P1–P25), typecheck, migrate, Next.js build, and 1 Playwright Creator flow test against PostgreSQL 16. No hosted CI PostgreSQL claim.

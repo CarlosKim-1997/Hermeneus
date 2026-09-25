@@ -62,6 +62,12 @@ async function saveDraftUpdate(repos: Repos, draft: DraftHandoff) {
   return repos.drafts.save(draft, revision);
 }
 
+async function publishCurrentDraft(repos: Repos, handoffId: string, publishedAt: string) {
+  const revision = await repos.drafts.getRevision(handoffId);
+  if (revision === undefined) throw new Error(`Missing draft revision for ${handoffId}`);
+  return repos.published.publish(handoffId, publishedAt, revision);
+}
+
 if (!url) {
   describe.skip("PostgreSQL persistence", () => {
     it("requires TEST_DATABASE_URL", () => undefined);
@@ -111,7 +117,7 @@ if (!url) {
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
       await saveInitialDraft(repos, draft);
-      const published = await repos.published.publish("handoff-p3", "2026-09-25T00:00:00.000Z");
+      const published = await publishCurrentDraft(repos, "handoff-p3", "2026-09-25T00:00:00.000Z");
       const loaded = await repos.published.get("handoff-p3", 1);
       expect(loaded).toEqual(published);
     });
@@ -123,7 +129,7 @@ if (!url) {
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
       await saveInitialDraft(repos, draft);
-      const v1 = await repos.published.publish("handoff-p4", "2026-09-25T00:00:00.000Z");
+      const v1 = await publishCurrentDraft(repos, "handoff-p4", "2026-09-25T00:00:00.000Z");
       draft = updateItem(draft, "web", { statement: "Native mobile is confirmed." });
       await saveDraftUpdate(repos, draft);
       expect(await repos.published.get("handoff-p4", 1)).toEqual(v1);
@@ -136,10 +142,10 @@ if (!url) {
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
       await saveInitialDraft(repos, draft);
-      const v1 = await repos.published.publish("handoff-p5", "2026-09-25T00:00:00.000Z");
+      const v1 = await publishCurrentDraft(repos, "handoff-p5", "2026-09-25T00:00:00.000Z");
       draft = updateItem(draft, "web", { statement: "Native mobile is confirmed." });
       await saveDraftUpdate(repos, draft);
-      const v2 = await repos.published.publish("handoff-p5", "2026-09-25T01:00:00.000Z");
+      const v2 = await publishCurrentDraft(repos, "handoff-p5", "2026-09-25T01:00:00.000Z");
       expect(v1.version).toBe(1);
       expect(v2.version).toBe(2);
       expect(await repos.published.get("handoff-p5", 1)).toEqual(v1);
@@ -153,7 +159,7 @@ if (!url) {
         repos,
         createDraft("handoff-p6", [item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." })]),
       );
-      await repos.published.publish("handoff-p6", "2026-09-25T00:00:00.000Z");
+      await publishCurrentDraft(repos, "handoff-p6", "2026-09-25T00:00:00.000Z");
       await expect(
         pool.query(
           `UPDATE published_handoff_versions
@@ -178,7 +184,7 @@ if (!url) {
           }),
         ]),
       );
-      await repos.published.publish("handoff-p7", "2026-09-25T00:00:00.000Z");
+      await publishCurrentDraft(repos, "handoff-p7", "2026-09-25T00:00:00.000Z");
       const view = await repos.receiver.getPublishedView("handoff-p7", 1);
       expect(view?.items.every((entry) => !("sources" in entry))).toBe(true);
       expect(JSON.stringify(view)).not.toMatch(/SECRET exploratory salary discussion/);
@@ -199,7 +205,7 @@ if (!url) {
           }),
         ]),
       );
-      await repos.published.publish("handoff-p8", "2026-09-25T00:00:00.000Z");
+      await publishCurrentDraft(repos, "handoff-p8", "2026-09-25T00:00:00.000Z");
       const provenance = await repos.receiver.getProvenance("handoff-p8", 1, ["web"]);
       expect(provenance.items).toHaveLength(1);
       expect(provenance.items[0]?.references).toHaveLength(1);
@@ -223,7 +229,7 @@ if (!url) {
           item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
         ]),
       );
-      await repos.published.publish("handoff-p9", "2026-09-25T00:00:00.000Z");
+      await publishCurrentDraft(repos, "handoff-p9", "2026-09-25T00:00:00.000Z");
       const view = await repos.receiver.getPublishedView("handoff-p9", 1);
       expect(view).toBeDefined();
       const result = interpretPublished("Are we building mobile first?", authorityFromReceiverView(view!));
@@ -239,8 +245,8 @@ if (!url) {
         createDraft("handoff-p10", [item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." })]),
       );
       const [first, second] = await Promise.all([
-        repos.published.publish("handoff-p10", "2026-09-25T00:00:00.000Z"),
-        repos.published.publish("handoff-p10", "2026-09-25T00:00:00.001Z"),
+        publishCurrentDraft(repos, "handoff-p10", "2026-09-25T00:00:00.000Z"),
+        publishCurrentDraft(repos, "handoff-p10", "2026-09-25T00:00:00.001Z"),
       ]);
       expect(new Set([first.version, second.version])).toEqual(new Set([1, 2]));
       expect(await repos.published.listVersions("handoff-p10")).toHaveLength(2);
@@ -283,7 +289,7 @@ if (!url) {
           }),
         ]),
       );
-      await repos.published.publish("handoff-p13", "2026-09-25T00:00:00.000Z");
+      await publishCurrentDraft(repos, "handoff-p13", "2026-09-25T00:00:00.000Z");
       const conflicting = {
         ...conversation,
         messages: conversation.messages.map((message) =>
@@ -388,7 +394,7 @@ if (!url) {
           }),
         ]),
       );
-      await repos.published.publish("handoff-secret", "2026-09-25T00:00:00.000Z");
+      await publishCurrentDraft(repos, "handoff-secret", "2026-09-25T00:00:00.000Z");
       const provenance = await repos.receiver.getProvenance("handoff-secret", 1, ["web"]);
       expect(JSON.stringify(provenance)).toMatch(/relevant approved sentence/);
       expect(JSON.stringify(provenance)).not.toMatch(/SECRET PRIVATE MATERIAL/);
@@ -523,7 +529,7 @@ if (!url) {
           }),
         ]),
       );
-      await expect(repos.published.publish("handoff-p20", "2026-09-25T00:00:00.000Z")).rejects.toBeInstanceOf(
+      await expect(publishCurrentDraft(repos, "handoff-p20", "2026-09-25T00:00:00.000Z")).rejects.toBeInstanceOf(
         ProvenanceValidationError,
       );
       expect(await repos.published.get("handoff-p20", 1)).toBeUndefined();
@@ -552,7 +558,7 @@ if (!url) {
           }),
         ]),
       );
-      await expect(repos.published.publish("handoff-p21", "2026-09-25T00:00:00.000Z")).rejects.toBeInstanceOf(
+      await expect(publishCurrentDraft(repos, "handoff-p21", "2026-09-25T00:00:00.000Z")).rejects.toBeInstanceOf(
         ProvenanceValidationError,
       );
       expect(await repos.published.get("handoff-p21", 1)).toBeUndefined();
@@ -584,7 +590,7 @@ if (!url) {
           }),
         ]),
       );
-      await expect(repos.published.publish("handoff-p22", "2026-09-25T00:00:00.000Z")).rejects.toBeInstanceOf(
+      await expect(publishCurrentDraft(repos, "handoff-p22", "2026-09-25T00:00:00.000Z")).rejects.toBeInstanceOf(
         ProvenanceValidationError,
       );
       expect(await repos.published.get("handoff-p22", 1)).toBeUndefined();
@@ -616,8 +622,76 @@ if (!url) {
           }),
         ]),
       );
-      const published = await repos.published.publish("handoff-p23", "2026-09-25T00:00:00.000Z");
+      const published = await publishCurrentDraft(repos, "handoff-p23", "2026-09-25T00:00:00.000Z");
       expect(published.version).toBe(1);
+    });
+
+    it("P24 — publication rejects changed draft revision", async () => {
+      await repos.conversations.create(conversation);
+      await repos.handoffs.create("handoff-p24", "conv-p");
+      let draft = createDraft("handoff-p24", [
+        item({ id: "web", type: "CONFIRMED", statement: "Initial revision one." }),
+      ]);
+      await saveInitialDraft(repos, draft);
+      draft = updateItem(draft, "web", { statement: "Creator A approved revision two." });
+      await saveDraftUpdate(repos, draft);
+      draft = updateItem(draft, "web", { statement: "Creator B revision three." });
+      await saveDraftUpdate(repos, draft);
+
+      await expect(
+        repos.published.publish("handoff-p24", "2026-09-25T00:00:00.000Z", 2),
+      ).rejects.toBeInstanceOf(PersistenceConflictError);
+      expect(await repos.published.get("handoff-p24", 1)).toBeUndefined();
+      expect(await repos.drafts.getRevision("handoff-p24")).toBe(3);
+      expect((await repos.drafts.get("handoff-p24"))?.items[0]?.statement).toBe("Creator B revision three.");
+    });
+
+    it("P25 — publication never publishes a revision newer than approved", async () => {
+      await repos.conversations.create(conversation);
+      await repos.handoffs.create("handoff-p25", "conv-p");
+      let draft = createDraft("handoff-p25", [
+        item({ id: "web", type: "CONFIRMED", statement: "Revision one baseline." }),
+      ]);
+      await saveInitialDraft(repos, draft);
+      const approvedStatement = "Creator approved revision two.";
+      const interveningStatement = "Concurrent revision three.";
+      draft = updateItem(draft, "web", { statement: approvedStatement });
+      await saveDraftUpdate(repos, draft);
+      const revisionTwoSnapshot = structuredClone(await repos.drafts.get("handoff-p25"));
+
+      const draftForConcurrentSave = updateItem(draft, "web", { statement: interveningStatement });
+      const [publishResult, saveResult] = await Promise.allSettled([
+        repos.published.publish("handoff-p25", "2026-09-25T00:00:00.000Z", 2),
+        repos.drafts.save(draftForConcurrentSave, 2),
+      ]);
+
+      const published = await repos.published.get("handoff-p25", 1);
+      const finalRevision = await repos.drafts.getRevision("handoff-p25");
+      const finalDraft = await repos.drafts.get("handoff-p25");
+
+      if (published) {
+        expect(published.items[0]?.statement).toBe(revisionTwoSnapshot?.items[0]?.statement);
+        expect(published.items[0]?.statement).toBe(approvedStatement);
+        expect(published.items[0]?.statement).not.toBe(interveningStatement);
+      }
+
+      if (publishResult.status === "fulfilled" && saveResult.status === "fulfilled") {
+        expect(finalRevision).toBe(3);
+        expect(finalDraft?.items[0]?.statement).toBe(interveningStatement);
+      } else if (publishResult.status === "rejected" && saveResult.status === "fulfilled") {
+        expect(publishResult.reason).toBeInstanceOf(PersistenceConflictError);
+        expect(finalRevision).toBe(3);
+        expect(published).toBeUndefined();
+      } else if (publishResult.status === "fulfilled" && saveResult.status === "rejected") {
+        expect(saveResult.reason).toBeInstanceOf(PersistenceConflictError);
+        expect(finalRevision).toBe(2);
+      } else {
+        expect(publishResult.status === "rejected" || saveResult.status === "rejected").toBe(true);
+      }
+
+      expect(
+        !(published && published.items[0]?.statement === interveningStatement),
+      ).toBe(true);
     });
   });
 }
