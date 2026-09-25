@@ -12,6 +12,7 @@
     "test:application": "vitest run --config vitest.application.config.ts",
     "test:extraction": "vitest run --config vitest.extraction.config.ts",
     "test:live-extraction": "vitest run --config vitest.live-extraction.config.ts",
+    "test:live-extraction-eval": "vitest run --config vitest.live-extraction-eval.config.ts",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "governance": "node tooling/governance/check.mjs",
@@ -19,7 +20,7 @@
   },
   "dependencies": {
     "next": "^15.5.3",
-    "openai": "^4.104.0",
+    "openai": "^7.23.0",
     "pg": "^8.16.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

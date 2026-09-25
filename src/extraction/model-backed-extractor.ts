@@ -1,11 +1,24 @@
 import { zodTextFormat } from "openai/helpers/zod";
+import type OpenAI from "openai";
+import type { ParsedResponse } from "openai/resources/responses/responses";
 import type { NormalizedConversation } from "../import/types.js";
 import { createOpenAiClient } from "../llm/openai/client.js";
 import type { OpenAiExtractionConfig } from "../llm/openai/config.js";
+import { parseStructuredExtractionResponse } from "../llm/openai/parse-extraction-response.js";
 import { ExtractionError } from "./errors.js";
 import type { HandoffExtractor } from "./extractor.js";
 import { modelExtractionOutputSchema } from "./proposal-schema.js";
 import { EXTRACTION_SYSTEM_PROMPT } from "./prompt.js";
+
+/** Narrow test seam: only `responses.parse` is required. */
+export type OpenAiResponsesClient = {
+  responses: {
+    parse: (
+      body: Parameters<OpenAI["responses"]["parse"]>[0],
+      options?: Parameters<OpenAI["responses"]["parse"]>[1],
+    ) => PromiseLike<ParsedResponse<unknown>>;
+  };
+};
 
 function conversationPayload(conversation: NormalizedConversation) {
   return {
@@ -19,8 +32,11 @@ function conversationPayload(conversation: NormalizedConversation) {
   };
 }
 
-export function createOpenAiHandoffExtractor(config: OpenAiExtractionConfig): HandoffExtractor {
-  const client = createOpenAiClient(config);
+export function createOpenAiHandoffExtractor(
+  config: OpenAiExtractionConfig,
+  options?: { client?: OpenAiResponsesClient },
+): HandoffExtractor {
+  const client = options?.client ?? createOpenAiClient(config);
 
   return {
     async extract(conversation: NormalizedConversation) {
@@ -49,16 +65,7 @@ export function createOpenAiHandoffExtractor(config: OpenAiExtractionConfig): Ha
           },
         });
 
-        if (response.status === "incomplete") {
-          throw new ExtractionError("MODEL_OUTPUT_INVALID", "Model response was incomplete.");
-        }
-
-        const parsed = response.output_parsed;
-        if (!parsed) {
-          throw new ExtractionError("MODEL_OUTPUT_INVALID", "Model returned no structured extraction output.");
-        }
-
-        return modelExtractionOutputSchema.parse(parsed);
+        return parseStructuredExtractionResponse(response);
       } catch (error) {
         if (error instanceof ExtractionError) throw error;
         throw new ExtractionError(

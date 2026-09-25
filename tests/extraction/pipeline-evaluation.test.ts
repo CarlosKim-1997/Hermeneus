@@ -23,7 +23,7 @@ function assertRejected(conversation: NormalizedConversation, proposal: Extracti
   expect(() => validateExtractionProposal(conversation, proposal)).toThrow(ExtractionError);
 }
 
-describe("extraction evaluation fixtures", () => {
+describe("deterministic extraction validation", () => {
   it("E1 — later decision supersedes early idea", async () => {
     const conversation = conv("conv-e1", [
       {

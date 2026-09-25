@@ -26,11 +26,10 @@ Introduce the first model-backed Handoff extraction workflow while preserving th
 In scope:
 - ExtractionProposal domain separate from DraftHandoff authority
 - provider-neutral HandoffExtractor returning proposals
-- OpenAI Responses API adapter with Structured Outputs (`store: false`)
-- deterministic post-model provenance validation
+- OpenAI Responses API adapter (SDK v7) with Structured Outputs (`store: false`) and refusal handling
+- deterministic post-model provenance validation (E1–E10) and adapter edge tests (O1–O4)
+- opt-in live smoke (`test:live-extraction`) and live semantic evaluation (`test:live-extraction-eval`, L1–L6)
 - Creator UI: explicit Generate AI suggestions, non-authoritative suggestion panel, accept/edit/save flow
-- extraction evaluation fixtures E1–E10 and application tests U10–U14
-- opt-in live OpenAI smoke test command
 
 Out of scope:
 - Receiver AI, auth, sharing, extraction audit/history in PostgreSQL, Anthropic/Gemini extraction adapters, native provider import parsers
@@ -41,26 +40,32 @@ Authorized on `cursor/live-handoff-extraction-e41b`. Not authorized to merge or 
 
 ## Constraints
 
-C-001 through C-004 remain binding. Model output is proposal-only. Extraction must not publish, overwrite drafts, or bypass publication provenance validation.
+C-001 through C-004 remain binding. Model output is proposal-only. Extraction must not publish, overwrite drafts, or bypass publication provenance validation. Untrusted client saves cannot assert `createdBy: "EXTRACTION"` on first persistence.
+
+## Verification
+
+Deterministic (2026-09-25, PostgreSQL 16):
+
+- `node tooling/governance/check.mjs` — PASS
+- `npm test` — 14 passed
+- `npm run test:application` — 14 passed
+- `npm run test:integration` — 29 passed
+- `npm run test:extraction` — 14 passed (10 deterministic validation E1–E10 + 4 adapter O1–O4)
+- `npm run typecheck` — PASS
+- `npm run migrate` — OK
+- `npm run build` — PASS
+- `npm run test:e2e` — 2 passed (fixture-backed extraction UI)
+
+Live OpenAI (requires `OPENAI_API_KEY` + `OPENAI_MODEL`):
+
+- `npm run test:live-extraction` — **pending in agent environment** (skipped)
+- `npm run test:live-extraction-eval` (L1–L6) — **pending in agent environment** (skipped)
+
+Implementation is complete; live-provider verification remains for a human/local run before treating Milestone 4 as fully live-verified.
 
 ## Stop Conditions
 
 Stop if Milestone 3 is not on `main`, if implementation requires new normative Canon, or if verification cannot run against real PostgreSQL for persistence-backed tests.
-
-## Verification
-
-Observed on 2026-09-25 with local PostgreSQL 16:
-
-- `node tooling/governance/check.mjs` — PASS
-- `npm test` — 14 passed
-- `npm run test:application` — 14 passed (U1–U9, U10–U14)
-- `npm run test:integration` — 29 passed
-- `npm run test:extraction` — 10 passed (E1–E10)
-- `npm run typecheck` — PASS
-- `npm run migrate` — OK
-- `npm run build` — PASS
-- `npm run test:e2e` — 2 passed (manual + extraction UI with fixture provider)
-- `npm run test:live-extraction` — skipped (OPENAI credentials not configured in agent environment)
 
 ## Completion Criteria
 

@@ -39,7 +39,8 @@ function resolveCreatedBy(
   incoming: HandoffItem,
   previous: HandoffItem | undefined,
 ): HandoffItem["createdBy"] {
-  if (!previous) return incoming.createdBy === "EXTRACTION" ? "EXTRACTION" : "CREATOR";
+  // Untrusted browser payloads cannot establish machine origin on first save.
+  if (!previous) return "CREATOR";
   if (previous.createdBy !== "EXTRACTION") return "CREATOR";
   const unchanged =
     previous.statement === incoming.statement &&

@@ -72,7 +72,7 @@ if (!url) {
       expect(after?.draft.items).toEqual(before?.draft.items);
     });
 
-    it("U11 — accept suggestion persists EXTRACTION origin", async () => {
+    it("U11 — accept suggestion persists draft content (client save uses CREATOR origin)", async () => {
       const imported = await importAndCreateHandoff(repos, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
       const messageId = review!.sourceConversation.messages.at(-1)!.id;
@@ -88,26 +88,33 @@ if (!url) {
       await saveCreatorDraft(repos, imported.handoffId, suggestions, review!.revision);
       const reloaded = await loadCreatorReview(repos, imported.handoffId);
       expect(reloaded?.draft.items).toHaveLength(1);
-      expect(reloaded?.draft.items[0]?.createdBy).toBe("EXTRACTION");
+      expect(reloaded?.draft.items[0]?.createdBy).toBe("CREATOR");
+      expect(reloaded?.draft.items[0]?.statement).toBe("Web-first is confirmed.");
     });
 
-    it("U12 — creator edit changes origin", async () => {
+    it("U12 — creator edit changes origin when persisted EXTRACTION item exists", async () => {
       const imported = await importAndCreateHandoff(repos, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
       const messageId = review!.sourceConversation.messages.at(-1)!.id;
-      const extractor = fixtureExtractor([
-        {
-          type: "CONFIRMED",
-          statement: "Web-first is confirmed.",
-          priority: "CORE",
-          sources: [{ messageId, excerpt: "web first" }],
-        },
-      ]);
-      const { suggestions } = await generateHandoffExtractionProposal(repos, extractor, imported.handoffId);
-      const accepted = suggestions[0]!;
-      await saveCreatorDraft(repos, imported.handoffId, [accepted], review!.revision);
-      const edited = { ...accepted, statement: "Web-first is confirmed for the MVP." };
-      await saveCreatorDraft(repos, imported.handoffId, [edited], (await loadCreatorReview(repos, imported.handoffId))!.revision);
+      const extractionItem = {
+        id: "extracted_item",
+        type: "CONFIRMED" as const,
+        statement: "Web-first is confirmed.",
+        priority: "CORE" as const,
+        createdBy: "EXTRACTION" as const,
+        sources: [{ messageId, excerpt: "web first" }],
+      };
+      await repos.drafts.save(
+        { id: imported.handoffId, items: [extractionItem] },
+        review!.revision,
+      );
+      const edited = { ...extractionItem, statement: "Web-first is confirmed for the MVP." };
+      await saveCreatorDraft(
+        repos,
+        imported.handoffId,
+        [edited],
+        (await loadCreatorReview(repos, imported.handoffId))!.revision,
+      );
       const reloaded = await loadCreatorReview(repos, imported.handoffId);
       expect(reloaded?.draft.items[0]?.createdBy).toBe("CREATOR");
     });

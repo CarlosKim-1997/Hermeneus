@@ -43,6 +43,10 @@ Provider-specific data may remain on a normalized message as `source.provider`. 
 
 Live extraction sends the persisted source conversation to the configured external model only when the Creator clicks **Generate AI suggestions** (`store: false` on OpenAI requests). No extraction prompt/response history is stored in PostgreSQL in this milestone.
 
+**Deterministic extraction validation** (E1–E10, O1–O4) exercises post-model structural rules: provenance shape, Creator-role sources, excerpts, and candidate limits. It does not prove live model chronology or ratification quality.
+
+**Live extraction semantic evaluation** (L1–L6, opt-in) measures real model behavior on small fixtures via `npm run test:live-extraction-eval`.
+
 ## Publication
 
 Publication locks the handoff and draft rows, verifies the expected draft revision, validates provenance, and inserts the next immutable version. Editing the draft afterward does not change earlier versions.
