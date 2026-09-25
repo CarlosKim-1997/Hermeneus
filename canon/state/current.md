@@ -8,11 +8,11 @@ areas:
 
 ## Current Position
 
-Milestones 1 and 2 are merged into `main`. Milestone 3 Creator review UI is implemented on `cursor/creator-review-milestone-3-e41b` (PR #3 pending merge). A local Next.js Creator workflow supports generic-text import, manual Handoff editing with provenance, explicit Save with revision conflicts, and immutable publication that requires the approved draft revision at publish time. There is no production UI deployment, no live-model integration, and no Receiver chat product surface.
+Milestones 1–3 are merged into `main`. Milestone 4 live Handoff extraction is implemented on `cursor/live-handoff-extraction-e41b` (PR pending): explicit **Generate AI suggestions**, validated non-authoritative proposals, Creator accept/edit/save, and unchanged publication with expected draft revision. OpenAI is the first extraction-model adapter; source import provider remains separate. Receiver AI is not productized.
 
 ## Active Work
 
-None. T-003 is complete pending PR #3 merge review.
+None. T-004 complete pending PR merge review.
 
 ## Blockers
 
@@ -20,8 +20,8 @@ None.
 
 ## Material Risks
 
-The Creator UI is local/development-only: no authentication, authorization, or production privacy controls. Do not deploy publicly.
+Live extraction sends persisted source conversations to configured external model providers on explicit Creator action only (`store: false`). The application remains local/development-only without production privacy controls.
 
 ## Verification Basis
 
-On 2026-09-25, local verification passed: governance checker, 14 unit tests, 9 application tests (U1–U9), 29 PostgreSQL integration tests (P1–P25), typecheck, migrate, Next.js build, and 1 Playwright Creator flow test against PostgreSQL 16. No hosted CI PostgreSQL claim.
+On 2026-09-25, local verification passed: governance checker, 14 unit tests, 14 application tests, 29 integration tests, 10 extraction eval tests, typecheck, migrate, build, 2 Playwright flows (fixture-backed extraction UI). Live OpenAI smoke test was skipped in this environment because `OPENAI_API_KEY` / `OPENAI_MODEL` were not configured.

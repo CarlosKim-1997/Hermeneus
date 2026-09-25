@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { fixtureExtractor } from "../src/extraction/extractor.js";
+import { fixtureExtractor } from "../src/extraction/fixture-extractor.js";
+import { materializeExtractionProposal } from "../src/extraction/materialize.js";
 import { createDraft, updateItem } from "../src/handoff/draft.js";
 import { PublicationLedger } from "../src/handoff/publication.js";
 import type { HandoffItem } from "../src/handoff/schema.js";
@@ -105,16 +106,16 @@ describe("epistemic fixtures", () => {
         },
       ],
     };
-    const extractor = fixtureExtractor("handoff-f", [
+    const extractor = fixtureExtractor([
       {
-        id: "mobile",
         type: "CONFIRMED",
         statement: "Mobile-first is confirmed.",
         priority: "CORE",
         sources: [{ messageId: "conv-f:m1", excerpt: "Maybe mobile first would be good." }],
       },
     ]);
-    const extracted = await extractor.extract(conversation);
+    const proposal = await extractor.extract(conversation);
+    const extracted = materializeExtractionProposal("handoff-f", proposal, { itemIds: ["mobile"] });
     expect(extracted.items[0]?.createdBy).toBe("EXTRACTION");
     expect(extracted.items[0]?.type).toBe("CONFIRMED");
 

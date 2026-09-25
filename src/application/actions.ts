@@ -7,6 +7,9 @@ import { getRepositories } from "./runtime.js";
 import { importAndCreateHandoff } from "./use-cases/import-conversation.js";
 import { loadCreatorReview, saveCreatorDraft } from "./use-cases/creator-review.js";
 import { loadPublishedHandoff, publishHandoff } from "./use-cases/publish-handoff.js";
+import { generateHandoffExtractionProposal } from "./use-cases/generate-extraction-proposal.js";
+import { getHandoffExtractor } from "./extraction-factory.js";
+import { toExtractionFacingError } from "./extraction-user-errors.js";
 import type { HandoffItem } from "../handoff/schema.js";
 
 export async function importConversationAction(formData: FormData) {
@@ -57,4 +60,15 @@ export async function fetchCreatorReview(handoffId: string) {
 export async function fetchPublishedHandoff(handoffId: string, version: number) {
   const repos = getRepositories();
   return loadPublishedHandoff(repos, handoffId, version);
+}
+
+export async function generateExtractionSuggestionsAction(handoffId: string) {
+  try {
+    const repos = getRepositories();
+    const extractor = getHandoffExtractor();
+    const result = await generateHandoffExtractionProposal(repos, extractor, handoffId);
+    return { ok: true as const, suggestions: result.suggestions };
+  } catch (error) {
+    return { ok: false as const, error: toExtractionFacingError(error) };
+  }
 }
