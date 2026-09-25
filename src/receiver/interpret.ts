@@ -1,4 +1,5 @@
-import type { HandoffItem, PublishedHandoff } from "../handoff/schema.js";
+import type { HandoffItemType } from "../handoff/schema.js";
+import type { InterpretationAuthority, InterpretationAuthorityItem } from "./interpretation-authority.js";
 
 export const ANSWERABILITIES = ["SUPPORTED", "DERIVED", "OPEN", "UNKNOWN"] as const;
 export type Answerability = (typeof ANSWERABILITIES)[number];
@@ -20,7 +21,7 @@ const STOP_WORDS = new Set([
   "than", "its", "your", "they", "them", "their",
 ]);
 
-const DIRECT_TYPES = new Set<HandoffItem["type"]>([
+const DIRECT_TYPES = new Set<HandoffItemType>([
   "CORE_INTENT",
   "CONTEXT",
   "CONFIRMED",
@@ -29,8 +30,8 @@ const DIRECT_TYPES = new Set<HandoffItem["type"]>([
   "RATIONALE",
 ]);
 
-export function interpretPublished(question: string, published: PublishedHandoff): Interpretation {
-  const items = published.items;
+export function interpretPublished(question: string, authority: InterpretationAuthority): Interpretation {
+  const items = authority.items;
   const derived = deriveDisabledCapability(question, items);
   const ranked = rankItems(question, items);
   if (ranked.length === 0) return derived ?? unknown();
@@ -74,7 +75,10 @@ function unknown(): Interpretation {
   return { classification: "UNKNOWN", answer: UNKNOWN_ANSWER, citations: [] };
 }
 
-function deriveDisabledCapability(question: string, items: HandoffItem[]): Interpretation | null {
+function deriveDisabledCapability(
+  question: string,
+  items: readonly InterpretationAuthorityItem[],
+): Interpretation | null {
   const q = question.toLowerCase();
   if (/\b(engineer|developer|staff|hire|hiring)\b/.test(q)) return null;
   if (!/\b(browse|browsing|search)\b/.test(q)) return null;
@@ -87,7 +91,10 @@ function deriveDisabledCapability(question: string, items: HandoffItem[]): Inter
   };
 }
 
-function rankItems(question: string, items: HandoffItem[]): Array<{ item: HandoffItem; score: number }> {
+function rankItems(
+  question: string,
+  items: readonly InterpretationAuthorityItem[],
+): Array<{ item: InterpretationAuthorityItem; score: number }> {
   const questionTokens = tokens(question);
   return items
     .map((item) => ({ item, score: overlap(questionTokens, tokens(item.statement)) }))
@@ -95,7 +102,10 @@ function rankItems(question: string, items: HandoffItem[]): Array<{ item: Handof
     .sort((a, b) => b.score - a.score);
 }
 
-function relatedApproved(matched: HandoffItem[], items: HandoffItem[]): HandoffItem[] {
+function relatedApproved(
+  matched: InterpretationAuthorityItem[],
+  items: readonly InterpretationAuthorityItem[],
+): InterpretationAuthorityItem[] {
   const matchedTokens = new Set(matched.flatMap((item) => [...tokens(item.statement)]));
   return items.filter((item) => {
     if (matched.some((existing) => existing.id === item.id)) return false;
@@ -119,7 +129,7 @@ function overlap(left: Set<string>, right: Set<string>): number {
   return count;
 }
 
-function dedupe(items: HandoffItem[]): HandoffItem[] {
+function dedupe(items: InterpretationAuthorityItem[]): InterpretationAuthorityItem[] {
   const seen = new Set<string>();
   return items.filter((item) => {
     if (seen.has(item.id)) return false;

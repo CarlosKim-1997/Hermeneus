@@ -34,3 +34,9 @@ Greenfield procedure from SPEC Part II.K: install the skeleton, then record only
 ## Provenance limit
 
 This report does not grant authority. If a later fetch of `repository-governance` differs from the CarlosLab snapshot, reconcile through the upgrade procedure in SPEC Part II.L before treating either side as a silent overwrite.
+
+## Post-adoption verification note (2026-09-25, Milestone 2 preflight)
+
+A later independent check reported that the installed Hermeneus governance files matched upstream `repository-governance` at `fdcdea87ce7fb8ff60821356706b1148ea00d056`, including blob SHAs for `AGENTS.md`, `governance/SPEC.md`, the five schema files, and the checker bundle.
+
+This Milestone 2 environment still receives GitHub 404 for `CarlosKim-1997/repository-governance`, so that match was not re-verified here. The original adoption provenance is unchanged. Current State Material Risks are unchanged until a direct upstream fetch succeeds in this repository.

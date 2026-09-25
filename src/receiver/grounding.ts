@@ -1,5 +1,7 @@
-import type { HandoffItem, PublishedHandoff } from "../handoff/schema.js";
+import { authorityFromPublished } from "./interpretation-authority.js";
+import type { PublishedHandoff } from "../handoff/schema.js";
 import { interpretPublished, type Interpretation } from "./interpret.js";
+import type { InterpretationAuthorityItem } from "./interpretation-authority.js";
 
 export type ModelProposal = {
   classification: Interpretation["classification"];
@@ -8,26 +10,23 @@ export type ModelProposal = {
 };
 
 export interface AnswerModel {
-  propose(input: { question: string; items: readonly HandoffItem[] }): ModelProposal;
+  propose(input: { question: string; items: readonly InterpretationAuthorityItem[] }): ModelProposal;
 }
 
-/**
- * Model output cannot outrank the published handoff. OPEN and UNKNOWN domain
- * results are kept even if a model tries to fill them in.
- */
 export function interpretWithModel(
   question: string,
   published: PublishedHandoff,
   model: AnswerModel,
 ): Interpretation {
-  const domain = interpretPublished(question, published);
+  const authority = authorityFromPublished(published);
+  const domain = interpretPublished(question, authority);
   if (domain.classification === "OPEN" || domain.classification === "UNKNOWN") return domain;
 
-  const proposal = model.propose({ question, items: published.items });
+  const proposal = model.propose({ question, items: authority.items });
   if (proposal.classification !== domain.classification) return domain;
-  const cited = proposal.citations.map((id) => published.items.find((item) => item.id === id));
+  const cited = proposal.citations.map((id) => authority.items.find((item) => item.id === id));
   if (cited.some((item) => !item)) return domain;
-  const groundedItems = cited.filter((item): item is HandoffItem => Boolean(item));
+  const groundedItems = cited.filter((item): item is InterpretationAuthorityItem => Boolean(item));
   if (!answerUsesOnlyItems(proposal.answer, groundedItems)) return domain;
   return {
     classification: domain.classification,
@@ -36,7 +35,7 @@ export function interpretWithModel(
   };
 }
 
-function answerUsesOnlyItems(answer: string, items: HandoffItem[]): boolean {
+function answerUsesOnlyItems(answer: string, items: InterpretationAuthorityItem[]): boolean {
   let rest = answer.toLowerCase();
   for (const item of items) rest = rest.replaceAll(item.statement.toLowerCase(), " ");
   rest = rest.replace(/\b(no|yes|this is still tentative)\b/g, " ");
