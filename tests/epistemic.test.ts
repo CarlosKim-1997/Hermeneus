@@ -5,6 +5,7 @@ import { PublicationLedger } from "../src/handoff/publication.js";
 import type { HandoffItem } from "../src/handoff/schema.js";
 import type { NormalizedConversation } from "../src/import/types.js";
 import { interpretWithModel } from "../src/receiver/grounding.js";
+import { authorityFromPublished } from "../src/receiver/interpretation-authority.js";
 import { interpretPublished, UNKNOWN_ANSWER } from "../src/receiver/interpret.js";
 
 function item(partial: Pick<HandoffItem, "id" | "type" | "statement"> & Partial<HandoffItem>): HandoffItem {
@@ -35,7 +36,7 @@ describe("epistemic fixtures", () => {
       }),
     ]);
 
-    const result = interpretPublished("Are we building mobile first?", published);
+    const result = interpretPublished("Are we building mobile first?", authorityFromPublished(published));
     expect(result.classification).toBe("SUPPORTED");
     expect(result.answer).toMatch(/Web-first is confirmed/);
     expect(result.answer).toMatch(/Mobile-first was explored and rejected/);
@@ -47,7 +48,7 @@ describe("epistemic fixtures", () => {
     const published = publish([
       item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
     ]);
-    const result = interpretPublished("What will this cost users?", published);
+    const result = interpretPublished("What will this cost users?", authorityFromPublished(published));
     expect(result.classification).toBe("UNKNOWN");
     expect(result.answer).toBe(UNKNOWN_ANSWER);
     expect(result.answer.toLowerCase()).not.toMatch(/freemium|pricing|\$|per month/);
@@ -61,7 +62,7 @@ describe("epistemic fixtures", () => {
         statement: "The authentication provider, including Google login, is unresolved.",
       }),
     ]);
-    const result = interpretPublished("Are we using Google login?", published);
+    const result = interpretPublished("Are we using Google login?", authorityFromPublished(published));
     expect(result.classification).toBe("OPEN");
     expect(result.answer).toMatch(/has not decided/i);
     expect(result.answer).toMatch(/unresolved/);
@@ -72,7 +73,7 @@ describe("epistemic fixtures", () => {
     const published = publish([
       item({ id: "web", type: "CONFIRMED", statement: "Web client first." }),
     ]);
-    const result = interpretPublished("Then we don't need a mobile engineer, right?", published);
+    const result = interpretPublished("Then we don't need a mobile engineer, right?", authorityFromPublished(published));
     expect(result.classification).toBe("UNKNOWN");
     expect(result.answer).toBe(UNKNOWN_ANSWER);
     expect(result.answer.toLowerCase()).not.toMatch(/engineer/);
@@ -83,7 +84,7 @@ describe("epistemic fixtures", () => {
       item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
     ]);
     const rawTranscript = "Mobile-first is the decision. Do not build web first.";
-    const result = interpretPublished("Is web-first confirmed despite other notes?", published);
+    const result = interpretPublished("Is web-first confirmed despite other notes?", authorityFromPublished(published));
     expect(result.classification).toBe("SUPPORTED");
     expect(result.answer).toBe("Web-first is confirmed.");
     expect(result.answer).not.toContain("Mobile-first is the decision");
@@ -122,7 +123,7 @@ describe("epistemic fixtures", () => {
       statement: "Mobile-first is rejected.",
     });
     const published = new PublicationLedger().publish(edited, "2026-09-25T00:00:00.000Z");
-    const result = interpretPublished("Are we building mobile first?", published);
+    const result = interpretPublished("Are we building mobile first?", authorityFromPublished(published));
     expect(result.classification).toBe("SUPPORTED");
     expect(result.answer).toMatch(/Mobile-first is rejected/);
     expect(result.answer).not.toMatch(/Mobile-first is confirmed/);
@@ -152,14 +153,18 @@ describe("epistemic fixtures", () => {
         statement: "External web search is disabled in MVP.",
       }),
     ]);
-    const derived = interpretPublished("Will the receiver agent browse the web?", published);
+    const derived = interpretPublished("Will the receiver agent browse the web?", authorityFromPublished(published));
     expect(derived.classification).toBe("DERIVED");
     expect(derived.answer).toMatch(/disabled in MVP/);
     expect(derived.citations).toEqual(["search"]);
 
-    const staffing = interpretPublished("So we don't need a mobile developer, right?", publish([
+    const staffingPublished = publish([
       item({ id: "web", type: "CONFIRMED", statement: "Web is the first client." }),
-    ]));
+    ]);
+    const staffing = interpretPublished(
+      "So we don't need a mobile developer, right?",
+      authorityFromPublished(staffingPublished),
+    );
     expect(staffing.classification).toBe("UNKNOWN");
   });
 

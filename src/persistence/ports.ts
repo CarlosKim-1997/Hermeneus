@@ -2,14 +2,19 @@ import type { DraftHandoff, PublishedHandoff } from "../handoff/schema.js";
 import type { NormalizedConversation } from "../import/types.js";
 import type { ProvenanceBundle, PublishedReceiverView } from "./receiver-types.js";
 
+export type DraftSaveResult = {
+  revision: number;
+};
+
 export interface ConversationRepository {
-  save(conversation: NormalizedConversation): Promise<void>;
+  create(conversation: NormalizedConversation): Promise<void>;
   get(id: string): Promise<NormalizedConversation | undefined>;
 }
 
 export interface DraftRepository {
-  save(draft: DraftHandoff): Promise<void>;
+  save(draft: DraftHandoff, expectedRevision?: number): Promise<DraftSaveResult>;
   get(handoffId: string): Promise<DraftHandoff | undefined>;
+  getRevision(handoffId: string): Promise<number | undefined>;
 }
 
 export interface PublishedHandoffRepository {

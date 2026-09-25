@@ -1,7 +1,7 @@
 import type { Pool } from "pg";
-import { publishedHandoffSchema, type HandoffItem, type PublishedHandoff } from "../../handoff/schema.js";
+import { publishedHandoffSchema, type PublishedHandoff } from "../../handoff/schema.js";
 import type { ReceiverReadRepository } from "../ports.js";
-import { toReceiverItems, type ProvenanceBundle, type PublishedReceiverView } from "../receiver-types.js";
+import { toReceiverItems, type ProvenanceBundle, type PublishedReceiverView, type ProvenanceReference } from "../receiver-types.js";
 
 export class PostgresReceiverReadRepository implements ReceiverReadRepository {
   constructor(private readonly pool: Pool) {}
@@ -28,44 +28,41 @@ export class PostgresReceiverReadRepository implements ReceiverReadRepository {
     const selected = published.items.filter((item) => itemIds.includes(item.id));
     const messageIds = [...new Set(selected.flatMap((item) => item.sources.map((source) => source.messageId)))];
 
-    const conversation = await this.pool.query<{ source_conversation_id: string }>(
-      "SELECT source_conversation_id FROM handoffs WHERE id = $1",
-      [handoffId],
-    );
-    if (conversation.rowCount === 0) {
-      throw new Error(`Handoff ${handoffId} does not exist`);
-    }
-    const conversationId = conversation.rows[0].source_conversation_id;
-
-    const messages =
+    const roles =
       messageIds.length === 0
-        ? { rows: [] as Array<{ id: string; role: "creator" | "assistant" | "other"; content: string }> }
-        : await this.pool.query<{ id: string; role: "creator" | "assistant" | "other"; content: string }>(
-            `SELECT id, role, content
+        ? { rows: [] as Array<{ id: string; role: "creator" | "assistant" | "other" }> }
+        : await this.pool.query<{ id: string; role: "creator" | "assistant" | "other" }>(
+            `SELECT id, role
              FROM source_messages
-             WHERE conversation_id = $1 AND id = ANY($2::text[])`,
-            [conversationId, messageIds],
+             WHERE id = ANY($1::text[])`,
+            [messageIds],
           );
-
-    const byId = new Map(messages.rows.map((row) => [row.id, row]));
+    const roleById = new Map(roles.rows.map((row) => [row.id, row.role]));
 
     return {
       handoffId,
       version,
       items: selected.map((item) => ({
         itemId: item.id,
-        messages: item.sources
-          .map((source) => {
-            const message = byId.get(source.messageId);
-            if (!message) return undefined;
+        references: item.sources
+          .map((source): ProvenanceReference | undefined => {
+            const role = roleById.get(source.messageId);
+            if (!role) return undefined;
+            if (source.excerpt) {
+              return {
+                messageId: source.messageId,
+                role,
+                excerpt: source.excerpt,
+                excerptAvailable: true,
+              };
+            }
             return {
               messageId: source.messageId,
-              role: message.role,
-              content: message.content,
-              excerpt: source.excerpt,
+              role,
+              excerptAvailable: false,
             };
           })
-          .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)),
+          .filter((entry): entry is ProvenanceReference => Boolean(entry)),
       })),
     };
   }
@@ -82,18 +79,4 @@ export class PostgresReceiverReadRepository implements ReceiverReadRepository {
     }
     return publishedHandoffSchema.parse(result.rows[0].snapshot_json);
   }
-}
-
-export function publishedForInterpretation(view: PublishedReceiverView): PublishedHandoff {
-  const items: HandoffItem[] = view.items.map((item) => ({
-    ...item,
-    createdBy: "CREATOR",
-    sources: [],
-  }));
-  return publishedHandoffSchema.parse({
-    handoffId: view.handoffId,
-    version: view.version,
-    publishedAt: view.publishedAt,
-    items,
-  });
 }

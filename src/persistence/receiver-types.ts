@@ -14,11 +14,11 @@ export type PublishedReceiverView = {
   items: ReceiverItem[];
 };
 
-export type ProvenanceMessage = {
+export type ProvenanceReference = {
   messageId: string;
   role: "creator" | "assistant" | "other";
-  content: string;
   excerpt?: string;
+  excerptAvailable: boolean;
 };
 
 export type ProvenanceBundle = {
@@ -26,12 +26,10 @@ export type ProvenanceBundle = {
   version: number;
   items: Array<{
     itemId: string;
-    messages: ProvenanceMessage[];
+    references: ProvenanceReference[];
   }>;
 };
 
-export function toReceiverItems<T extends { id: string; type: HandoffItemType; statement: string; priority: HandoffPriority }>(
-  items: T[],
-): ReceiverItem[] {
+export function toReceiverItems<T extends ReceiverItem>(items: T[]): ReceiverItem[] {
   return items.map(({ id, type, statement, priority }) => ({ id, type, statement, priority }));
 }

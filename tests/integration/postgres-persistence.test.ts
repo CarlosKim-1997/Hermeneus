@@ -1,13 +1,16 @@
 import { execSync } from "node:child_process";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createDraft, updateItem } from "../../src/handoff/draft.js";
-import type { HandoffItem } from "../../src/handoff/schema.js";
+import type { DraftHandoff, HandoffItem } from "../../src/handoff/schema.js";
+import { PersistenceConflictError } from "../../src/persistence/errors.js";
 import { createPostgresRepositories } from "../../src/persistence/postgres/create-repositories.js";
 import { createPool } from "../../src/persistence/postgres/pool.js";
-import { publishedForInterpretation } from "../../src/persistence/postgres/receiver-read-repository.js";
+import { authorityFromReceiverView } from "../../src/receiver/interpretation-authority.js";
 import { interpretPublished } from "../../src/receiver/interpret.js";
 
 const url = process.env.TEST_DATABASE_URL;
+
+type Repos = ReturnType<typeof createPostgresRepositories>;
 
 function item(partial: Pick<HandoffItem, "id" | "type" | "statement"> & Partial<HandoffItem>): HandoffItem {
   return {
@@ -49,6 +52,16 @@ const conversation = {
   ],
 };
 
+async function saveInitialDraft(repos: Repos, draft: DraftHandoff) {
+  return repos.drafts.save(draft);
+}
+
+async function saveDraftUpdate(repos: Repos, draft: DraftHandoff) {
+  const revision = await repos.drafts.getRevision(draft.id);
+  if (revision === undefined) throw new Error(`Missing draft revision for ${draft.id}`);
+  return repos.drafts.save(draft, revision);
+}
+
 if (!url) {
   describe.skip("PostgreSQL persistence", () => {
     it("requires TEST_DATABASE_URL", () => undefined);
@@ -76,56 +89,56 @@ if (!url) {
     });
 
     it("P1 — normalized conversation round trip", async () => {
-      await repos.conversations.save(conversation);
+      await repos.conversations.create(conversation);
       const loaded = await repos.conversations.get("conv-p");
       expect(loaded).toEqual(conversation);
     });
 
     it("P2 — draft round trip", async () => {
-      await repos.conversations.save(conversation);
+      await repos.conversations.create(conversation);
       const draft = createDraft("handoff-p2", [
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
       await repos.handoffs.create("handoff-p2", "conv-p");
-      await repos.drafts.save(draft);
+      await saveInitialDraft(repos, draft);
       expect(await repos.drafts.get("handoff-p2")).toEqual(draft);
     });
 
     it("P3 — publish v1", async () => {
-      await repos.conversations.save(conversation);
+      await repos.conversations.create(conversation);
       await repos.handoffs.create("handoff-p3", "conv-p");
       const draft = createDraft("handoff-p3", [
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
-      await repos.drafts.save(draft);
+      await saveInitialDraft(repos, draft);
       const published = await repos.published.publish("handoff-p3", "2026-09-25T00:00:00.000Z");
       const loaded = await repos.published.get("handoff-p3", 1);
       expect(loaded).toEqual(published);
     });
 
     it("P4 — draft mutation after publish leaves v1 unchanged", async () => {
-      await repos.conversations.save(conversation);
+      await repos.conversations.create(conversation);
       await repos.handoffs.create("handoff-p4", "conv-p");
       let draft = createDraft("handoff-p4", [
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
-      await repos.drafts.save(draft);
+      await saveInitialDraft(repos, draft);
       const v1 = await repos.published.publish("handoff-p4", "2026-09-25T00:00:00.000Z");
       draft = updateItem(draft, "web", { statement: "Native mobile is confirmed." });
-      await repos.drafts.save(draft);
+      await saveDraftUpdate(repos, draft);
       expect(await repos.published.get("handoff-p4", 1)).toEqual(v1);
     });
 
     it("P5 — publish v2 after draft change", async () => {
-      await repos.conversations.save(conversation);
+      await repos.conversations.create(conversation);
       await repos.handoffs.create("handoff-p5", "conv-p");
       let draft = createDraft("handoff-p5", [
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
-      await repos.drafts.save(draft);
+      await saveInitialDraft(repos, draft);
       const v1 = await repos.published.publish("handoff-p5", "2026-09-25T00:00:00.000Z");
       draft = updateItem(draft, "web", { statement: "Native mobile is confirmed." });
-      await repos.drafts.save(draft);
+      await saveDraftUpdate(repos, draft);
       const v2 = await repos.published.publish("handoff-p5", "2026-09-25T01:00:00.000Z");
       expect(v1.version).toBe(1);
       expect(v2.version).toBe(2);
@@ -134,9 +147,10 @@ if (!url) {
     });
 
     it("P6 — direct published UPDATE rejected", async () => {
-      await repos.conversations.save(conversation);
+      await repos.conversations.create(conversation);
       await repos.handoffs.create("handoff-p6", "conv-p");
-      await repos.drafts.save(
+      await saveInitialDraft(
+        repos,
         createDraft("handoff-p6", [item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." })]),
       );
       await repos.published.publish("handoff-p6", "2026-09-25T00:00:00.000Z");
@@ -151,9 +165,10 @@ if (!url) {
     });
 
     it("P7 — receiver view isolation", async () => {
-      await repos.conversations.save(conversation);
+      await repos.conversations.create(conversation);
       await repos.handoffs.create("handoff-p7", "conv-p");
-      await repos.drafts.save(
+      await saveInitialDraft(
+        repos,
         createDraft("handoff-p7", [
           item({
             id: "web",
@@ -170,10 +185,11 @@ if (!url) {
       expect(await repos.conversations.get("conv-p")).toBeDefined();
     });
 
-    it("P8 — explicit provenance returns only referenced messages", async () => {
-      await repos.conversations.save(conversation);
+    it("P8 — explicit provenance returns only referenced excerpts", async () => {
+      await repos.conversations.create(conversation);
       await repos.handoffs.create("handoff-p8", "conv-p");
-      await repos.drafts.save(
+      await saveInitialDraft(
+        repos,
         createDraft("handoff-p8", [
           item({
             id: "web",
@@ -186,16 +202,18 @@ if (!url) {
       await repos.published.publish("handoff-p8", "2026-09-25T00:00:00.000Z");
       const provenance = await repos.receiver.getProvenance("handoff-p8", 1, ["web"]);
       expect(provenance.items).toHaveLength(1);
-      expect(provenance.items[0]?.messages).toHaveLength(1);
-      expect(provenance.items[0]?.messages[0]?.messageId).toBe("conv-p:m3");
-      expect(provenance.items[0]?.messages[0]?.content).toBe("Actually, web first.");
+      expect(provenance.items[0]?.references).toHaveLength(1);
+      expect(provenance.items[0]?.references[0]?.messageId).toBe("conv-p:m3");
+      expect(provenance.items[0]?.references[0]?.excerpt).toBe("Actually, web first.");
+      expect(provenance.items[0]?.references[0]).not.toHaveProperty("content");
       expect(JSON.stringify(provenance)).not.toMatch(/SECRET exploratory salary discussion/);
     });
 
     it("P9 — transcript/canonical conflict survives persistence", async () => {
-      await repos.conversations.save(conversation);
+      await repos.conversations.create(conversation);
       await repos.handoffs.create("handoff-p9", "conv-p");
-      await repos.drafts.save(
+      await saveInitialDraft(
+        repos,
         createDraft("handoff-p9", [
           item({
             id: "rejected-mobile",
@@ -208,15 +226,16 @@ if (!url) {
       await repos.published.publish("handoff-p9", "2026-09-25T00:00:00.000Z");
       const view = await repos.receiver.getPublishedView("handoff-p9", 1);
       expect(view).toBeDefined();
-      const result = interpretPublished("Are we building mobile first?", publishedForInterpretation(view!));
+      const result = interpretPublished("Are we building mobile first?", authorityFromReceiverView(view!));
       expect(result.answer).toMatch(/Web-first is confirmed/);
       expect(result.answer).not.toMatch(/Maybe mobile first would be good/);
     });
 
     it("P10 — concurrent publication assigns distinct versions", async () => {
-      await repos.conversations.save(conversation);
+      await repos.conversations.create(conversation);
       await repos.handoffs.create("handoff-p10", "conv-p");
-      await repos.drafts.save(
+      await saveInitialDraft(
+        repos,
         createDraft("handoff-p10", [item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." })]),
       );
       const [first, second] = await Promise.all([
@@ -225,6 +244,155 @@ if (!url) {
       ]);
       expect(new Set([first.version, second.version])).toEqual(new Set([1, 2]));
       expect(await repos.published.listVersions("handoff-p10")).toHaveLength(2);
+    });
+
+    it("P11 — identical re-import is idempotent", async () => {
+      await repos.conversations.create(conversation);
+      await repos.conversations.create(conversation);
+      const loaded = await repos.conversations.get("conv-p");
+      expect(loaded).toEqual(conversation);
+      const count = await pool.query("SELECT COUNT(*)::int AS count FROM source_messages WHERE conversation_id = $1", [
+        "conv-p",
+      ]);
+      expect(count.rows[0].count).toBe(conversation.messages.length);
+    });
+
+    it("P12 — conflicting re-import rejected", async () => {
+      await repos.conversations.create(conversation);
+      const conflicting = {
+        ...conversation,
+        messages: conversation.messages.map((message) =>
+          message.id === "conv-p:m3" ? { ...message, content: "Native mobile is confirmed." } : message,
+        ),
+      };
+      await expect(repos.conversations.create(conflicting)).rejects.toBeInstanceOf(PersistenceConflictError);
+      expect(await repos.conversations.get("conv-p")).toEqual(conversation);
+    });
+
+    it("P13 — published provenance cannot drift", async () => {
+      await repos.conversations.create(conversation);
+      await repos.handoffs.create("handoff-p13", "conv-p");
+      await saveInitialDraft(
+        repos,
+        createDraft("handoff-p13", [
+          item({
+            id: "web",
+            type: "CONFIRMED",
+            statement: "Web-first is confirmed.",
+            sources: [{ messageId: "conv-p:m3", excerpt: "Actually, web first." }],
+          }),
+        ]),
+      );
+      await repos.published.publish("handoff-p13", "2026-09-25T00:00:00.000Z");
+      const conflicting = {
+        ...conversation,
+        messages: conversation.messages.map((message) =>
+          message.id === "conv-p:m3" ? { ...message, content: "Mobile-first is confirmed." } : message,
+        ),
+      };
+      await expect(repos.conversations.create(conflicting)).rejects.toBeInstanceOf(PersistenceConflictError);
+      const provenance = await repos.receiver.getProvenance("handoff-p13", 1, ["web"]);
+      expect(provenance.items[0]?.references[0]?.excerpt).toBe("Actually, web first.");
+    });
+
+    it("P14 — failed import is atomic", async () => {
+      const broken = {
+        id: "conv-p14",
+        source: { provider: "generic-text", importedAt: "2026-09-25T00:00:00.000Z" },
+        messages: [
+          {
+            id: "conv-p14:m1",
+            role: "creator" as const,
+            content: "First message",
+            source: { provider: "generic-text" },
+          },
+          {
+            id: "conv-p14:m1",
+            role: "assistant" as const,
+            content: "Duplicate ID should fail",
+            source: { provider: "generic-text" },
+          },
+        ],
+      };
+      await expect(repos.conversations.create(broken)).rejects.toThrow();
+      expect(await repos.conversations.get("conv-p14")).toBeUndefined();
+      const count = await pool.query("SELECT COUNT(*)::int AS count FROM source_messages WHERE conversation_id = $1", [
+        "conv-p14",
+      ]);
+      expect(count.rows[0].count).toBe(0);
+    });
+
+    it("handoff root rebinding conflict is rejected", async () => {
+      await repos.conversations.create(conversation);
+      const other = {
+        ...conversation,
+        id: "conv-other",
+        messages: conversation.messages.map((message) => ({
+          ...message,
+          id: message.id.replace("conv-p:", "conv-other:"),
+        })),
+      };
+      await repos.conversations.create(other);
+      await repos.handoffs.create("handoff-root", "conv-p");
+      await expect(repos.handoffs.create("handoff-root", "conv-other")).rejects.toBeInstanceOf(PersistenceConflictError);
+      await expect(repos.handoffs.create("handoff-root", "conv-p")).resolves.toBeUndefined();
+    });
+
+    it("draft stale revision write is rejected", async () => {
+      await repos.conversations.create(conversation);
+      await repos.handoffs.create("handoff-draft", "conv-p");
+      const draft = createDraft("handoff-draft", [
+        item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
+      ]);
+      await saveInitialDraft(repos, draft);
+      await expect(repos.drafts.save(draft, 0)).rejects.toBeInstanceOf(PersistenceConflictError);
+    });
+
+    it("concurrent draft writes reject stale revision", async () => {
+      await repos.conversations.create(conversation);
+      await repos.handoffs.create("handoff-concurrent", "conv-p");
+      const draft = createDraft("handoff-concurrent", [
+        item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
+      ]);
+      await saveInitialDraft(repos, draft);
+      const first = updateItem(draft, "web", { statement: "Revision two." });
+      const second = updateItem(draft, "web", { statement: "Revision two alternate." });
+      await repos.drafts.save(first, 1);
+      await expect(repos.drafts.save(second, 1)).rejects.toBeInstanceOf(PersistenceConflictError);
+      expect((await repos.drafts.get("handoff-concurrent"))?.items[0]?.statement).toBe("Revision two.");
+    });
+
+    it("provenance never exposes unrelated message content", async () => {
+      const sensitive = {
+        ...conversation,
+        id: "conv-secret",
+        messages: [
+          {
+            id: "conv-secret:m1",
+            role: "creator" as const,
+            content: "SECRET PRIVATE MATERIAL ... relevant approved sentence.",
+            source: { provider: "generic-text" },
+          },
+        ],
+      };
+      await repos.conversations.create(sensitive);
+      await repos.handoffs.create("handoff-secret", "conv-secret");
+      await saveInitialDraft(
+        repos,
+        createDraft("handoff-secret", [
+          item({
+            id: "web",
+            type: "CONFIRMED",
+            statement: "Web-first is confirmed.",
+            sources: [{ messageId: "conv-secret:m1", excerpt: "relevant approved sentence." }],
+          }),
+        ]),
+      );
+      await repos.published.publish("handoff-secret", "2026-09-25T00:00:00.000Z");
+      const provenance = await repos.receiver.getProvenance("handoff-secret", 1, ["web"]);
+      expect(JSON.stringify(provenance)).toMatch(/relevant approved sentence/);
+      expect(JSON.stringify(provenance)).not.toMatch(/SECRET PRIVATE MATERIAL/);
+      expect(provenance.items[0]?.references[0]).not.toHaveProperty("content");
     });
   });
 }

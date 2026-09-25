@@ -1,7 +1,7 @@
 ---
 schema: task/v1
 id: T-002
-status: COMPLETE
+status: IN_PROGRESS
 areas:
   - handoff
 depends_on:
@@ -10,6 +10,7 @@ implements:
   - C-001
   - C-002
   - C-003
+  - C-004
 related_to:
   - D-003
   - D-004

@@ -1,6 +1,6 @@
 ---
 schema: state/v1
-status: READY
+status: IN_PROGRESS
 areas:
   - global
 ---
@@ -14,7 +14,7 @@ Milestone 1 is merged into `main`. Milestone 2 adds PostgreSQL persistence for n
 
 ## Active Work
 
-No task is in progress. T-002 is complete.
+T-002 pre-merge integrity correction is in progress on PR #2.
 
 ## Blockers
 

@@ -1,21 +1,63 @@
-import type { NormalizedConversation } from "../../import/types.js";
+import type { Pool } from "pg";
+import { conversationsEqual } from "../conversation-equality.js";
+import { PersistenceConflictError } from "../errors.js";
 import type { ConversationRepository } from "../ports.js";
-import type { Queryable } from "./pool.js";
+import type { NormalizedConversation } from "../../import/types.js";
 
 export class PostgresConversationRepository implements ConversationRepository {
-  constructor(private readonly db: Queryable) {}
+  constructor(private readonly pool: Pool) {}
 
-  async save(conversation: NormalizedConversation): Promise<void> {
-    await this.db.query(
+  async create(conversation: NormalizedConversation): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const existingConversation = await client.query<{
+        id: string;
+        provider: string;
+        imported_at: Date;
+      }>("SELECT id, provider, imported_at FROM source_conversations WHERE id = $1 FOR UPDATE", [conversation.id]);
+
+      if (existingConversation.rowCount === 0) {
+        await this.insertConversation(client, conversation);
+        await client.query("COMMIT");
+        return;
+      }
+
+      const loaded = await this.loadConversation(client, conversation.id);
+      if (!loaded) {
+        throw new Error(`Conversation ${conversation.id} disappeared during import`);
+      }
+      if (!conversationsEqual(loaded, conversation)) {
+        throw new PersistenceConflictError(
+          `Conversation ${conversation.id} already exists with different normalized content`,
+        );
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async get(id: string): Promise<NormalizedConversation | undefined> {
+    const client = await this.pool.connect();
+    try {
+      return await this.loadConversation(client, id);
+    } finally {
+      client.release();
+    }
+  }
+
+  private async insertConversation(client: Queryable, conversation: NormalizedConversation): Promise<void> {
+    await client.query(
       `INSERT INTO source_conversations (id, provider, imported_at)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (id) DO UPDATE SET provider = EXCLUDED.provider, imported_at = EXCLUDED.imported_at`,
+       VALUES ($1, $2, $3)`,
       [conversation.id, conversation.source.provider, conversation.source.importedAt],
     );
-
-    await this.db.query("DELETE FROM source_messages WHERE conversation_id = $1", [conversation.id]);
     for (const [index, message] of conversation.messages.entries()) {
-      await this.db.query(
+      await client.query(
         `INSERT INTO source_messages
           (id, conversation_id, ordinal, role, content, created_at, source_provider, original_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -33,15 +75,15 @@ export class PostgresConversationRepository implements ConversationRepository {
     }
   }
 
-  async get(id: string): Promise<NormalizedConversation | undefined> {
-    const conversation = await this.db.query<{
+  private async loadConversation(client: Queryable, id: string): Promise<NormalizedConversation | undefined> {
+    const conversation = await client.query<{
       id: string;
       provider: string;
       imported_at: Date;
     }>("SELECT id, provider, imported_at FROM source_conversations WHERE id = $1", [id]);
     if (conversation.rowCount === 0) return undefined;
 
-    const messages = await this.db.query<{
+    const messages = await client.query<{
       id: string;
       role: "creator" | "assistant" | "other";
       content: string;
@@ -76,3 +118,7 @@ export class PostgresConversationRepository implements ConversationRepository {
     };
   }
 }
+
+type Queryable = {
+  query: Pool["query"];
+};
