@@ -24,14 +24,15 @@ Implemented now:
 - normalized conversation
 - draft edits and immutable publication
 - PostgreSQL persistence for conversations, drafts, and published versions
+- local Creator web UI for manual Handoff review and publication (`npm run dev`)
 - receiver views without automatic source excerpts; explicit provenance lookup
 - deterministic answerability and grounding
 - fixtures for superseded exploration, unknown facts, explicit open questions, unsupported implications, transcript conflicts, creator edits, and published immutability
 
 Not implemented:
 
-- a user interface
-- live model calls
+- live model extraction or Receiver AI chat
+- authentication, public sharing, or production-safe deployment
 - ChatGPT, Claude, or Gemini export parsers
 - scraping, web search, vector search, teams, billing, or a "Got it?" quiz
 
@@ -52,11 +53,15 @@ Secrets do not belong in source, Canon, tasks, or reports. Do not treat this mil
 ```bash
 node tooling/governance/check.mjs
 npm test
+npm run test:application
 npm run typecheck
 npm run migrate
-npm run test:integration
+TEST_DATABASE_URL=... npm run test:integration
+npm run build
 ```
 
-Set `TEST_DATABASE_URL` to a real PostgreSQL database before integration tests. See `.env.example` for placeholder variable names only.
+Set `DATABASE_URL` for the Creator UI and `TEST_DATABASE_URL` for PostgreSQL-backed tests. See `.env.example` for placeholder variable names only.
+
+The Creator UI is for local development only. Do not deploy it publicly without authentication and privacy controls.
 
 The unit test suite does not need an API key.

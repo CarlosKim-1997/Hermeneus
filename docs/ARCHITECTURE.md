@@ -55,3 +55,17 @@ Publication runs in a transaction: lock the handoff row, validate the draft, com
 Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without `sources`. Provenance is fetched separately through `getProvenance` and returns receiver-safe excerpts only, never full source message content.
 
 Conversation import uses `ConversationRepository.create`: identical re-imports are idempotent; conflicting re-imports for the same ID fail. Handoff root creation and initial draft creation use the same insert-or-compare pattern for concurrent safety. Draft updates require an expected revision. Publication validates source message existence, conversation binding, and exact excerpt support before inserting a published version.
+
+## Milestone 3 — Creator UI
+
+```text
+Web UI (src/app)
+  ↓ server actions
+Application use cases (src/application)
+  ↓
+Domain / ports (src/handoff, src/import, src/persistence)
+  ↓
+PostgreSQL adapter
+```
+
+The Creator UI may inspect the full imported source conversation through a Creator-only read path. Receiver read boundaries remain unchanged. Manual draft creation is intentional until live extraction is introduced in a later milestone.

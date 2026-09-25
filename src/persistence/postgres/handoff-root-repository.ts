@@ -27,4 +27,13 @@ export class PostgresHandoffRootRepository implements HandoffRootRepository {
       `Handoff ${handoffId} is already bound to conversation ${existing.rows[0].source_conversation_id}`,
     );
   }
+
+  async getSourceConversationId(handoffId: string): Promise<string | undefined> {
+    const existing = await this.db.query<{ source_conversation_id: string }>(
+      "SELECT source_conversation_id FROM handoffs WHERE id = $1",
+      [handoffId],
+    );
+    if (existing.rowCount === 0) return undefined;
+    return existing.rows[0].source_conversation_id;
+  }
 }

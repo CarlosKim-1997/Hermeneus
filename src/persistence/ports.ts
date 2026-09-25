@@ -25,6 +25,7 @@ export interface PublishedHandoffRepository {
 
 export interface HandoffRootRepository {
   create(handoffId: string, sourceConversationId: string, createdAt?: string): Promise<void>;
+  getSourceConversationId(handoffId: string): Promise<string | undefined>;
 }
 
 export interface ReceiverReadRepository {
