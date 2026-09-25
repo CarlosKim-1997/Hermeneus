@@ -1,0 +1,3 @@
+# decision/v1
+
+Canonical path: `canon/decisions/*.md`. Frontmatter requires `schema: decision/v1`, `id: D-<digits>`, `status`, and nonempty `areas`. `global` is exclusive per record. Status: PROPOSED, APPROVED, ACTIVE, SUPERSEDED, REJECTED, DEFERRED. Required headings: Decision, Context, Rationale, Consequences. Allowed list relations: `depends_on`, `blocked_by`, `supersedes`, `implements`, `related_to`; target types are defined in [SPEC](../SPEC.md). Human ratification is required before APPROVED; authorized mechanical canonicalization makes it ACTIVE. Material change to ACTIVE meaning needs a new superseding Decision; an ACTIVE successor points to a SUPERSEDED target.

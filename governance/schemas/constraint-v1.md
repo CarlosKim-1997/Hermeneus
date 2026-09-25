@@ -1,0 +1,3 @@
+# constraint/v1
+
+Governance path: `governance/constraints/*.md`; Project path: `canon/constraints/*.md`. Frontmatter requires `schema: constraint/v1`, `id`, `kind`, `status`, and nonempty `areas`. `INV-<digits>` requires INVARIANT and Governance path. `C-<digits>` requires HARD_CONSTRAINT; Project path allows only this kind. Status: ACTIVE, SUPERSEDED, RETIRED. An ACTIVE successor with `supersedes` points to a SUPERSEDED target. Optional boolean `overridable` defaults false; Invariants cannot be overridable. Required headings: Constraint, Rationale, Operational Effect. Allowed list relations and target matrix are in [SPEC](../SPEC.md). No PROPOSED Constraint is canonical.

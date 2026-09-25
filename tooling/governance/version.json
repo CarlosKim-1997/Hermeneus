@@ -1,0 +1,6 @@
+{
+  "checker_version": "0.1.0",
+  "governance_version": "1.0.0",
+  "distribution_version": "0.1.0",
+  "node_minimum": "20"
+}

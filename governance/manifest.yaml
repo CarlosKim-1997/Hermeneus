@@ -1,0 +1,12 @@
+schema: governance-manifest/v1
+governance_version: 1.0.0
+areas:
+  - global
+  - handoff
+current_state: canon/state/current.md
+supported_schemas:
+  - decision/v1
+  - constraint/v1
+  - open-question/v1
+  - task/v1
+  - state/v1
