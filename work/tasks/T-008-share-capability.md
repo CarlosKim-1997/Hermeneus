@@ -28,7 +28,7 @@ Out of scope: Creator auth, expiry, email delivery, Receiver memory, production 
 
 ## Authority
 
-Authorized on `cursor/share-capability-m8-6f39`. Not authorized to merge or modify D-001–D-004 / C-001–C-004.
+Integrated to `main` at `ccb6810` (PR #8). Further normative changes require a Decision Request; D-001–D-004 / C-001–C-004 unchanged.
 
 ## Constraints
 
