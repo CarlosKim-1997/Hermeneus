@@ -1,7 +1,7 @@
 ---
 schema: task/v1
 id: T-004
-status: VERIFYING
+status: COMPLETE
 areas:
   - handoff
 depends_on:
@@ -60,12 +60,10 @@ Observed 2026-09-25 with local PostgreSQL 16 (after O5):
 
 ### Live OpenAI verification
 
-Pending trusted local run with `OPENAI_API_KEY` and `OPENAI_MODEL`:
+Observed 2026-09-26 in Cursor Cloud with configured `OPENAI_MODEL` (OpenAI SDK v7, `store: false`):
 
-- `npm run test:live-extraction`
-- `npm run test:live-extraction-eval` (L1–L6)
-
-Do not mark this Task COMPLETE until both live commands pass against a real configured model.
+- `npm run test:live-extraction` — PASS (1/1)
+- `npm run test:live-extraction-eval` — PASS (6/6): L1 supersession, L2 assistant pricing without Creator ratification, L3 explicit OPEN, L4 explicit REJECTED, L5 assistant factual assertion, L6 transcript prompt injection
 
 ## Stop Conditions
 
