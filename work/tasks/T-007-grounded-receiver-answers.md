@@ -35,7 +35,7 @@ Out of scope:
 
 ## Authority
 
-Authorized on `cursor/receiver-grounded-answer-m7-6f39`. Not authorized to merge or change D-001–D-004 / C-001–C-004 without a Decision Request.
+Integrated to `main` at `c166355` (PR #7). Further normative changes require a Decision Request; D-001–D-004 / C-001–C-004 unchanged.
 
 ## Constraints
 
