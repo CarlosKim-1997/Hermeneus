@@ -249,6 +249,92 @@ describe("Receiver grounding verifier (GV)", () => {
     ).rejects.toThrow("unexpected implementation defect");
   });
 
+  const twoSentenceProposal = {
+    sentences: [
+      { text: "First fact.", citationIds: ["web"] },
+      { text: "Second fact.", citationIds: ["web"] },
+    ],
+  };
+
+  it("GV7 — duplicate sentence index rejected", () => {
+    const ok = validateGroundingVerification(
+      {
+        verdict: "GROUNDED",
+        sentenceResults: [
+          { index: 0, grounded: true, citationIds: ["web"] },
+          { index: 0, grounded: true, citationIds: ["web"] },
+        ],
+      },
+      twoSentenceProposal,
+      allowed,
+    );
+    expect(ok).toBe(false);
+  });
+
+  it("GV7 — duplicate index falls back through orchestration", async () => {
+    const outcome = await applyGroundedNaturalAnswer({
+      question: "Where first?",
+      interpretation: interpretationSupported,
+      selectedItems: selected,
+      deterministicAnswer: interpretationSupported.answer,
+      generator: { generate: vi.fn(async () => twoSentenceProposal) },
+      verifier: {
+        verify: vi.fn(async () => ({
+          verdict: "GROUNDED" as const,
+          sentenceResults: [
+            { index: 0, grounded: true, citationIds: ["web"] },
+            { index: 0, grounded: true, citationIds: ["web"] },
+          ],
+        })),
+      },
+    });
+    expect(outcome.answerMode).toBe("deterministic");
+  });
+
+  it("GV8 — missing sentence index rejected", () => {
+    const ok = validateGroundingVerification(
+      {
+        verdict: "GROUNDED",
+        sentenceResults: [{ index: 0, grounded: true, citationIds: ["web"] }],
+      },
+      twoSentenceProposal,
+      allowed,
+    );
+    expect(ok).toBe(false);
+  });
+
+  it("GV9 — verifier cannot substitute another selected item", () => {
+    const dualAllowed = new Set(["a", "b"]);
+    const dualProposal = {
+      sentences: [{ text: "Combined claim.", citationIds: ["a"] }],
+    };
+    const ok = validateGroundingVerification(
+      {
+        verdict: "GROUNDED",
+        sentenceResults: [{ index: 0, grounded: true, citationIds: ["b"] }],
+      },
+      dualProposal,
+      dualAllowed,
+    );
+    expect(ok).toBe(false);
+  });
+
+  it("GV10 — verifier may return declared citation subset", () => {
+    const dualAllowed = new Set(["a", "b"]);
+    const dualProposal = {
+      sentences: [{ text: "Combined claim.", citationIds: ["a", "b"] }],
+    };
+    const ok = validateGroundingVerification(
+      {
+        verdict: "GROUNDED",
+        sentenceResults: [{ index: 0, grounded: true, citationIds: ["a"] }],
+      },
+      dualProposal,
+      dualAllowed,
+    );
+    expect(ok).toBe(true);
+  });
+
   it("fabricated React claim is rejected by verifier gate", async () => {
     const badProposal = {
       sentences: [{ text: "The MVP is web-first and will use React.", citationIds: ["web"] }],

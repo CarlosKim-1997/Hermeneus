@@ -40,15 +40,28 @@ export function validateGroundingVerification(
   allowedCitationIds: ReadonlySet<string>,
 ): boolean {
   if (verification.verdict !== "GROUNDED") return false;
-  if (verification.sentenceResults.length !== proposal.sentences.length) return false;
+
+  const sentenceCount = proposal.sentences.length;
+  const byIndex = new Map<number, (typeof verification.sentenceResults)[number]>();
 
   for (const result of verification.sentenceResults) {
+    if (result.index < 0 || result.index >= sentenceCount) return false;
+    if (byIndex.has(result.index)) return false;
+    byIndex.set(result.index, result);
+  }
+
+  for (let index = 0; index < sentenceCount; index += 1) {
+    const result = byIndex.get(index);
+    if (!result) return false;
     if (!result.grounded) return false;
-    if (result.index < 0 || result.index >= proposal.sentences.length) return false;
     if (result.citationIds.length === 0) return false;
+
+    const declaredCitationIds = new Set(proposal.sentences[index]!.citationIds);
     for (const id of result.citationIds) {
       if (!allowedCitationIds.has(id)) return false;
+      if (!declaredCitationIds.has(id)) return false;
     }
   }
+
   return true;
 }
