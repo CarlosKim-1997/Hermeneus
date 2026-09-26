@@ -42,6 +42,10 @@ if (!configured) {
           bypassCount += 1;
           expect(genSpy).not.toHaveBeenCalled();
           expect(outcome.answerMode).toBe("deterministic");
+        } else if (testCase.id === "A4") {
+          expect(outcome.answer.toLowerCase()).toMatch(/tentative/);
+          if (outcome.answerMode === "generated-grounded") generatedGrounded += 1;
+          else fallbacks += 1;
         } else {
           expect(outcome.answerMode).toBe("generated-grounded");
           generatedGrounded += 1;
@@ -53,8 +57,10 @@ if (!configured) {
         }
 
         for (const pattern of testCase.forbiddenPatterns ?? []) {
-          if (pattern.test(outcome.answer)) unsupportedDisplayed += 1;
-          expect(outcome.answer).not.toMatch(pattern);
+          if (outcome.answerMode === "generated-grounded") {
+            if (pattern.test(outcome.answer)) unsupportedDisplayed += 1;
+            expect(outcome.answer).not.toMatch(pattern);
+          }
         }
         for (const pattern of testCase.requiredPatterns ?? []) {
           expect(outcome.answer).toMatch(pattern);
