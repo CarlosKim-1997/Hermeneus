@@ -3,7 +3,11 @@
 import { useMemo, useState, useTransition } from "react";
 import type { HandoffItem, HandoffItemType, HandoffPriority } from "../../handoff/schema.js";
 import type { NormalizedConversation } from "../../import/types.js";
-import { publishHandoffAction, saveDraftAction } from "../../application/actions";
+import {
+  generateExtractionSuggestionsAction,
+  publishHandoffAction,
+  saveDraftAction,
+} from "../../application/actions";
 
 const TYPES: HandoffItemType[] = [
   "CORE_INTENT",
@@ -35,6 +39,9 @@ export function ReviewEditor({ handoffId, initialRevision, initialItems, sourceC
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [conflict, setConflict] = useState(false);
+  const [suggestions, setSuggestions] = useState<HandoffItem[]>([]);
+  const [extractionMessage, setExtractionMessage] = useState<string | null>(null);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const messageOptions = useMemo(
@@ -43,7 +50,47 @@ export function ReviewEditor({ handoffId, initialRevision, initialItems, sourceC
   );
 
   function updateItem(index: number, patch: Partial<HandoffItem>) {
-    setItems((current) => current.map((item, i) => (i === index ? { ...item, ...patch, createdBy: "CREATOR" } : item)));
+    setItems((current) =>
+      current.map((item, i) => {
+        if (i !== index) return item;
+        const next = { ...item, ...patch };
+        if (item.createdBy === "EXTRACTION" && Object.keys(patch).length > 0) {
+          return { ...next, createdBy: "CREATOR" };
+        }
+        return next;
+      }),
+    );
+  }
+
+  function generateSuggestions() {
+    setExtractionMessage(null);
+    setExtractionError(null);
+    startTransition(async () => {
+      const result = await generateExtractionSuggestionsAction(handoffId);
+      if (!result.ok) {
+        setExtractionError(result.error.message);
+        return;
+      }
+      setSuggestions(result.suggestions);
+      setExtractionMessage(
+        `Received ${result.suggestions.length} AI suggestion(s). They are not saved until you accept them into the draft.`,
+      );
+    });
+  }
+
+  function dismissSuggestion(suggestionId: string) {
+    setSuggestions((current) => current.filter((entry) => entry.id !== suggestionId));
+  }
+
+  function acceptSuggestion(suggestion: HandoffItem) {
+    setItems((current) => [...current, suggestion]);
+    dismissSuggestion(suggestion.id);
+  }
+
+  function acceptAllSuggestions() {
+    setItems((current) => [...current, ...suggestions]);
+    setSuggestions([]);
+    setExtractionMessage("All AI suggestions were added to the draft editor. Save draft to persist.");
   }
 
   function addItem() {
@@ -113,9 +160,50 @@ export function ReviewEditor({ handoffId, initialRevision, initialItems, sourceC
 
       <section className="panel panel-draft" aria-labelledby="draft-heading">
         <h2 id="draft-heading">Handoff Draft</h2>
-        <p className="notice">
-          AI extraction is not enabled in this milestone. Build and review the Handoff manually.
-        </p>
+        <div className="extraction-panel">
+          <h3>AI suggestions (optional)</h3>
+          <p className="notice">
+            Generate AI suggestions sends the imported conversation to the configured external model provider.
+            Suggestions are proposals only — not saved and not published until you accept them, edit the draft, save,
+            and explicitly approve publication.
+          </p>
+          <div className="actions">
+            <button type="button" onClick={generateSuggestions} disabled={pending}>
+              Generate AI suggestions
+            </button>
+            {suggestions.length ? (
+              <button type="button" onClick={acceptAllSuggestions} disabled={pending}>
+                Add all suggestions to draft
+              </button>
+            ) : null}
+          </div>
+          {extractionMessage ? <p role="status">{extractionMessage}</p> : null}
+          {extractionError ? (
+            <p className="error" role="alert">
+              {extractionError}
+            </p>
+          ) : null}
+          {suggestions.map((suggestion) => (
+            <div key={suggestion.id} className="item-card suggestion-card">
+              <p className="suggestion-label">AI suggestion — not saved</p>
+              <p>
+                <strong>{suggestion.type}</strong> — {suggestion.statement}
+              </p>
+              <p style={{ color: "#64748b", fontSize: "0.9rem" }}>
+                Provenance:{" "}
+                {suggestion.sources.map((source) => `${source.messageId} (“${source.excerpt ?? ""}”)`).join("; ")}
+              </p>
+              <div className="actions">
+                <button type="button" onClick={() => acceptSuggestion(suggestion)}>
+                  Add to draft
+                </button>
+                <button type="button" className="danger" onClick={() => dismissSuggestion(suggestion.id)}>
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
         <p>
           Draft revision: <strong>{revision}</strong>
         </p>

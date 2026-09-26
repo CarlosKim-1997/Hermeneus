@@ -28,12 +28,42 @@ export async function loadCreatorReview(repos: Repos, handoffId: string): Promis
   return { handoffId, conversationId, revision, draft, sourceConversation };
 }
 
+function sourcesEqual(
+  left: HandoffItem["sources"],
+  right: HandoffItem["sources"],
+): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function resolveCreatedBy(
+  incoming: HandoffItem,
+  previous: HandoffItem | undefined,
+): HandoffItem["createdBy"] {
+  // Untrusted browser payloads cannot establish machine origin on first save.
+  if (!previous) return "CREATOR";
+  if (previous.createdBy !== "EXTRACTION") return "CREATOR";
+  const unchanged =
+    previous.statement === incoming.statement &&
+    previous.type === incoming.type &&
+    previous.priority === incoming.priority &&
+    sourcesEqual(previous.sources, incoming.sources);
+  return unchanged ? "EXTRACTION" : "CREATOR";
+}
+
 export async function saveCreatorDraft(
   repos: Repos,
   handoffId: string,
   items: HandoffItem[],
   expectedRevision: number,
 ) {
-  const parsedItems = items.map((item) => handoffItemSchema.parse({ ...item, createdBy: "CREATOR" }));
+  const previousDraft = await repos.drafts.get(handoffId);
+  const previousById = new Map(previousDraft?.items.map((item) => [item.id, item]) ?? []);
+
+  const parsedItems = items.map((item) => {
+    const parsed = handoffItemSchema.parse(item);
+    const createdBy = resolveCreatedBy(parsed, previousById.get(parsed.id));
+    return handoffItemSchema.parse({ ...parsed, createdBy });
+  });
+
   return repos.drafts.save(createDraft(handoffId, parsedItems), expectedRevision);
 }

@@ -97,6 +97,29 @@ button.danger {
   margin-bottom: 0.75rem;
 }
 
+.extraction-panel {
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: #f8fafc;
+}
+
+.suggestion-card {
+  border-style: dashed;
+  border-color: #93c5fd;
+  background: #f0f9ff;
+}
+
+.suggestion-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #1d4ed8;
+  margin: 0 0 0.5rem;
+}
+
 label {
   display: block;
   font-size: 0.875rem;

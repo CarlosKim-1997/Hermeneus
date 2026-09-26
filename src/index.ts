@@ -1,4 +1,13 @@
-export { fixtureExtractor, type HandoffExtractor } from "./extraction/extractor.js";
+export { type HandoffExtractor } from "./extraction/extractor.js";
+export { fixtureExtractor, e2eFixtureExtractor } from "./extraction/fixture-extractor.js";
+export {
+  extractionProposalSchema,
+  type ExtractionCandidate,
+  type ExtractionProposal,
+} from "./extraction/proposal-schema.js";
+export { validateExtractionProposal } from "./extraction/validation.js";
+export { materializeExtractionProposal } from "./extraction/materialize.js";
+export { ExtractionError, type ExtractionErrorCode } from "./extraction/errors.js";
 export { addItem, createDraft, removeItem, updateItem } from "./handoff/draft.js";
 export { PublicationLedger } from "./handoff/publication.js";
 export {
