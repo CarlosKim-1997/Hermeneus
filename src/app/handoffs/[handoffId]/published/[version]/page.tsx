@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchPublishedHandoff } from "../../../../../application/actions";
+import { listShareCapabilitiesAction } from "../../../../../application/share-actions";
+import { ShareCapabilityPanel } from "../../../../components/share-capability-panel";
 
 export default async function PublishedPage({
   params,
@@ -14,6 +16,8 @@ export default async function PublishedPage({
   const published = await fetchPublishedHandoff(handoffId, version);
   if (!published) notFound();
 
+  const capabilityList = await listShareCapabilitiesAction({ handoffId, version });
+
   return (
     <section className="panel panel-published">
       <h2>Published Handoff</h2>
@@ -25,6 +29,11 @@ export default async function PublishedPage({
         {" · "}
         <Link href={`/handoffs/${handoffId}/review`}>Return to draft review</Link>
       </p>
+      <ShareCapabilityPanel
+        handoffId={handoffId}
+        version={version}
+        initialCapabilities={capabilityList.ok ? capabilityList.capabilities : []}
+      />
       {published.items.map((item) => (
         <article key={item.id} className="item-card">
           <div>
