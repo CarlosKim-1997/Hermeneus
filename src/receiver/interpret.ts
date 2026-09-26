@@ -30,6 +30,14 @@ const DIRECT_TYPES = new Set<HandoffItemType>([
   "RATIONALE",
 ]);
 
+/** Conservative deterministic DERIVED rules only (e.g. disabled web search). */
+export function interpretDeterministicDerived(
+  question: string,
+  authority: InterpretationAuthority,
+): Interpretation | null {
+  return deriveDisabledCapability(question, authority.items);
+}
+
 export function interpretPublished(question: string, authority: InterpretationAuthority): Interpretation {
   const items = authority.items;
   const derived = deriveDisabledCapability(question, items);

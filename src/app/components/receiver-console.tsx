@@ -21,12 +21,14 @@ type Props = {
   version: number;
   publishedAt: string;
   items: ReceiverItemView[];
+  semanticModeEnabled: boolean;
 };
 
 type AnswerState = {
   classification: Answerability;
   answer: string;
   citedItems: ReceiverItemView[];
+  interpretationNotice?: string;
 };
 
 const CLASSIFICATION_HELP: Record<Answerability, string> = {
@@ -36,7 +38,7 @@ const CLASSIFICATION_HELP: Record<Answerability, string> = {
   UNKNOWN: "The approved Handoff does not contain enough information.",
 };
 
-export function ReceiverConsole({ handoffId, version, publishedAt, items }: Props) {
+export function ReceiverConsole({ handoffId, version, publishedAt, items, semanticModeEnabled }: Props) {
   const [question, setQuestion] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +58,12 @@ export function ReceiverConsole({ handoffId, version, publishedAt, items }: Prop
       setError(result.error.message);
       return;
     }
-    setAnswer(result.answer);
+    setAnswer({
+      classification: result.answer.classification,
+      answer: result.answer.answer,
+      citedItems: result.answer.citedItems,
+      interpretationNotice: result.answer.interpretationNotice,
+    });
   }
 
   async function onShowProvenance(itemId: string) {
@@ -77,7 +84,9 @@ export function ReceiverConsole({ handoffId, version, publishedAt, items }: Prop
   return (
     <div className="receiver-layout">
       <p className="receiver-notice">
-        Receiver interpretation is currently deterministic. Live natural-language interpretation is not enabled yet.
+        {semanticModeEnabled
+          ? "Receiver uses live semantic interpretation over this pinned canonical Handoff."
+          : "Receiver interpretation is currently deterministic. Live natural-language interpretation is not enabled yet."}
       </p>
 
       <section className="panel panel-receiver">
@@ -123,6 +132,7 @@ export function ReceiverConsole({ handoffId, version, publishedAt, items }: Prop
               <span className="answerability-help">{CLASSIFICATION_HELP[answer.classification]}</span>
             </p>
             <p>{answer.answer}</p>
+            {answer.interpretationNotice ? <p className="notice">{answer.interpretationNotice}</p> : null}
             {answer.citedItems.length > 0 ? (
               <div className="receiver-citations">
                 <h4>Canonical citations</h4>
