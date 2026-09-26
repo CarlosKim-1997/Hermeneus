@@ -48,8 +48,8 @@ Observed 2026-09-26 with local PostgreSQL 16:
 
 - `node tooling/governance/check.mjs` — PASS
 - `npm test` — 14 passed
-- `npm run test:application` — 24 passed (U1–U9, extraction U-flows, R1–R10)
-- `npm run test:receiver` — 10 passed
+- `npm run test:application` — 25 passed (U1–U9, extraction U-flows, R1–R11)
+- `npm run test:receiver` — 11 passed
 - `npm run test:integration` — 29 passed
 - `npm run test:extraction` — 15 passed
 - `npm run typecheck` — PASS

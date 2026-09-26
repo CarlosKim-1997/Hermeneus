@@ -93,7 +93,7 @@ ReceiverReadRepository + interpretPublished
 PostgreSQL adapter
 ```
 
-The Receiver page never receives `NormalizedConversation` or full raw source messages. Server actions return only `PublishedReceiverView`, answer payloads, and explicit provenance bundles.
+The Receiver page never receives `NormalizedConversation` or full raw source messages. Server actions return only `PublishedReceiverView`, answer payloads, and explicit provenance bundles. Receiver application paths do not provide Creator/raw-source navigation or data in the UI (no links into Creator review or publication surfaces). The Creator publication page may link into the pinned Receiver view; that asymmetry is intentional. Authentication and route authorization remain deferred—the app is local/development-only, and manually typing a Creator URL is not prevented.
 
 ## Creator UI (Milestones 3–4)
 

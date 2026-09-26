@@ -32,6 +32,10 @@ test.describe("Receiver flow", () => {
     await expect(page.getByRole("heading", { name: "Receiver", exact: true })).toBeVisible();
     await expect(page.getByText("Pinned to version 1")).toBeVisible();
     await expect(page.getByText("Web-first is confirmed.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "View publication record" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Return to draft review/i })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Source Conversation" })).toHaveCount(0);
+    await expect(page.locator('a[href*="/handoffs/"]')).toHaveCount(0);
 
     await page.getByLabel("Your question").fill("Are we building web first?");
     await page.getByRole("button", { name: "Ask" }).click();

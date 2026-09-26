@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import type { HandoffItem } from "../../src/handoff/schema.js";
 import { closePool, getRepositories } from "../../src/application/runtime.js";
 import { importAndCreateHandoff } from "../../src/application/use-cases/import-conversation.js";
@@ -322,6 +325,21 @@ if (!url) {
         expect(JSON.stringify(bundle)).not.toContain(SECRET_MARKER);
       }
       expect(JSON.stringify(provenance)).toContain("Actually, web first.");
+    });
+
+    it("R11 — Receiver surface module excludes Creator navigation affordances", () => {
+      const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+      const receiverPage = readFileSync(
+        path.join(repoRoot, "src/app/receiver/[handoffId]/[version]/page.tsx"),
+        "utf8",
+      );
+      const receiverConsole = readFileSync(path.join(repoRoot, "src/app/components/receiver-console.tsx"), "utf8");
+      for (const source of [receiverPage, receiverConsole]) {
+        expect(source).not.toMatch(/\/handoffs\//);
+        expect(source).not.toMatch(/View publication record/i);
+        expect(source).not.toMatch(/Return to draft review/i);
+        expect(source).not.toMatch(/Source Conversation/i);
+      }
     });
   });
 }

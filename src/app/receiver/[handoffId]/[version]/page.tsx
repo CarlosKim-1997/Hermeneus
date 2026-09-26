@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { fetchReceiverPublishedViewAction } from "../../../../application/receiver-actions";
 import { ReceiverConsole } from "../../../components/receiver-console";
 
@@ -20,9 +19,6 @@ export default async function ReceiverPage({
       <h2>Receiver</h2>
       <p>
         Handoff <code>{handoffId}</code> · explicit version {version}
-      </p>
-      <p>
-        <Link href={`/handoffs/${handoffId}/published/${version}`}>View publication record</Link>
       </p>
       <ReceiverConsole
         handoffId={view.handoffId}
