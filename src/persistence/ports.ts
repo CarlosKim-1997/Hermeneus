@@ -1,5 +1,6 @@
 import type { DraftHandoff, PublishedHandoff } from "../handoff/schema.js";
 import type { NormalizedConversation } from "../import/types.js";
+import type { ShareCapabilityMetadata, ShareCapabilityTarget } from "../share/types.js";
 import type { ProvenanceBundle, PublishedReceiverView } from "./receiver-types.js";
 
 export type DraftSaveResult = {
@@ -31,4 +32,20 @@ export interface HandoffRootRepository {
 export interface ReceiverReadRepository {
   getPublishedView(handoffId: string, version: number): Promise<PublishedReceiverView | undefined>;
   getProvenance(handoffId: string, version: number, itemIds: string[]): Promise<ProvenanceBundle>;
+}
+
+export interface ShareCapabilityRepository {
+  create(input: {
+    id: string;
+    handoffId: string;
+    version: number;
+    tokenHash: string;
+    createdAt: string;
+  }): Promise<ShareCapabilityMetadata>;
+
+  resolveActiveByTokenHash(tokenHash: string): Promise<ShareCapabilityTarget | undefined>;
+
+  listForPublishedVersion(handoffId: string, version: number): Promise<ShareCapabilityMetadata[]>;
+
+  revoke(capabilityId: string, revokedAt: string): Promise<ShareCapabilityMetadata | undefined>;
 }
