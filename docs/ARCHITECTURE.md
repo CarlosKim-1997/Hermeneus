@@ -46,6 +46,20 @@ M6 evidence selection (classification + canonical citation IDs)
 
 Generated prose is not canonical authority. Grounding failure degrades to canonical deterministic rendering rather than automatic repair. `RECEIVER_ANSWER_MODE=openai-grounded` is independent of `RECEIVER_INTERPRETER`; only SUPPORTED answers enter generation.
 
+**Milestone 8 share capability (development):**
+
+```text
+Creator → Published Handoff vN
+  → issue Share Capability (raw bearer token returned once)
+  → SHA-256(token) persisted
+  → /share/[token]
+  → server resolves ACTIVE capability on every protected operation
+  → internal exact (handoffId, version)
+  → ReceiverReadRepository → M6 + M7 Receiver pipeline
+```
+
+Published Handoff immutability and Share Capability revocability are separate concerns. Shared Receiver requests authorize through the capability token on each view load, Q&A request, and provenance request. The shared surface does not expose internal `handoffId`. Existing direct `/receiver/[handoffId]/[version]` and Creator routes are not yet protected by authentication; production route authorization is deferred.
+
 Source conversation **import provider** (ChatGPT export, Claude, Gemini, generic text) is separate from **extraction model provider** (OpenAI in Milestone 4). Extraction adapters do not alter Handoff domain schemas.
 
 ## Modules
