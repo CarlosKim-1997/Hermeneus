@@ -27,7 +27,7 @@ Out of scope: production auth provider, ownership transfer, teams, MFA, rate lim
 
 ## Authority
 
-Authorized on `cursor/creator-ownership-m9-6f39`. Not authorized to merge.
+Integrated into `main` via PR #9; merge commit `e4b81cf71ae22059599e64c9a6ec0ec089c3060e`.
 
 ## Constraints
 
@@ -35,7 +35,7 @@ C-001–C-006 remain binding. Share bearer authorization remains independent.
 
 ## Verification
 
-PR #9 head: production dev-session validation blocked in `resolveDevSessionPrincipal`; A7a/A7b; Server Action tests SA1–SA10; migration compat M9C1; full deterministic + E2E (5) green.
+Merged to `main` (e4b81cf): production dev-session validation blocked in `resolveDevSessionPrincipal`; A7a/A7b; Server Action tests SA1–SA10; migration compat M9C1; full deterministic + E2E (5) green.
 
 ## Stop Conditions
 

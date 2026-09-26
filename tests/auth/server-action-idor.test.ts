@@ -8,7 +8,6 @@ import {
   publishHandoffAction,
   saveDraftAction,
 } from "../../src/application/actions.js";
-import { devSignInAction } from "../../src/application/auth-actions.js";
 import {
   issueShareCapabilityAction,
   listShareCapabilitiesAction,
@@ -227,17 +226,5 @@ if (!url) {
       });
     });
 
-    it("A7a — production devSignInAction refused", async () => {
-      vi.stubEnv("NODE_ENV", "production");
-      vi.stubEnv("CREATOR_AUTH_MODE", "dev");
-      vi.stubEnv("DEV_CREATOR_ID", CREATOR_A);
-      vi.stubEnv("CREATOR_SESSION_SECRET", "test-session-secret-minimum-32-characters");
-      const result = await devSignInAction();
-      expect(result).toEqual({
-        ok: false,
-        error: "Development Creator sign-in is not available in production.",
-      });
-      vi.unstubAllEnvs();
-    });
   });
 }

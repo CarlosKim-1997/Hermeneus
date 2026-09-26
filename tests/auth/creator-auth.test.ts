@@ -91,6 +91,20 @@ if (!url) {
       vi.unstubAllEnvs();
     });
 
+    it("A7a — production devSignInAction refused", async () => {
+      vi.stubEnv("NODE_ENV", "production");
+      vi.stubEnv("CREATOR_AUTH_MODE", "dev");
+      vi.stubEnv("DEV_CREATOR_ID", CREATOR_A);
+      vi.stubEnv("CREATOR_SESSION_SECRET", SECRET);
+      const { devSignInAction } = await import("../../src/application/auth-actions.js");
+      const result = await devSignInAction();
+      expect(result).toEqual({
+        ok: false,
+        error: "Development Creator sign-in is not available in production.",
+      });
+      vi.unstubAllEnvs();
+    });
+
     it("A7b — production rejects valid signed dev session token", () => {
       vi.stubEnv("NODE_ENV", "production");
       vi.stubEnv("CREATOR_AUTH_MODE", "dev");
