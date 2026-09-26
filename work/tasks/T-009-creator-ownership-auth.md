@@ -1,7 +1,7 @@
 ---
 schema: task/v1
 id: T-009
-status: IN_PROGRESS
+status: COMPLETE
 areas:
   - handoff
 depends_on:
@@ -35,7 +35,7 @@ C-001–C-006 remain binding. Share bearer authorization remains independent.
 
 ## Verification
 
-PR #9 review correction in progress: production session rejection, Server Action IDOR tests, M1–M8 migration backfill proof.
+PR #9 head: production dev-session validation blocked in `resolveDevSessionPrincipal`; A7a/A7b; Server Action tests SA1–SA10; migration compat M9C1; full deterministic + E2E (5) green.
 
 ## Stop Conditions
 
