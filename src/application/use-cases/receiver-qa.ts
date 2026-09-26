@@ -2,8 +2,10 @@ import { authorityFromReceiverView } from "../../receiver/interpretation-authori
 import type { Answerability } from "../../receiver/interpret.js";
 import type { HandoffItemType, HandoffPriority } from "../../handoff/schema.js";
 import type { ProvenanceBundle, PublishedReceiverView } from "../../persistence/receiver-types.js";
+import { applyGroundedNaturalAnswer } from "../grounded-receiver-answer.js";
 import { ReceiverIntegrityError } from "../receiver-errors.js";
 import { interpretReceiverQuestion } from "../receiver-interpretation.js";
+import { getReceiverAnswerGenerator, getReceiverGroundingVerifier } from "../receiver-answer-factory.js";
 import { getReceiverSemanticInterpreter } from "../receiver-interpreter-factory.js";
 import type { getRepositories } from "../runtime.js";
 
@@ -22,6 +24,8 @@ export type ReceiverAnswer = {
   citedItems: ReceiverCitedItem[];
   interpretationMode: "deterministic" | "semantic";
   interpretationNotice?: string;
+  answerMode: "deterministic" | "generated-grounded";
+  answerNotice?: string;
 };
 
 export async function loadReceiverPublishedView(
@@ -40,16 +44,28 @@ export async function askReceiverQuestion(
   if (!view) return undefined;
 
   const authority = authorityFromReceiverView(view);
+  const question = input.question.trim();
   const semanticInterpreter = getReceiverSemanticInterpreter();
-  const interpretation = await interpretReceiverQuestion(input.question.trim(), authority, semanticInterpreter);
+  const interpretation = await interpretReceiverQuestion(question, authority, semanticInterpreter);
   const citedItems = resolveCitedItems(view, interpretation.citations);
+
+  const grounded = await applyGroundedNaturalAnswer({
+    question,
+    interpretation,
+    selectedItems: citedItems,
+    deterministicAnswer: interpretation.answer,
+    generator: getReceiverAnswerGenerator(),
+    verifier: getReceiverGroundingVerifier(),
+  });
 
   return {
     classification: interpretation.classification,
-    answer: interpretation.answer,
+    answer: grounded.answer,
     citedItems,
     interpretationMode: interpretation.interpretationMode,
     interpretationNotice: interpretation.interpretationNotice,
+    answerMode: grounded.answerMode,
+    answerNotice: grounded.answerNotice,
   };
 }
 

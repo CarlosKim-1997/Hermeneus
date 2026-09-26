@@ -33,6 +33,19 @@ Published Handoff vN (explicit pin)
 
 The live model performs semantic selection, not final authority generation. Default Receiver mode remains deterministic (`RECEIVER_INTERPRETER=deterministic`). Live Receiver requests use `store: false` and send only the Receiver question plus canonical item id/type/statement/priority—never raw source, provenance excerpts, drafts, or other versions.
 
+**Milestone 7 grounded expression (optional):**
+
+```text
+M6 evidence selection (classification + canonical citation IDs)
+  → M7 answer generator (structured evidence-linked sentences)
+  → structural validation
+  → grounding verifier
+  → if GROUNDED: natural answer (generated-grounded)
+  → else: deterministic M6 canonical rendering
+```
+
+Generated prose is not canonical authority. Grounding failure degrades to canonical deterministic rendering rather than automatic repair. `RECEIVER_ANSWER_MODE=openai-grounded` is independent of `RECEIVER_INTERPRETER`; only SUPPORTED answers enter generation.
+
 Source conversation **import provider** (ChatGPT export, Claude, Gemini, generic text) is separate from **extraction model provider** (OpenAI in Milestone 4). Extraction adapters do not alter Handoff domain schemas.
 
 ## Modules
