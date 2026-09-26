@@ -27,6 +27,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
 
 type Repos = ReturnType<typeof createPostgresRepositories>;
 
+const SHARE_OWNER = "creator_share_test";
+
 function item(partial: Pick<HandoffItem, "id" | "type" | "statement"> & Partial<HandoffItem>): HandoffItem {
   return { priority: "CORE", createdBy: "CREATOR", sources: [], ...partial };
 }
@@ -46,7 +48,8 @@ async function seedPublished(repos: Repos, handoffId: string, statement: string,
     ],
   };
   await repos.conversations.create(conversation);
-  await repos.handoffs.create(handoffId, conversation.id);
+  await repos.creators.ensure({ id: SHARE_OWNER, createdAt: "2026-09-25T00:00:00.000Z" });
+  await repos.handoffs.create(handoffId, conversation.id, SHARE_OWNER);
   const draft = createDraft(handoffId, [
     item({
       id: "core",
@@ -82,7 +85,7 @@ if (!url) {
 
     beforeEach(async () => {
       await pool.query(
-        "TRUNCATE share_capabilities, published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations RESTART IDENTITY CASCADE",
+        "TRUNCATE share_capabilities, published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creators RESTART IDENTITY CASCADE",
       );
       setReceiverSemanticInterpreterForTests(undefined);
     });
@@ -181,7 +184,8 @@ if (!url) {
         source: { provider: "generic-text", importedAt: "2026-09-25T00:00:00.000Z" },
         messages: [],
       });
-      await repos.handoffs.create("hd-s9", "conv-s9");
+      await repos.creators.ensure({ id: SHARE_OWNER, createdAt: "2026-09-25T00:00:00.000Z" });
+      await repos.handoffs.create("hd-s9", "conv-s9", SHARE_OWNER);
       await repos.drafts.save(createDraft("hd-s9", [item({ id: "d", type: "CONFIRMED", statement: "draft only" })]));
       await expect(issueShareCapability(repos, { handoffId: "hd-s9", version: 1 })).rejects.toBeInstanceOf(
         ShareCapabilityError,
@@ -242,7 +246,8 @@ if (!url) {
           },
         ],
       });
-      await repos.handoffs.create("hd-s13", conversationId);
+      await repos.creators.ensure({ id: SHARE_OWNER, createdAt: "2026-09-25T00:00:00.000Z" });
+      await repos.handoffs.create("hd-s13", conversationId, SHARE_OWNER);
       const draft = createDraft("hd-s13", [
         item({
           id: "core",

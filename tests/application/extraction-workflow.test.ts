@@ -11,6 +11,7 @@ import { generateHandoffExtractionProposal } from "../../src/application/use-cas
 import { createPool } from "../../src/persistence/postgres/pool.js";
 
 const url = process.env.TEST_DATABASE_URL;
+const APP_CREATOR = "creator_application_test";
 const transcript = `creator: Maybe mobile first would be good.
 assistant: We could start there.
 creator: Actually, web first.`;
@@ -39,8 +40,9 @@ if (!url) {
 
     beforeEach(async () => {
       await pool.query(
-        "TRUNCATE published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations RESTART IDENTITY CASCADE",
+        "TRUNCATE published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creators RESTART IDENTITY CASCADE",
       );
+      await repos.creators.ensure({ id: APP_CREATOR, createdAt: "2026-09-25T00:00:00.000Z" });
       setHandoffExtractorForTests(undefined);
     });
 
@@ -54,7 +56,7 @@ if (!url) {
     });
 
     it("U10 — generation does not modify draft", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const before = await loadCreatorReview(repos, imported.handoffId);
       const messageId = before!.sourceConversation.messages.at(-1)!.id;
       const extractor = fixtureExtractor([
@@ -73,7 +75,7 @@ if (!url) {
     });
 
     it("U11 — accept suggestion persists draft content (client save uses CREATOR origin)", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
       const messageId = review!.sourceConversation.messages.at(-1)!.id;
       const extractor = fixtureExtractor([
@@ -93,7 +95,7 @@ if (!url) {
     });
 
     it("U12 — creator edit changes origin when persisted EXTRACTION item exists", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
       const messageId = review!.sourceConversation.messages.at(-1)!.id;
       const extractionItem = {
@@ -120,7 +122,7 @@ if (!url) {
     });
 
     it("U13 — existing manual items survive generation", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -157,7 +159,7 @@ if (!url) {
     });
 
     it("U14 — invalid proposal does not mutate draft", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const before = await loadCreatorReview(repos, imported.handoffId);
       const invalid = fixtureExtractor([
         {

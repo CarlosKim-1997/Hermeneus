@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { devSignIn } from "./helpers/dev-auth";
 
 const transcript = `creator: Web-first is confirmed for the MVP.
 assistant: Understood.`;
@@ -10,6 +11,7 @@ test.describe("Share capability flow", () => {
     const creator = await browser.newPage();
     const receiver = await browser.newPage();
 
+    await devSignIn(creator);
     await creator.goto("/new");
     await creator.getByLabel("Conversation transcript").fill(transcript);
     await creator.getByRole("button", { name: "Import" }).click();

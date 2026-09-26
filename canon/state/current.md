@@ -1,6 +1,6 @@
 ---
 schema: state/v1
-status: READY
+status: IN_PROGRESS
 areas:
   - global
 ---
@@ -8,11 +8,11 @@ areas:
 
 ## Current Position
 
-Milestones 1–8 are merged into `main` (baseline `ccb6810`). Version-pinned, revocable share capabilities gate `/share/[token]` with per-request authorization into the M5–M7 Receiver pipeline. Shared provenance omits internal conversation and message identifiers.
+Milestones 1–8 are merged into `main` (baseline `2416feb`). Milestone 9 Creator identity, Handoff ownership, and route authorization are in progress on branch `cursor/creator-ownership-m9-6f39`.
 
 ## Active Work
 
-None. T-008 is COMPLETE.
+T-009: Creator persistence, dev session adapter, ownership guards, protected Creator/internal Receiver routes.
 
 ## Blockers
 
@@ -20,13 +20,11 @@ None.
 
 ## Material Risks
 
-- No Creator authentication or ownership enforcement yet.
-- Direct Creator routes and internal `/receiver/[handoffId]/[version]` remain unauthenticated until a later milestone adds route authorization.
-- Share bearer secrets appear in share URLs (`/share/[token]`).
-- Hermeneus application code deliberately avoids logging raw share tokens; persisted metadata stores hash only.
-- Production infrastructure or access-log redaction for share URLs has not yet been verified.
-- This milestone is not production-safe public sharing.
+- M9 uses a development-only signed session (`CREATOR_AUTH_MODE=dev`); this is not production authentication.
+- No external identity provider, account recovery, MFA, or deployment log-redaction guarantees yet.
+- Share bearer secrets remain in URLs; infrastructure/access-log redaction is not verified.
+- Direct Creator routes require dev sign-in locally; disabled auth mode denies Creator access while share links still work.
 
 ## Verification Basis
 
-On 2026-09-26: governance PASS; typecheck PASS; migrate PASS; build PASS. Deterministic counts: `test:share` 17; `npm test` 31; application 25; receiver 11; receiver-semantic 10; receiver-answer 22; integration 29; extraction 15; e2e 4. Shared provenance projection omits `messageId`, `sourceConversationId`, and `handoffId`; strengthened S13 passes. C-005 reflects application-controlled vs deferred infrastructure logging boundaries.
+M9 verification in progress.

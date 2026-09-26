@@ -16,6 +16,7 @@
     "test:live-receiver-eval": "vitest run --config vitest.live-receiver-eval.config.ts",
     "test:receiver-answer": "vitest run --config vitest.receiver-answer.config.ts",
     "test:share": "vitest run --config vitest.share.config.ts",
+    "test:auth": "vitest run --config vitest.auth.config.ts",
     "test:live-receiver-answer": "vitest run --config vitest.live-receiver-answer.config.ts",
     "test:live-receiver-answer-eval": "vitest run --config vitest.live-receiver-answer-eval.config.ts",
     "test:extraction": "vitest run --config vitest.extraction.config.ts",

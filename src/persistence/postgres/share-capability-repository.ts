@@ -63,6 +63,14 @@ export class PostgresShareCapabilityRepository implements ShareCapabilityReposit
     return result.rows.map(mapMetadata);
   }
 
+  async getMetadataById(capabilityId: string): Promise<ShareCapabilityMetadata | undefined> {
+    const result = await this.pool.query<Row>(`SELECT id, handoff_id, version, token_hash, created_at, revoked_at FROM share_capabilities WHERE id = $1`, [
+      capabilityId,
+    ]);
+    if (result.rowCount === 0) return undefined;
+    return mapMetadata(result.rows[0]!);
+  }
+
   async revoke(capabilityId: string, revokedAt: string): Promise<ShareCapabilityMetadata | undefined> {
     const result = await this.pool.query<Row>(
       `UPDATE share_capabilities

@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
+import { CreatorSessionBanner } from "./components/creator-session-banner";
 import "./globals.css";
+
+export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -12,6 +15,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               Local development only. Not safe for public deployment.
             </p>
           </header>
+          <CreatorSessionBanner />
           {children}
         </main>
       </body>

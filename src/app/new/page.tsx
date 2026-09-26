@@ -1,6 +1,8 @@
 import { ImportForm } from "../components/import-form";
+import { requireCreatorSessionPage } from "../../application/creator-page-guards";
 
-export default function NewImportPage() {
+export default async function NewImportPage() {
+  await requireCreatorSessionPage();
   return (
     <section className="panel">
       <h2>New Handoff import</h2>

@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import { PostgresCreatorRepository } from "./creator-repository.js";
 import { PostgresConversationRepository } from "./conversation-repository.js";
 import { PostgresDraftRepository } from "./draft-repository.js";
 import { PostgresHandoffRootRepository } from "./handoff-root-repository.js";
@@ -8,6 +9,7 @@ import { PostgresShareCapabilityRepository } from "./share-capability-repository
 
 export function createPostgresRepositories(pool: Pool) {
   return {
+    creators: new PostgresCreatorRepository(pool),
     conversations: new PostgresConversationRepository(pool),
     drafts: new PostgresDraftRepository(pool),
     handoffs: new PostgresHandoffRootRepository(pool),

@@ -13,7 +13,9 @@ export function ImportForm() {
         setError(null);
         startTransition(async () => {
           const result = await importConversationAction(formData);
-          if (result && "error" in result && result.error) setError(result.error);
+          if (result && "error" in result && result.error) {
+            setError(typeof result.error === "string" ? result.error : result.error.message);
+          }
         });
       }}
     >

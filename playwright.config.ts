@@ -11,7 +11,7 @@ export default defineConfig({
   },
   webServer: databaseUrl
     ? {
-        command: `DATABASE_URL=${databaseUrl} TEST_DATABASE_URL=${databaseUrl} HERMENEUS_EXTRACTION_FIXTURE=e2e PORT=${port} bash scripts/start-e2e-server.sh`,
+        command: `DATABASE_URL=${databaseUrl} TEST_DATABASE_URL=${databaseUrl} HERMENEUS_EXTRACTION_FIXTURE=e2e CREATOR_AUTH_MODE=dev DEV_CREATOR_ID=creator_e2e_a DEV_CREATOR_ID_B=creator_e2e_b CREATOR_SESSION_SECRET=e2e-test-session-secret-minimum-32-chars PORT=${port} bash scripts/start-e2e-server.sh`,
         url: `http://127.0.0.1:${port}`,
         reuseExistingServer: false,
         timeout: 180_000,

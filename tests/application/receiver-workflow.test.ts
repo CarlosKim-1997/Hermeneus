@@ -17,6 +17,7 @@ import { UNKNOWN_ANSWER } from "../../src/receiver/interpret.js";
 import { createPool } from "../../src/persistence/postgres/pool.js";
 
 const url = process.env.TEST_DATABASE_URL;
+const APP_CREATOR = "creator_application_test";
 const SECRET_MARKER = "SECRET PRIVATE MATERIAL";
 const transcriptWithSecret = `creator: ${SECRET_MARKER} maybe mobile first.
 assistant: We could start there.
@@ -52,8 +53,9 @@ if (!url) {
 
     beforeEach(async () => {
       await pool.query(
-        "TRUNCATE published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations RESTART IDENTITY CASCADE",
+        "TRUNCATE published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creators RESTART IDENTITY CASCADE",
       );
+      await repos.creators.ensure({ id: APP_CREATOR, createdAt: "2026-09-25T00:00:00.000Z" });
     });
 
     afterAll(async () => {
@@ -62,7 +64,7 @@ if (!url) {
     });
 
     it("R1 — pinned version answers from v1 after v2 exists", async () => {
-      const imported = await importAndCreateHandoff(repos, transcriptWithSecret);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -90,7 +92,7 @@ if (!url) {
     });
 
     it("R2 — SUPPORTED with canonical citation for web-first", async () => {
-      const imported = await importAndCreateHandoff(repos, transcriptWithSecret);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -110,7 +112,7 @@ if (!url) {
     });
 
     it("R3 — OPEN for explicit unresolved authentication", async () => {
-      const imported = await importAndCreateHandoff(repos, transcriptWithSecret);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -135,7 +137,7 @@ if (!url) {
     });
 
     it("R4 — UNKNOWN when pricing is absent", async () => {
-      const imported = await importAndCreateHandoff(repos, transcriptWithSecret);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -155,7 +157,7 @@ if (!url) {
     });
 
     it("R5 — transcript conflict cannot override published Canon", async () => {
-      const imported = await importAndCreateHandoff(repos, transcriptWithSecret);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -176,7 +178,7 @@ if (!url) {
     });
 
     it("R6 — safe provenance returns approved excerpt only", async () => {
-      const imported = await importAndCreateHandoff(repos, transcriptWithSecret);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       const review = await loadCreatorReview(repos, imported.handoffId);
       const messageId = review!.sourceConversation.messages.at(-1)!.id;
       await saveCreatorDraft(
@@ -205,7 +207,7 @@ if (!url) {
     });
 
     it("R7 — provenance without excerpt marks excerptAvailable false", async () => {
-      const imported = await importAndCreateHandoff(repos, transcriptWithSecret);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       const review = await loadCreatorReview(repos, imported.handoffId);
       const messageId = review!.sourceConversation.messages.at(-1)!.id;
       await saveCreatorDraft(
@@ -235,7 +237,7 @@ if (!url) {
     });
 
     it("R8 — rejected item reflects canonical REJECTED state", async () => {
-      const imported = await importAndCreateHandoff(repos, transcriptWithSecret);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -262,7 +264,7 @@ if (!url) {
     });
 
     it("R9 — published version URL stability after newer publication", async () => {
-      const imported = await importAndCreateHandoff(repos, transcriptWithSecret);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -290,7 +292,7 @@ if (!url) {
     });
 
     it("R10 — serialized Receiver state excludes raw secret material", async () => {
-      const imported = await importAndCreateHandoff(repos, transcriptWithSecret);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       const review = await loadCreatorReview(repos, imported.handoffId);
       const messageId = review!.sourceConversation.messages.at(-1)!.id;
       await saveCreatorDraft(

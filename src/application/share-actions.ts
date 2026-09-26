@@ -14,10 +14,25 @@ import {
   SHARE_UNAVAILABLE_MESSAGE,
 } from "./use-cases/shared-receiver-qa.js";
 import { toReceiverFacingError } from "./receiver-errors.js";
+import { requireCreatorPrincipalFromSession } from "./creator-action-auth.js";
+import { requireOwnedHandoff } from "./authorize-handoff.js";
+import { CreatorUnauthenticatedError, HandoffAccessUnavailableError } from "./creator-auth-errors.js";
+
+function mapCreatorAuthFailure(error: unknown) {
+  if (error instanceof CreatorUnauthenticatedError) {
+    return { ok: false as const, error: { code: "UNAUTHENTICATED" as const, message: "Sign in to continue." } };
+  }
+  if (error instanceof HandoffAccessUnavailableError) {
+    return { ok: false as const, error: { code: "NOT_FOUND" as const, message: "This Handoff is unavailable." } };
+  }
+  return null;
+}
 
 export async function issueShareCapabilityAction(input: { handoffId: string; version: number }) {
   try {
     const repos = getRepositories();
+    const principal = await requireCreatorPrincipalFromSession();
+    await requireOwnedHandoff(repos, principal, input.handoffId);
     const issued = await issueShareCapability(repos, input);
     return {
       ok: true as const,
@@ -26,6 +41,8 @@ export async function issueShareCapabilityAction(input: { handoffId: string; ver
       sharePath: `/share/${issued.rawToken}`,
     };
   } catch (error) {
+    const auth = mapCreatorAuthFailure(error);
+    if (auth) return auth;
     if (error instanceof ShareCapabilityError) {
       return { ok: false as const, error: { code: error.code, message: error.message } };
     }
@@ -34,18 +51,38 @@ export async function issueShareCapabilityAction(input: { handoffId: string; ver
 }
 
 export async function listShareCapabilitiesAction(input: { handoffId: string; version: number }) {
-  const repos = getRepositories();
-  const capabilities = await listShareCapabilitiesForVersion(repos, input.handoffId, input.version);
-  return { ok: true as const, capabilities };
+  try {
+    const repos = getRepositories();
+    const principal = await requireCreatorPrincipalFromSession();
+    await requireOwnedHandoff(repos, principal, input.handoffId);
+    const capabilities = await listShareCapabilitiesForVersion(repos, input.handoffId, input.version);
+    return { ok: true as const, capabilities };
+  } catch (error) {
+    const auth = mapCreatorAuthFailure(error);
+    if (auth) return auth;
+    throw error;
+  }
 }
 
 export async function revokeShareCapabilityAction(input: { capabilityId: string }) {
-  const repos = getRepositories();
-  const revoked = await revokeShareCapability(repos, input);
-  if (!revoked) {
-    return { ok: false as const, error: { code: "NOT_FOUND" as const, message: "Share capability was not found." } };
+  try {
+    const repos = getRepositories();
+    const principal = await requireCreatorPrincipalFromSession();
+    const metadata = await repos.shareCapabilities.getMetadataById(input.capabilityId);
+    if (!metadata) {
+      return { ok: false as const, error: { code: "NOT_FOUND" as const, message: "Share capability was not found." } };
+    }
+    await requireOwnedHandoff(repos, principal, metadata.handoffId);
+    const revoked = await revokeShareCapability(repos, input);
+    if (!revoked) {
+      return { ok: false as const, error: { code: "NOT_FOUND" as const, message: "Share capability was not found." } };
+    }
+    return { ok: true as const, capability: revoked };
+  } catch (error) {
+    const auth = mapCreatorAuthFailure(error);
+    if (auth) return auth;
+    throw error;
   }
-  return { ok: true as const, capability: revoked };
 }
 
 export async function loadSharedReceiverViewAction(token: string) {

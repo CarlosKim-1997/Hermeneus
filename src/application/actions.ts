@@ -11,6 +11,19 @@ import { generateHandoffExtractionProposal } from "./use-cases/generate-extracti
 import { getHandoffExtractor } from "./extraction-factory.js";
 import { toExtractionFacingError } from "./extraction-user-errors.js";
 import type { HandoffItem } from "../handoff/schema.js";
+import { requireCreatorPrincipalFromSession } from "./creator-action-auth.js";
+import { requireOwnedHandoff } from "./authorize-handoff.js";
+import { CreatorUnauthenticatedError, HandoffAccessUnavailableError } from "./creator-auth-errors.js";
+
+function mapAuthFailure(error: unknown) {
+  if (error instanceof CreatorUnauthenticatedError) {
+    return { ok: false as const, error: { code: "UNAUTHENTICATED" as const, message: "Sign in to continue." } };
+  }
+  if (error instanceof HandoffAccessUnavailableError) {
+    return { ok: false as const, error: { code: "NOT_FOUND" as const, message: "This Handoff is unavailable." } };
+  }
+  return null;
+}
 
 export async function importConversationAction(formData: FormData) {
   const transcript = String(formData.get("transcript") ?? "").trim();
@@ -18,11 +31,14 @@ export async function importConversationAction(formData: FormData) {
     return { ok: false as const, error: "Paste a conversation transcript to import." };
   }
   try {
+    const principal = await requireCreatorPrincipalFromSession();
     const repos = getRepositories();
-    const result = await importAndCreateHandoff(repos, transcript);
+    const result = await importAndCreateHandoff(repos, principal.creatorId, transcript);
     redirect(`/handoffs/${result.handoffId}/review`);
   } catch (error) {
     if (isRedirectError(error)) throw error;
+    const auth = mapAuthFailure(error);
+    if (auth) return auth;
     return { ok: false as const, error: toCreatorFacingError(error).message };
   }
 }
@@ -34,9 +50,13 @@ export async function saveDraftAction(input: {
 }) {
   try {
     const repos = getRepositories();
+    const principal = await requireCreatorPrincipalFromSession();
+    await requireOwnedHandoff(repos, principal, input.handoffId);
     const result = await saveCreatorDraft(repos, input.handoffId, input.items, input.expectedRevision);
     return { ok: true as const, revision: result.revision };
   } catch (error) {
+    const auth = mapAuthFailure(error);
+    if (auth) return auth;
     return { ok: false as const, error: toCreatorFacingError(error) };
   }
 }
@@ -44,31 +64,57 @@ export async function saveDraftAction(input: {
 export async function publishHandoffAction(handoffId: string, expectedDraftRevision: number) {
   try {
     const repos = getRepositories();
+    const principal = await requireCreatorPrincipalFromSession();
+    await requireOwnedHandoff(repos, principal, handoffId);
     const published = await publishHandoff(repos, handoffId, expectedDraftRevision);
     redirect(`/handoffs/${handoffId}/published/${published.version}`);
   } catch (error) {
     if (isRedirectError(error)) throw error;
+    const auth = mapAuthFailure(error);
+    if (auth) return auth;
     return { ok: false as const, error: toCreatorFacingError(error) };
   }
 }
 
 export async function fetchCreatorReview(handoffId: string) {
-  const repos = getRepositories();
-  return loadCreatorReview(repos, handoffId);
+  try {
+    const repos = getRepositories();
+    const principal = await requireCreatorPrincipalFromSession();
+    await requireOwnedHandoff(repos, principal, handoffId);
+    return loadCreatorReview(repos, handoffId);
+  } catch (error) {
+    if (error instanceof HandoffAccessUnavailableError || error instanceof CreatorUnauthenticatedError) {
+      return undefined;
+    }
+    throw error;
+  }
 }
 
 export async function fetchPublishedHandoff(handoffId: string, version: number) {
-  const repos = getRepositories();
-  return loadPublishedHandoff(repos, handoffId, version);
+  try {
+    const repos = getRepositories();
+    const principal = await requireCreatorPrincipalFromSession();
+    await requireOwnedHandoff(repos, principal, handoffId);
+    return loadPublishedHandoff(repos, handoffId, version);
+  } catch (error) {
+    if (error instanceof HandoffAccessUnavailableError || error instanceof CreatorUnauthenticatedError) {
+      return undefined;
+    }
+    throw error;
+  }
 }
 
 export async function generateExtractionSuggestionsAction(handoffId: string) {
   try {
     const repos = getRepositories();
+    const principal = await requireCreatorPrincipalFromSession();
+    await requireOwnedHandoff(repos, principal, handoffId);
     const extractor = getHandoffExtractor();
     const result = await generateHandoffExtractionProposal(repos, extractor, handoffId);
     return { ok: true as const, suggestions: result.suggestions };
   } catch (error) {
+    const auth = mapAuthFailure(error);
+    if (auth) return auth;
     return { ok: false as const, error: toExtractionFacingError(error) };
   }
 }

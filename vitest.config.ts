@@ -15,6 +15,8 @@ export default defineConfig({
       "tests/live-receiver-eval.test.ts",
       "tests/live-receiver-answer.test.ts",
       "tests/live-receiver-answer-eval.test.ts",
+      "tests/auth/**",
+      "tests/share/**",
     ],
   },
 });

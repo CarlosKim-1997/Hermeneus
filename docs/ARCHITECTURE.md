@@ -58,7 +58,21 @@ Creator → Published Handoff vN
   → ReceiverReadRepository → M6 + M7 Receiver pipeline
 ```
 
-Published Handoff immutability and Share Capability revocability are separate concerns. Shared Receiver requests authorize through the capability token on each view load, Q&A request, and provenance request. The shared surface does not expose internal `handoffId`. Existing direct `/receiver/[handoffId]/[version]` and Creator routes are not yet protected by authentication; production route authorization is deferred.
+Published Handoff immutability and Share Capability revocability are separate concerns. Shared Receiver requests authorize through the capability token on each view load, Q&A request, and provenance request. The shared surface does not expose internal `handoffId`.
+
+**Milestone 9 Creator authorization (development session):**
+
+```text
+Creator path
+  authenticated Creator session → internal CreatorId
+  → Handoff ownership check (handoffs.owner_creator_id)
+  → Creator Review / Publish / Share management / Internal Receiver
+
+Shared Receiver path (unchanged)
+  bearer token → active Share Capability → pinned version → M5–M7 pipeline
+```
+
+Knowing a Handoff ID is not Creator authority. Knowing a Creator session is not share-link authority. Production authentication provider choice remains deferred; `CREATOR_AUTH_MODE=dev` is not production authentication.
 
 Source conversation **import provider** (ChatGPT export, Claude, Gemini, generic text) is separate from **extraction model provider** (OpenAI in Milestone 4). Extraction adapters do not alter Handoff domain schemas.
 

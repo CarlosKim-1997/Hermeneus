@@ -1,5 +1,6 @@
 import type { DraftHandoff, PublishedHandoff } from "../handoff/schema.js";
 import type { NormalizedConversation } from "../import/types.js";
+import type { CreatorId } from "../creator/types.js";
 import type { ShareCapabilityMetadata, ShareCapabilityTarget } from "../share/types.js";
 import type { ProvenanceBundle, PublishedReceiverView } from "./receiver-types.js";
 
@@ -24,9 +25,15 @@ export interface PublishedHandoffRepository {
   listVersions(handoffId: string): Promise<Array<{ version: number; publishedAt: string }>>;
 }
 
+export interface CreatorRepository {
+  ensure(input: { id: CreatorId; createdAt: string }): Promise<void>;
+  exists(id: CreatorId): Promise<boolean>;
+}
+
 export interface HandoffRootRepository {
-  create(handoffId: string, sourceConversationId: string, createdAt?: string): Promise<void>;
+  create(handoffId: string, sourceConversationId: string, ownerCreatorId: CreatorId, createdAt?: string): Promise<void>;
   getSourceConversationId(handoffId: string): Promise<string | undefined>;
+  getOwnerCreatorId(handoffId: string): Promise<CreatorId | undefined>;
 }
 
 export interface ReceiverReadRepository {
@@ -48,4 +55,6 @@ export interface ShareCapabilityRepository {
   listForPublishedVersion(handoffId: string, version: number): Promise<ShareCapabilityMetadata[]>;
 
   revoke(capabilityId: string, revokedAt: string): Promise<ShareCapabilityMetadata | undefined>;
+
+  getMetadataById(capabilityId: string): Promise<ShareCapabilityMetadata | undefined>;
 }
