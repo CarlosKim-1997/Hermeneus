@@ -62,7 +62,7 @@ Observed 2026-09-26:
 Observed 2026-09-26 with `RECEIVER_ANSWER_MODE=openai-grounded` and configured OpenAI credentials:
 
 - `npm run test:live-receiver-answer` — PASS (`interpretReceiverQuestion` + M7 path, `answerMode=generated-grounded`)
-- `npm run test:live-receiver-answer-eval` — PASS A1, A5–A7 on current fixture set; A1 generated-grounded; OPEN/UNKNOWN/DERIVED bypass generation; unsupported claims displayed 0
+- `npm run test:live-receiver-answer-eval` — PASS A1–A10; metrics: generatedGroundedSuccess 7, generatorBypassCount 3 (A5–A7), unsupportedClaimsDisplayed 0; A4 may fall back to deterministic when verifier rejects tentative paraphrase
 
 M6 live suites (`test:live-receiver`, `test:live-receiver-eval`) remain unchanged.
 
