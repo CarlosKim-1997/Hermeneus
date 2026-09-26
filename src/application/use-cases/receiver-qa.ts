@@ -1,8 +1,10 @@
 import { authorityFromReceiverView } from "../../receiver/interpretation-authority.js";
-import { interpretPublished, type Answerability } from "../../receiver/interpret.js";
+import type { Answerability } from "../../receiver/interpret.js";
 import type { HandoffItemType, HandoffPriority } from "../../handoff/schema.js";
 import type { ProvenanceBundle, PublishedReceiverView } from "../../persistence/receiver-types.js";
 import { ReceiverIntegrityError } from "../receiver-errors.js";
+import { interpretReceiverQuestion } from "../receiver-interpretation.js";
+import { getReceiverSemanticInterpreter } from "../receiver-interpreter-factory.js";
 import type { getRepositories } from "../runtime.js";
 
 type Repos = ReturnType<typeof getRepositories>;
@@ -18,6 +20,8 @@ export type ReceiverAnswer = {
   classification: Answerability;
   answer: string;
   citedItems: ReceiverCitedItem[];
+  interpretationMode: "deterministic" | "semantic";
+  interpretationNotice?: string;
 };
 
 export async function loadReceiverPublishedView(
@@ -36,13 +40,16 @@ export async function askReceiverQuestion(
   if (!view) return undefined;
 
   const authority = authorityFromReceiverView(view);
-  const interpretation = interpretPublished(input.question.trim(), authority);
+  const semanticInterpreter = getReceiverSemanticInterpreter();
+  const interpretation = await interpretReceiverQuestion(input.question.trim(), authority, semanticInterpreter);
   const citedItems = resolveCitedItems(view, interpretation.citations);
 
   return {
     classification: interpretation.classification,
     answer: interpretation.answer,
     citedItems,
+    interpretationMode: interpretation.interpretationMode,
+    interpretationNotice: interpretation.interpretationNotice,
   };
 }
 

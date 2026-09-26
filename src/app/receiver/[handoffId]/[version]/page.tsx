@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { isReceiverSemanticModeConfigured } from "../../../../application/receiver-interpreter-config";
 import { fetchReceiverPublishedViewAction } from "../../../../application/receiver-actions";
 import { ReceiverConsole } from "../../../components/receiver-console";
 
@@ -25,6 +26,7 @@ export default async function ReceiverPage({
         version={view.version}
         publishedAt={view.publishedAt}
         items={view.items}
+        semanticModeEnabled={isReceiverSemanticModeConfigured()}
       />
     </section>
   );

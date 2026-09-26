@@ -16,17 +16,22 @@ generic text
   -> immutable PublishedHandoff
 ```
 
-**Receiver path (Milestone 5, deterministic — no live Receiver LLM yet):**
+**Receiver path (Milestone 5–6):**
 
 ```text
 Published Handoff vN (explicit pin)
   -> ReceiverReadRepository.getPublishedView
   -> PublishedReceiverView
-  -> authorityFromReceiverView
-  -> interpretPublished
+  -> InterpretationAuthority
+  -> deterministic explicit DERIVED rules
+  -> optional live semantic selector (OpenAI when RECEIVER_INTERPRETER=openai)
+  -> validated classification + canonical item IDs
+  -> deterministic Hermeneus answer renderer
   -> answer + canonical citations
   -> optional ReceiverReadRepository.getProvenance (safe excerpts on demand)
 ```
+
+The live model performs semantic selection, not final authority generation. Default Receiver mode remains deterministic (`RECEIVER_INTERPRETER=deterministic`). Live Receiver requests use `store: false` and send only the Receiver question plus canonical item id/type/statement/priority—never raw source, provenance excerpts, drafts, or other versions.
 
 Source conversation **import provider** (ChatGPT export, Claude, Gemini, generic text) is separate from **extraction model provider** (OpenAI in Milestone 4). Extraction adapters do not alter Handoff domain schemas.
 
@@ -38,7 +43,7 @@ Source conversation **import provider** (ChatGPT export, Claude, Gemini, generic
 | `src/handoff` | Item schema, draft edits, immutable versions. |
 | `src/extraction` | Proposal schema, validation, fixture and OpenAI-backed extractors. |
 | `src/llm/openai` | First extraction-model adapter (Responses API, Structured Outputs). |
-| `src/receiver` | Answerability and grounding. |
+| `src/receiver` | Answerability, deterministic interpretation, semantic proposal validation/rendering. |
 | `src/persistence` | Domain ports, receiver view types. |
 | `src/persistence/postgres` | PostgreSQL adapter (`pg`, SQL migrations). |
 | `src/application` | Use cases, server actions, extraction factory. |
@@ -79,7 +84,7 @@ Tables:
 
 Publication runs in a transaction: lock the handoff row, lock the draft row, verify expected revision, validate provenance, compute the next version, insert only.
 
-Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without `sources`. Provenance is fetched separately through `getProvenance` and returns receiver-safe excerpts only. Receiver routes always pin an explicit version (`/receiver/[handoffId]/[version]`); there is no “latest” Receiver lookup. Receiver Q&A does not call OpenAI and cannot fill `OPEN` or `UNKNOWN` beyond the approved Handoff.
+Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without `sources`. Provenance is fetched separately through `getProvenance` and returns receiver-safe excerpts only. Receiver routes always pin an explicit version (`/receiver/[handoffId]/[version]`); there is no “latest” Receiver lookup. Receiver Q&A calls OpenAI only when explicitly configured; it cannot fill `OPEN` or `UNKNOWN` beyond the approved Handoff.
 
 ## Receiver UI (Milestone 5)
 
@@ -88,7 +93,7 @@ Web UI Receiver page (pinned version)
   ↓ server actions (ask / provenance)
 Application use cases (receiver-qa)
   ↓
-ReceiverReadRepository + interpretPublished
+ReceiverReadRepository + hybrid interpretation (deterministic / semantic)
   ↓
 PostgreSQL adapter
 ```

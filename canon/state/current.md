@@ -8,11 +8,11 @@ areas:
 
 ## Current Position
 
-Milestones 1–4 are merged into `main`. Milestone 5 Receiver vertical slice on PR #5 (`cursor/receiver-milestone-5-6f39`) includes deterministic Q&A, asymmetric navigation (Creator → Receiver only in UI), and R11 surface regression. **PR #5 remains unmerged.**
+Milestones 1–5 are merged into `main` (baseline `de9dc3c`). Milestone 6 live Receiver semantic interpretation is implemented on `cursor/receiver-semantic-m6-6f39` (draft PR pending): hybrid deterministic + optional OpenAI semantic selection with Hermeneus answer rendering. **PR remains unmerged.**
 
 ## Active Work
 
-None. T-005 is COMPLETE pending PR #5 merge review.
+None. T-006 is COMPLETE pending PR merge review.
 
 ## Blockers
 
@@ -20,8 +20,8 @@ None.
 
 ## Material Risks
 
-The application remains local/development-only without authentication or production privacy controls. Creator routes may still be reachable by direct URL; Receiver UI does not link into Creator surfaces.
+Live Receiver sends pinned canonical Handoff items and questions to configured external models only when `RECEIVER_INTERPRETER=openai` (`store: false`). Application remains local/development-only without authentication.
 
 ## Verification Basis
 
-On 2026-09-26, deterministic verification passed on PR #5 branch: governance checker, 14 unit, 25 application (R1–R11), 11 receiver, 29 integration, 15 extraction, typecheck, migrate, build, 3 Playwright flows. No live OpenAI extraction rerun for Receiver navigation-only changes.
+On 2026-09-26, deterministic suites passed (14 unit, 25 application, 11 receiver, 8 receiver-semantic RO, 29 integration, 15 extraction, typecheck, build, 3 E2E). Live Receiver smoke and Q1–Q10 semantic eval passed with configured OpenAI credentials.
