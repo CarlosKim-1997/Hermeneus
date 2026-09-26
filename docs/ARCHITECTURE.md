@@ -14,7 +14,18 @@ generic text
   -> Draft save
   -> Approve & Publish (expected draft revision)
   -> immutable PublishedHandoff
-  -> interpretPublished (deterministic receiver)
+```
+
+**Receiver path (Milestone 5, deterministic — no live Receiver LLM yet):**
+
+```text
+Published Handoff vN (explicit pin)
+  -> ReceiverReadRepository.getPublishedView
+  -> PublishedReceiverView
+  -> authorityFromReceiverView
+  -> interpretPublished
+  -> answer + canonical citations
+  -> optional ReceiverReadRepository.getProvenance (safe excerpts on demand)
 ```
 
 Source conversation **import provider** (ChatGPT export, Claude, Gemini, generic text) is separate from **extraction model provider** (OpenAI in Milestone 4). Extraction adapters do not alter Handoff domain schemas.
@@ -31,7 +42,7 @@ Source conversation **import provider** (ChatGPT export, Claude, Gemini, generic
 | `src/persistence` | Domain ports, receiver view types. |
 | `src/persistence/postgres` | PostgreSQL adapter (`pg`, SQL migrations). |
 | `src/application` | Use cases, server actions, extraction factory. |
-| `src/app` | Creator UI (import, review, publish). |
+| `src/app` | Creator UI (import, review, publish) and Receiver UI (`/receiver/[handoffId]/[version]`). |
 
 Dependency direction is inward: adapters and model ports do not own handoff authority. The receiver reads a published version, not a provider payload.
 
@@ -43,7 +54,7 @@ Provider-specific data may remain on a normalized message as `source.provider`. 
 
 Live extraction sends the persisted source conversation to the configured external model only when the Creator clicks **Generate AI suggestions** (`store: false` on OpenAI requests). No extraction prompt/response history is stored in PostgreSQL in this milestone.
 
-**Deterministic extraction validation** (E1–E10, O1–O4) exercises post-model structural rules: provenance shape, Creator-role sources, excerpts, and candidate limits. It does not prove live model chronology or ratification quality.
+**Deterministic extraction validation** (E1–E10, O1–O5) exercises post-model structural rules: provenance shape, Creator-role sources, excerpts, and candidate limits. It does not prove live model chronology or ratification quality.
 
 **Live extraction semantic evaluation** (L1–L6, opt-in) measures real model behavior on small fixtures via `npm run test:live-extraction-eval`.
 
@@ -68,7 +79,21 @@ Tables:
 
 Publication runs in a transaction: lock the handoff row, lock the draft row, verify expected revision, validate provenance, compute the next version, insert only.
 
-Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without `sources`. Provenance is fetched separately through `getProvenance` and returns receiver-safe excerpts only.
+Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without `sources`. Provenance is fetched separately through `getProvenance` and returns receiver-safe excerpts only. Receiver routes always pin an explicit version (`/receiver/[handoffId]/[version]`); there is no “latest” Receiver lookup. Receiver Q&A does not call OpenAI and cannot fill `OPEN` or `UNKNOWN` beyond the approved Handoff.
+
+## Receiver UI (Milestone 5)
+
+```text
+Web UI Receiver page (pinned version)
+  ↓ server actions (ask / provenance)
+Application use cases (receiver-qa)
+  ↓
+ReceiverReadRepository + interpretPublished
+  ↓
+PostgreSQL adapter
+```
+
+The Receiver page never receives `NormalizedConversation` or full raw source messages. Server actions return only `PublishedReceiverView`, answer payloads, and explicit provenance bundles. Receiver application paths do not provide Creator/raw-source navigation or data in the UI (no links into Creator review or publication surfaces). The Creator publication page may link into the pinned Receiver view; that asymmetry is intentional. Authentication and route authorization remain deferred—the app is local/development-only, and manually typing a Creator URL is not prevented.
 
 ## Creator UI (Milestones 3–4)
 

@@ -8,11 +8,11 @@ areas:
 
 ## Current Position
 
-Milestones 1–3 are merged into `main`. Milestone 4 on PR #4 (`cursor/live-handoff-extraction-e41b`) has implementation complete, deterministic verification passed, live OpenAI smoke passed, and L1–L6 semantic evaluation passed. **PR #4 remains unmerged.**
+Milestones 1–4 are merged into `main`. Milestone 5 Receiver vertical slice on PR #5 (`cursor/receiver-milestone-5-6f39`) includes deterministic Q&A, asymmetric navigation (Creator → Receiver only in UI), and R11 surface regression. **PR #5 remains unmerged.**
 
 ## Active Work
 
-None. T-004 is COMPLETE pending PR #4 merge review.
+None. T-005 is COMPLETE pending PR #5 merge review.
 
 ## Blockers
 
@@ -20,8 +20,8 @@ None.
 
 ## Material Risks
 
-Live extraction sends persisted source conversations to configured external model providers on explicit Creator action only (`store: false`). The application remains local/development-only without production privacy controls.
+The application remains local/development-only without authentication or production privacy controls. Creator routes may still be reachable by direct URL; Receiver UI does not link into Creator surfaces.
 
 ## Verification Basis
 
-Deterministic suites pass (14 unit, 14 application, 29 integration, 15 extraction validation/adapter, typecheck, migrate, build, 2 Playwright flows with fixture extraction). Live OpenAI verification passed 2026-09-26: `test:live-extraction` PASS; `test:live-extraction-eval` L1–L6 PASS (model configured via environment, SDK v7, `store: false`).
+On 2026-09-26, deterministic verification passed on PR #5 branch: governance checker, 14 unit, 25 application (R1–R11), 11 receiver, 29 integration, 15 extraction, typecheck, migrate, build, 3 Playwright flows. No live OpenAI extraction rerun for Receiver navigation-only changes.
