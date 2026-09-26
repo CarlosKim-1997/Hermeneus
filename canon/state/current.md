@@ -8,11 +8,11 @@ areas:
 
 ## Current Position
 
-Milestones 1–6 are merged into `main` (baseline `2a1a715`). Milestone 7 grounded natural-language Receiver answers are implemented on PR #7 (`cursor/receiver-grounded-answer-m7-6f39`): M6 selects evidence; optional M7 generator + verifier produces grounded prose for SUPPORTED only. **PR remains unmerged.**
+Milestones 1–7 are merged into `main` (baseline `c166355`). M6 selects canonical evidence; optional M7 generator + grounding verifier produces natural prose for SUPPORTED only (`RECEIVER_ANSWER_MODE=openai-grounded`, default deterministic).
 
 ## Active Work
 
-None. T-007 is COMPLETE pending PR #7 merge review.
+None. T-007 is COMPLETE.
 
 ## Blockers
 
