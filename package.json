@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:application": "vitest run --config vitest.application.config.ts",
+    "test:receiver": "vitest run --config vitest.receiver.config.ts",
     "test:extraction": "vitest run --config vitest.extraction.config.ts",
     "test:live-extraction": "vitest run --config vitest.live-extraction.config.ts",
     "test:live-extraction-eval": "vitest run --config vitest.live-extraction-eval.config.ts",

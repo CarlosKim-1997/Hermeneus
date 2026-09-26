@@ -21,6 +21,8 @@ export default async function PublishedPage({
         Version <strong>{published.version}</strong> · Published {new Date(published.publishedAt).toLocaleString()}
       </p>
       <p>
+        <Link href={`/receiver/${handoffId}/${version}`}>Open Receiver view (pinned v{version})</Link>
+        {" · "}
         <Link href={`/handoffs/${handoffId}/review`}>Return to draft review</Link>
       </p>
       {published.items.map((item) => (
