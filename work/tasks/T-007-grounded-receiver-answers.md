@@ -52,7 +52,7 @@ Observed 2026-09-26:
 - `npm run test:application` — 25 passed
 - `npm run test:receiver` — 11 passed
 - `npm run test:receiver-semantic` — 10 passed
-- `npm run test:receiver-answer` — 17 passed (GA/GV + bypass + fabrication gates)
+- `npm run test:receiver-answer` — 22 passed (GA/GV through GV10 + bypass + fabrication gates)
 - `npm run test:integration` — 29 passed
 - `npm run test:extraction` — 15 passed
 - `npm run typecheck` / `npm run build` / `npm run test:e2e` — PASS
@@ -62,7 +62,7 @@ Observed 2026-09-26:
 Observed 2026-09-26 with `RECEIVER_ANSWER_MODE=openai-grounded` and configured OpenAI credentials:
 
 - `npm run test:live-receiver-answer` — PASS (`interpretReceiverQuestion` + M7 path, `answerMode=generated-grounded`)
-- `npm run test:live-receiver-answer-eval` — PASS A1–A10; metrics: generatedGroundedSuccess 7, generatorBypassCount 3 (A5–A7), unsupportedClaimsDisplayed 0; A4 may fall back to deterministic when verifier rejects tentative paraphrase
+- `npm run test:live-receiver-answer-eval` — PASS A1–A10 after grounding index/citation integrity fix (verifier prompt clarification + deterministic validation); unsupportedClaimsDisplayed 0
 
 M6 live suites (`test:live-receiver`, `test:live-receiver-eval`) remain unchanged.
 

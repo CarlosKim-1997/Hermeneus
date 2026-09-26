@@ -12,7 +12,7 @@ Milestones 1–6 are merged into `main` (baseline `2a1a715`). Milestone 7 ground
 
 ## Active Work
 
-None. T-007 is COMPLETE pending PR merge review.
+None. T-007 is COMPLETE pending PR #7 merge review.
 
 ## Blockers
 
@@ -24,4 +24,4 @@ Live answer generation uses pinned canonical items only (`store: false`) when `R
 
 ## Verification Basis
 
-On 2026-09-26: unit 14; application 25; receiver 11; receiver-semantic 10; receiver-answer 17; integration 29; extraction 15; E2E 3; governance/typecheck/build PASS. Live M7 smoke and answer eval passed on fixture set; unsupported claims displayed 0.
+On 2026-09-26: unit 14; application 25; receiver 11; receiver-semantic 10; receiver-answer 22; integration 29; extraction 15; E2E 3; governance/typecheck/build PASS. Grounding verification enforces one-to-one sentence indices and verifier citations ⊆ generator-declared citations. Live M7 smoke/eval re-run after verifier prompt clarification; unsupported claims displayed 0.
