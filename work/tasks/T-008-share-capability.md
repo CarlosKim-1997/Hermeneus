@@ -1,7 +1,7 @@
 ---
 schema: task/v1
 id: T-008
-status: VERIFYING
+status: COMPLETE
 areas:
   - handoff
 depends_on:
@@ -36,13 +36,15 @@ C-001–C-005 remain binding. M6/M7 pipeline unchanged after capability resoluti
 
 ## Verification
 
-Observed 2026-09-26:
+Observed 2026-09-26 (including final review correction on PR #8):
 
+- Shared provenance projection excludes `messageId`; known `sourceConversationId` leakage fixture (strengthened S13) passes.
+- C-005 reconciled: application-controlled logging boundary enforced; infrastructure/access-log redaction remains deferred (not a production security claim).
 - `node tooling/governance/check.mjs` — PASS
-- `npm run test:share` — 17 passed (S1–S15, S32, S33)
-- Full regression: unit 31, application 25, receiver 11, receiver-semantic 10, receiver-answer 22, integration 29, extraction 15, typecheck, migrate, build, e2e 4 (includes share-flow) — PASS
+- `npm run test:share` — 17 PASS
+- Full deterministic regression — PASS: `npm test` 31; `test:application` 25; `test:receiver` 11; `test:receiver-semantic` 10; `test:receiver-answer` 22; `test:integration` 29; `test:extraction` 15; typecheck; migrate; build; `test:e2e` 4 (includes share-flow)
 
-Live M6/M7 suites not re-run (share layer only; model payload unchanged).
+Live M6/M7 suites were not rerun because model-facing runtime code was unchanged.
 
 ## Stop Conditions
 
