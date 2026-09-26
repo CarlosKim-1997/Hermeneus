@@ -29,6 +29,7 @@ type AnswerState = {
   answer: string;
   citedItems: ReceiverItemView[];
   interpretationNotice?: string;
+  answerNotice?: string;
 };
 
 const CLASSIFICATION_HELP: Record<Answerability, string> = {
@@ -63,6 +64,7 @@ export function ReceiverConsole({ handoffId, version, publishedAt, items, semant
       answer: result.answer.answer,
       citedItems: result.answer.citedItems,
       interpretationNotice: result.answer.interpretationNotice,
+      answerNotice: result.answer.answerNotice,
     });
   }
 
@@ -133,6 +135,7 @@ export function ReceiverConsole({ handoffId, version, publishedAt, items, semant
             </p>
             <p>{answer.answer}</p>
             {answer.interpretationNotice ? <p className="notice">{answer.interpretationNotice}</p> : null}
+            {answer.answerNotice ? <p className="notice">{answer.answerNotice}</p> : null}
             {answer.citedItems.length > 0 ? (
               <div className="receiver-citations">
                 <h4>Canonical citations</h4>

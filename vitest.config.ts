@@ -13,6 +13,8 @@ export default defineConfig({
       "tests/receiver/**",
       "tests/live-receiver.test.ts",
       "tests/live-receiver-eval.test.ts",
+      "tests/live-receiver-answer.test.ts",
+      "tests/live-receiver-answer-eval.test.ts",
     ],
   },
 });
