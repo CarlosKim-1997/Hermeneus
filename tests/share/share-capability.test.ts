@@ -72,7 +72,7 @@ if (!url) {
     const repos = createPostgresRepositories(pool);
 
     beforeAll(() => {
-      const migrateEnv = { ...process.env, TEST_DATABASE_URL: url };
+      const migrateEnv = { ...process.env, TEST_DATABASE_URL: url } as NodeJS.ProcessEnv;
       delete migrateEnv.DATABASE_URL;
       execSync("node scripts/migrate.mjs", {
         env: migrateEnv,
@@ -226,13 +226,53 @@ if (!url) {
       expect(payload).not.toContain(secret);
     });
 
-    it("S13 — shared provenance projection omits handoffId", async () => {
-      await seedPublished(repos, "hd-s13", "With provenance.", "excerpt line");
+    it("S13 — shared provenance omits conversation and message identifiers", async () => {
+      const conversationId = "conv-share-secret-internal-id";
+      const messageId = `${conversationId}:m1`;
+      const approvedExcerpt = "Approved excerpt for shared provenance.";
+      await repos.conversations.create({
+        id: conversationId,
+        source: { provider: "generic-text", importedAt: "2026-09-25T00:00:00.000Z" },
+        messages: [
+          {
+            id: messageId,
+            role: "creator",
+            content: `${approvedExcerpt} ${conversationId} tail`,
+            source: { provider: "generic-text" },
+          },
+        ],
+      });
+      await repos.handoffs.create("hd-s13", conversationId);
+      const draft = createDraft("hd-s13", [
+        item({
+          id: "core",
+          type: "CONFIRMED",
+          statement: "Shared provenance item.",
+          sources: [{ messageId, excerpt: approvedExcerpt }],
+        }),
+      ]);
+      await repos.drafts.save(draft);
+      const revision = await repos.drafts.getRevision("hd-s13");
+      await repos.published.publish("hd-s13", "2026-09-25T12:00:00.000Z", revision!);
+
       const issued = await issueShareCapability(repos, { handoffId: "hd-s13", version: 1 });
       const outcome = await fetchSharedReceiverProvenance(repos, { token: issued.rawToken, itemIds: ["core"] });
       expect(outcome.kind).toBe("provenance");
+      if (outcome.kind !== "provenance") return;
       const serialized = JSON.stringify(outcome);
       expect(serialized).not.toMatch(/handoffId/);
+      expect(serialized).not.toMatch(/sourceConversationId/);
+      expect(serialized).not.toMatch(/messageId/);
+      expect(serialized).not.toContain(conversationId);
+      expect(serialized).toContain(approvedExcerpt);
+
+      const reference = outcome.provenance.items[0]!.references[0]!;
+      expect(reference).toEqual({
+        role: "creator",
+        excerpt: approvedExcerpt,
+        excerptAvailable: true,
+      });
+      expect(reference).not.toHaveProperty("messageId");
     });
 
     it("S14 — revoked capability blocks subsequent Q&A", async () => {

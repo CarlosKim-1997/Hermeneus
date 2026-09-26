@@ -142,8 +142,8 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
                     </div>
                     {provenanceByItem[item.id] ? (
                       <ul>
-                        {provenanceByItem[item.id].references.map((reference) => (
-                          <li key={reference.messageId}>
+                        {provenanceByItem[item.id].references.map((reference, referenceIndex) => (
+                          <li key={`${item.id}-ref-${referenceIndex}`}>
                             {reference.excerptAvailable && reference.excerpt
                               ? `"${reference.excerpt}"`
                               : "Excerpt not approved for display."}

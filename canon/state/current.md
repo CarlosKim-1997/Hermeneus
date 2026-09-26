@@ -1,6 +1,6 @@
 ---
 schema: state/v1
-status: READY
+status: VERIFYING
 areas:
   - global
 ---
@@ -12,7 +12,7 @@ Milestones 1–7 are merged into `main` (baseline `0c3ca45`). Milestone 8 versio
 
 ## Active Work
 
-None. T-008 is COMPLETE pending PR merge review.
+T-008: shared provenance data minimization and C-005 logging-boundary reconciliation on PR #8.
 
 ## Blockers
 
@@ -20,7 +20,7 @@ None.
 
 ## Material Risks
 
-Share links are high-entropy bearer secrets without Creator authentication in M8. This milestone is not production-safe public sharing. Direct `/receiver/[handoffId]/[version]` and Creator routes remain unauthenticated until a later milestone adds ownership and route authorization.
+Share links are high-entropy bearer secrets without Creator authentication in M8. This milestone is not production-safe public sharing. Share tokens are bearer secrets embedded in share URLs. Hermeneus application code does not deliberately log them, but production infrastructure or access-log redaction has not yet been verified. Direct `/receiver/[handoffId]/[version]` and Creator routes remain unauthenticated until a later milestone adds ownership and route authorization.
 
 ## Verification Basis
 

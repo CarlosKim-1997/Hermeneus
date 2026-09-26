@@ -1,7 +1,7 @@
 ---
 schema: task/v1
 id: T-008
-status: COMPLETE
+status: VERIFYING
 areas:
   - handoff
 depends_on:

@@ -1,5 +1,11 @@
 import type { HandoffItemType, HandoffPriority } from "../handoff/schema.js";
-import type { ProvenanceReference, ReceiverItem } from "./receiver-types.js";
+import type { ProvenanceBundle, ReceiverItem } from "./receiver-types.js";
+
+export type SharedProvenanceReference = {
+  role: "creator" | "assistant" | "other";
+  excerpt?: string;
+  excerptAvailable: boolean;
+};
 
 export type SharedReceiverView = {
   version: number;
@@ -10,7 +16,7 @@ export type SharedReceiverView = {
 export type SharedProvenanceBundle = {
   items: Array<{
     itemId: string;
-    references: ProvenanceReference[];
+    references: SharedProvenanceReference[];
   }>;
 };
 
@@ -31,13 +37,15 @@ export function toSharedReceiverView(input: {
   };
 }
 
-export function toSharedProvenanceBundle(bundle: {
-  items: Array<{ itemId: string; references: ProvenanceReference[] }>;
-}): SharedProvenanceBundle {
+export function toSharedProvenanceBundle(bundle: ProvenanceBundle): SharedProvenanceBundle {
   return {
     items: bundle.items.map((entry) => ({
       itemId: entry.itemId,
-      references: entry.references.map((reference) => ({ ...reference })),
+      references: entry.references.map((reference) => ({
+        role: reference.role,
+        excerptAvailable: reference.excerptAvailable,
+        ...(reference.excerpt !== undefined ? { excerpt: reference.excerpt } : {}),
+      })),
     })),
   };
 }
