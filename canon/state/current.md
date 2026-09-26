@@ -1,18 +1,18 @@
 ---
 schema: state/v1
-status: IN_PROGRESS
+status: READY
 areas:
-  - global
+  - handoff
 ---
 # Current Project State
 
 ## Current Position
 
-Milestones 1–8 are merged into `main` (baseline `2416feb`). Milestone 9 Creator identity, Handoff ownership, and route authorization are in progress on branch `cursor/creator-ownership-m9-6f39`.
+Milestone 9 on PR #9 (`cursor/creator-ownership-m9-6f39`): Creator ownership, production dev-session hardening, Server Action IDOR tests, and M1–M8 migration backfill proof complete pending human merge review.
 
 ## Active Work
 
-T-009: Creator persistence, dev session adapter, ownership guards, protected Creator/internal Receiver routes.
+None. T-009 verification complete on PR #9 (not merged).
 
 ## Blockers
 
@@ -20,11 +20,10 @@ None.
 
 ## Material Risks
 
-- M9 uses a development-only signed session (`CREATOR_AUTH_MODE=dev`); this is not production authentication.
-- No external identity provider, account recovery, MFA, or deployment log-redaction guarantees yet.
-- Share bearer secrets remain in URLs; infrastructure/access-log redaction is not verified.
-- Direct Creator routes require dev sign-in locally; disabled auth mode denies Creator access while share links still work.
+- M9 uses development-only signed session; refused for issuance and validation when `NODE_ENV=production`.
+- No external identity provider, MFA, account recovery, or verified share URL log redaction.
+- Pre-M9 Handoffs remain on `creator_legacy_pre_m9` (not claimable via dev login).
 
 ## Verification Basis
 
-M9 verification in progress.
+Governance check; deterministic suites (`npm test` 14, `test:application` 25, `test:receiver` 11, `test:receiver-semantic` 10, `test:receiver-answer` 22, `test:share` 17, `test:auth` 34, `test:integration` 29, `test:extraction` 15); typecheck; migrate; build; E2E 5 passed. Auth evidence includes A7a/A7b production session rejection, SA1–SA10 Server Action IDOR, M9C1 pre-M9 backfill.

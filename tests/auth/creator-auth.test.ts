@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { isDevCreatorAuthAllowedInRuntime } from "../../src/creator/auth-config.js";
 import { createSignedSessionToken, verifySignedSessionToken } from "../../src/creator/dev-session.js";
+import { readCreatorAuthConfig } from "../../src/creator/auth-config.js";
+import { resolveDevSessionPrincipal } from "../../src/creator/resolve-dev-session-principal.js";
 import { LEGACY_PRE_M9_CREATOR_ID } from "../../src/creator/types.js";
 import { requireOwnedHandoff } from "../../src/application/authorize-handoff.js";
 import { CreatorUnauthenticatedError, HandoffAccessUnavailableError } from "../../src/application/creator-auth-errors.js";
@@ -86,6 +88,24 @@ if (!url) {
     it("A7 — dev auth not allowed in production runtime", () => {
       vi.stubEnv("NODE_ENV", "production");
       expect(isDevCreatorAuthAllowedInRuntime()).toBe(false);
+      vi.unstubAllEnvs();
+    });
+
+    it("A7b — production rejects valid signed dev session token", () => {
+      vi.stubEnv("NODE_ENV", "production");
+      vi.stubEnv("CREATOR_AUTH_MODE", "dev");
+      vi.stubEnv("DEV_CREATOR_ID", CREATOR_A);
+      vi.stubEnv("CREATOR_SESSION_SECRET", SECRET);
+      const now = Date.now();
+      const token = createSignedSessionToken({
+        creatorId: CREATOR_A,
+        issuedAt: now,
+        expiresAt: now + 60_000,
+        secret: SECRET,
+      });
+      const config = readCreatorAuthConfig();
+      expect(config.mode).toBe("dev");
+      expect(resolveDevSessionPrincipal({ sessionToken: token, config, nowMs: now })).toBeUndefined();
       vi.unstubAllEnvs();
     });
 

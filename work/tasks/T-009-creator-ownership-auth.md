@@ -35,7 +35,7 @@ C-001–C-006 remain binding. Share bearer authorization remains independent.
 
 ## Verification
 
-Pending completion run.
+PR #9 review correction in progress: production session rejection, Server Action IDOR tests, M1–M8 migration backfill proof.
 
 ## Stop Conditions
 
