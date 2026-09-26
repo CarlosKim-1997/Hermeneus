@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { interpretReceiverQuestion } from "../src/application/receiver-interpretation.js";
 import { readOpenAiExtractionConfig } from "../src/llm/openai/config.js";
 import { interpretPublished } from "../src/receiver/interpret.js";
 import { authorityFromReceiverView } from "../src/receiver/interpretation-authority.js";
 import { createOpenAiReceiverSemanticInterpreter } from "../src/receiver/semantic/openai-semantic-interpreter.js";
-import { validateInterpretationProposal } from "../src/receiver/semantic/validate-proposal.js";
-import { renderInterpretationAnswer } from "../src/receiver/semantic/render-answer.js";
 import { semanticEvalCases } from "./receiver/semantic-eval-fixtures.js";
 
 const configured = readOpenAiExtractionConfig();
@@ -15,6 +14,7 @@ type Metrics = {
   falseSupported: number;
   falseOpen: number;
   missedSupported: number;
+  unexpectedFallbacks: number;
 };
 
 function scoreCase(
@@ -35,9 +35,9 @@ function scoreCase(
 }
 
 if (!configured) {
-  describe.skip("live Receiver semantic evaluation", () => {});
+  describe.skip("Hybrid Receiver live evaluation", () => {});
 } else {
-  describe("live Receiver semantic evaluation", () => {
+  describe("Hybrid Receiver live evaluation", () => {
     const interpreter = createOpenAiReceiverSemanticInterpreter(configured);
     const metrics: Metrics = {
       classificationAccuracy: 0,
@@ -45,6 +45,7 @@ if (!configured) {
       falseSupported: 0,
       falseOpen: 0,
       missedSupported: 0,
+      unexpectedFallbacks: 0,
     };
     let total = 0;
     let classHits = 0;
@@ -61,22 +62,14 @@ if (!configured) {
         const authority = authorityFromReceiverView(view);
         const deterministic = interpretPublished(testCase.question, authority);
 
-        const proposal = await interpreter.interpret({ question: testCase.question, items: testCase.items });
-        const validated = validateInterpretationProposal(proposal, testCase.items);
-        expect(validated.ok).toBe(true);
-        const live = renderInterpretationAnswer(
-          proposal.classification,
-          proposal.citationIds,
-          testCase.items,
-          testCase.question,
-        );
+        const hybrid = await interpretReceiverQuestion(testCase.question, authority, interpreter);
 
         const expectedClass = testCase.expectedClassification;
         const scored = scoreCase(
           expectedClass,
-          live.classification,
+          hybrid.classification,
           testCase.expectedCitationIds,
-          live.citations,
+          hybrid.citations,
         );
         total += 1;
         if (scored.classOk) classHits += 1;
@@ -84,38 +77,44 @@ if (!configured) {
         metrics.falseSupported += scored.falseSupported ? 1 : 0;
         metrics.falseOpen += scored.falseOpen ? 1 : 0;
         metrics.missedSupported += scored.missed ? 1 : 0;
+        if (hybrid.interpretationMode !== "semantic") {
+          metrics.unexpectedFallbacks += 1;
+        }
 
         // eslint-disable-next-line no-console
         console.log(
           JSON.stringify({
             id: testCase.id,
             deterministic: deterministic.classification,
-            live: live.classification,
+            hybridLive: hybrid.classification,
             expected: expectedClass,
+            interpretationMode: hybrid.interpretationMode,
             deterministicCitations: deterministic.citations,
-            liveCitations: live.citations,
+            hybridCitations: hybrid.citations,
           }),
         );
 
-        expect(live.classification).toBe(expectedClass);
+        expect(hybrid.interpretationMode).toBe("semantic");
+        expect(hybrid.classification).toBe(expectedClass);
         if (testCase.expectedCitationIds) {
-          expect(live.citations.sort()).toEqual([...testCase.expectedCitationIds].sort());
+          expect(hybrid.citations.sort()).toEqual([...testCase.expectedCitationIds].sort());
         }
         if (testCase.id === "Q5") {
-          expect(live.answer.toLowerCase()).toMatch(/tentative/);
+          expect(hybrid.answer.toLowerCase()).toMatch(/tentative/);
         }
         if (testCase.rawTranscriptSecret) {
-          expect(JSON.stringify(live)).not.toContain(testCase.rawTranscriptSecret);
+          expect(JSON.stringify(hybrid)).not.toContain(testCase.rawTranscriptSecret);
         }
       }, 120_000);
     }
 
-    it("reports semantic evaluation metrics", () => {
+    it("reports Hybrid Receiver live evaluation metrics", () => {
       metrics.classificationAccuracy = total ? classHits / total : 0;
       metrics.citationAccuracy = total ? citationHits / total : 0;
       // eslint-disable-next-line no-console
       console.log(JSON.stringify({ metrics, total, classHits, citationHits }));
       expect(total).toBe(semanticEvalCases.length);
+      expect(metrics.unexpectedFallbacks).toBe(0);
     });
   });
 }

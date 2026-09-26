@@ -127,12 +127,11 @@ describe("OpenAI Receiver semantic adapter", () => {
     expect(result.interpretationNotice).toMatch(/Semantic interpretation was unavailable/);
   });
 
-  it("RO7 — provider exception uses fallback path", async () => {
-    const interpreter = {
-      interpret: vi.fn(async () => {
-        throw new Error("network down");
-      }),
-    };
+  it("RO7 — provider exception uses fallback path via ReceiverSemanticError", async () => {
+    const { client } = fakeClient(async () => {
+      throw new Error("network down");
+    });
+    const interpreter = createOpenAiReceiverSemanticInterpreter(config, { client });
     const authority = authorityFromReceiverView({
       handoffId: "h",
       version: 1,
@@ -141,7 +140,52 @@ describe("OpenAI Receiver semantic adapter", () => {
     });
     const result = await interpretReceiverQuestion("Are we web first?", authority, interpreter);
     expect(result.interpretationMode).toBe("deterministic");
-    expect(result.interpretationNotice).toBeDefined();
+    expect(result.interpretationNotice).toMatch(/Semantic interpretation was unavailable/);
+  });
+
+  it("RO9 — unexpected interpreter error is not silently swallowed", async () => {
+    const interpreter = {
+      interpret: vi.fn(async () => {
+        throw new Error("unexpected implementation defect");
+      }),
+    };
+    const authority = authorityFromReceiverView({
+      handoffId: "h",
+      version: 1,
+      publishedAt: "2026-09-26T00:00:00.000Z",
+      items,
+    });
+    await expect(interpretReceiverQuestion("Are we web first?", authority, interpreter)).rejects.toThrow(
+      "unexpected implementation defect",
+    );
+  });
+
+  it("RO10 — deterministic DERIVED bypasses semantic model", async () => {
+    const derivedItems: InterpretationAuthorityItem[] = [
+      {
+        id: "search-off",
+        type: "CONSTRAINT",
+        statement: "Web search is disabled for the Receiver agent.",
+        priority: "CORE",
+      },
+    ];
+    const interpretSpy = vi.fn(async () => ({
+      classification: "SUPPORTED" as const,
+      citationIds: ["search-off"],
+    }));
+    const authority = authorityFromReceiverView({
+      handoffId: "h",
+      version: 1,
+      publishedAt: "2026-09-26T00:00:00.000Z",
+      items: derivedItems,
+    });
+    const result = await interpretReceiverQuestion(
+      "Will the Receiver browse the web?",
+      authority,
+      { interpret: interpretSpy },
+    );
+    expect(result.classification).toBe("DERIVED");
+    expect(interpretSpy).toHaveBeenCalledTimes(0);
   });
 
   it("RO8 — model payload excludes raw source and provenance markers", async () => {

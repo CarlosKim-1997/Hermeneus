@@ -4,6 +4,7 @@ import {
   type Interpretation,
 } from "../receiver/interpret.js";
 import type { InterpretationAuthority } from "../receiver/interpretation-authority.js";
+import { ReceiverSemanticError } from "../receiver/semantic/errors.js";
 import { renderInterpretationAnswer } from "../receiver/semantic/render-answer.js";
 import { validateInterpretationProposal } from "../receiver/semantic/validate-proposal.js";
 import type { ReceiverSemanticInterpreter } from "../receiver/semantic/interpreter.js";
@@ -49,20 +50,26 @@ export async function interpretReceiverQuestion(
     return { ...interpretPublished(trimmed, authority), interpretationMode: "deterministic" };
   }
 
+  let proposal;
   try {
-    const proposal = await semanticInterpreter.interpret({ question: trimmed, items: authority.items });
-    const validated = validateInterpretationProposal(proposal, authority.items);
-    if (validated.ok) {
-      const rendered = renderInterpretationAnswer(
-        validated.proposal.classification,
-        validated.proposal.citationIds,
-        authority.items,
-        trimmed,
-      );
-      return { ...rendered, interpretationMode: "semantic" };
+    proposal = await semanticInterpreter.interpret({ question: trimmed, items: authority.items });
+  } catch (error) {
+    if (error instanceof ReceiverSemanticError) {
+      return fallbackDeterministicInterpretation(trimmed, authority, SEMANTIC_FALLBACK_NOTICE);
     }
-    return fallbackDeterministicInterpretation(trimmed, authority, SEMANTIC_FALLBACK_NOTICE);
-  } catch {
+    throw error;
+  }
+
+  const validated = validateInterpretationProposal(proposal, authority.items);
+  if (!validated.ok) {
     return fallbackDeterministicInterpretation(trimmed, authority, SEMANTIC_FALLBACK_NOTICE);
   }
+
+  const rendered = renderInterpretationAnswer(
+    validated.proposal.classification,
+    validated.proposal.citationIds,
+    authority.items,
+    trimmed,
+  );
+  return { ...rendered, interpretationMode: "semantic" };
 }
