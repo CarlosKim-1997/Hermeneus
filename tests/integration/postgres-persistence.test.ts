@@ -86,7 +86,7 @@ if (!url) {
 
     beforeEach(async () => {
       await pool.query(
-        "TRUNCATE published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations RESTART IDENTITY CASCADE",
+        "TRUNCATE share_capabilities, published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations RESTART IDENTITY CASCADE",
       );
     });
 
