@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { isReceiverSemanticModeConfigured } from "../../../../application/receiver-interpreter-config";
 import { fetchReceiverPublishedViewAction } from "../../../../application/receiver-actions";
+import { requireOwnedHandoffPage } from "../../../../application/creator-page-guards";
 import { ReceiverConsole } from "../../../components/receiver-console";
 
 export default async function ReceiverPage({
@@ -12,6 +13,7 @@ export default async function ReceiverPage({
   const version = Number(versionRaw);
   if (!Number.isInteger(version) || version <= 0) notFound();
 
+  await requireOwnedHandoffPage(handoffId);
   const view = await fetchReceiverPublishedViewAction(handoffId, version);
   if (!view) notFound();
 

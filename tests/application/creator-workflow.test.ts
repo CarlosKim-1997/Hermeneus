@@ -11,6 +11,7 @@ import { PersistenceConflictError } from "../../src/persistence/errors.js";
 import { createPool } from "../../src/persistence/postgres/pool.js";
 
 const url = process.env.TEST_DATABASE_URL;
+const APP_CREATOR = "creator_application_test";
 const transcript = `creator: Maybe mobile first would be good.
 assistant: We could start there.
 creator: Actually, web first.`;
@@ -45,8 +46,9 @@ if (!url) {
 
     beforeEach(async () => {
       await pool.query(
-        "TRUNCATE published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations RESTART IDENTITY CASCADE",
+        "TRUNCATE published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creators RESTART IDENTITY CASCADE",
       );
+      await repos.creators.ensure({ id: APP_CREATOR, createdAt: "2026-09-25T00:00:00.000Z" });
     });
 
     afterAll(async () => {
@@ -55,7 +57,7 @@ if (!url) {
     });
 
     it("U1 — import flow creates persisted empty draft", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
       expect(review?.draft.items).toEqual([]);
       expect(review?.revision).toBe(1);
@@ -63,7 +65,7 @@ if (!url) {
     });
 
     it("U2 — manual item editing persists", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -75,7 +77,7 @@ if (!url) {
     });
 
     it("U3 — reclassification persists", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -93,7 +95,7 @@ if (!url) {
     });
 
     it("U4 — provenance attachment publishes", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
       const messageId = review!.sourceConversation.messages.at(-1)!.id;
       await saveCreatorDraft(
@@ -114,7 +116,7 @@ if (!url) {
     });
 
     it("U5 — fabricated excerpt fails publication", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
       const messageId = review!.sourceConversation.messages.at(-1)!.id;
       await saveCreatorDraft(
@@ -135,7 +137,7 @@ if (!url) {
     });
 
     it("U6 — stale revision conflict", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       let draft = createDraft(imported.handoffId, [
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
@@ -153,7 +155,7 @@ if (!url) {
     });
 
     it("U7 — publish v1 immutability", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -173,7 +175,7 @@ if (!url) {
     });
 
     it("U8 — publish v2 keeps v1", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -194,7 +196,7 @@ if (!url) {
     });
 
     it("U9 — approval cannot publish an intervening edit", async () => {
-      const imported = await importAndCreateHandoff(repos, transcript);
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const approved = await saveCreatorDraft(
         repos,
         imported.handoffId,

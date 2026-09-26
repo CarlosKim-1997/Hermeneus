@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { fetchCreatorReview } from "../../../../application/actions";
+import { requireOwnedHandoffPage } from "../../../../application/creator-page-guards";
 import { ReviewEditor } from "../../../components/review-editor";
 
 export default async function ReviewPage({ params }: { params: Promise<{ handoffId: string }> }) {
   const { handoffId } = await params;
+  await requireOwnedHandoffPage(handoffId);
   const review = await fetchCreatorReview(handoffId);
   if (!review) notFound();
 

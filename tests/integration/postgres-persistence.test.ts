@@ -9,6 +9,9 @@ import { authorityFromReceiverView } from "../../src/receiver/interpretation-aut
 import { interpretPublished } from "../../src/receiver/interpret.js";
 
 const url = process.env.TEST_DATABASE_URL;
+const TEST_CREATOR = "creator_integration_test";
+const OWNER_A = "creator_owner_a";
+const OWNER_B = "creator_owner_b";
 
 type Repos = ReturnType<typeof createPostgresRepositories>;
 
@@ -86,8 +89,11 @@ if (!url) {
 
     beforeEach(async () => {
       await pool.query(
-        "TRUNCATE share_capabilities, published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations RESTART IDENTITY CASCADE",
+        "TRUNCATE share_capabilities, published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creators RESTART IDENTITY CASCADE",
       );
+      await repos.creators.ensure({ id: TEST_CREATOR, createdAt: "2026-09-25T00:00:00.000Z" });
+      await repos.creators.ensure({ id: OWNER_A, createdAt: "2026-09-25T00:00:00.000Z" });
+      await repos.creators.ensure({ id: OWNER_B, createdAt: "2026-09-25T00:00:00.000Z" });
     });
 
     afterAll(async () => {
@@ -105,14 +111,14 @@ if (!url) {
       const draft = createDraft("handoff-p2", [
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
-      await repos.handoffs.create("handoff-p2", "conv-p");
+      await repos.handoffs.create("handoff-p2", "conv-p", TEST_CREATOR);
       await saveInitialDraft(repos, draft);
       expect(await repos.drafts.get("handoff-p2")).toEqual(draft);
     });
 
     it("P3 — publish v1", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p3", "conv-p");
+      await repos.handoffs.create("handoff-p3", "conv-p", TEST_CREATOR);
       const draft = createDraft("handoff-p3", [
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
@@ -124,7 +130,7 @@ if (!url) {
 
     it("P4 — draft mutation after publish leaves v1 unchanged", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p4", "conv-p");
+      await repos.handoffs.create("handoff-p4", "conv-p", TEST_CREATOR);
       let draft = createDraft("handoff-p4", [
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
@@ -137,7 +143,7 @@ if (!url) {
 
     it("P5 — publish v2 after draft change", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p5", "conv-p");
+      await repos.handoffs.create("handoff-p5", "conv-p", TEST_CREATOR);
       let draft = createDraft("handoff-p5", [
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
@@ -154,7 +160,7 @@ if (!url) {
 
     it("P6 — direct published UPDATE rejected", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p6", "conv-p");
+      await repos.handoffs.create("handoff-p6", "conv-p", TEST_CREATOR);
       await saveInitialDraft(
         repos,
         createDraft("handoff-p6", [item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." })]),
@@ -172,7 +178,7 @@ if (!url) {
 
     it("P7 — receiver view isolation", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p7", "conv-p");
+      await repos.handoffs.create("handoff-p7", "conv-p", TEST_CREATOR);
       await saveInitialDraft(
         repos,
         createDraft("handoff-p7", [
@@ -193,7 +199,7 @@ if (!url) {
 
     it("P8 — explicit provenance returns only referenced excerpts", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p8", "conv-p");
+      await repos.handoffs.create("handoff-p8", "conv-p", TEST_CREATOR);
       await saveInitialDraft(
         repos,
         createDraft("handoff-p8", [
@@ -217,7 +223,7 @@ if (!url) {
 
     it("P9 — transcript/canonical conflict survives persistence", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p9", "conv-p");
+      await repos.handoffs.create("handoff-p9", "conv-p", TEST_CREATOR);
       await saveInitialDraft(
         repos,
         createDraft("handoff-p9", [
@@ -239,7 +245,7 @@ if (!url) {
 
     it("P10 — concurrent publication assigns distinct versions", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p10", "conv-p");
+      await repos.handoffs.create("handoff-p10", "conv-p", TEST_CREATOR);
       await saveInitialDraft(
         repos,
         createDraft("handoff-p10", [item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." })]),
@@ -277,7 +283,7 @@ if (!url) {
 
     it("P13 — published provenance cannot drift", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p13", "conv-p");
+      await repos.handoffs.create("handoff-p13", "conv-p", TEST_CREATOR);
       await saveInitialDraft(
         repos,
         createDraft("handoff-p13", [
@@ -339,14 +345,16 @@ if (!url) {
         })),
       };
       await repos.conversations.create(other);
-      await repos.handoffs.create("handoff-root", "conv-p");
-      await expect(repos.handoffs.create("handoff-root", "conv-other")).rejects.toBeInstanceOf(PersistenceConflictError);
-      await expect(repos.handoffs.create("handoff-root", "conv-p")).resolves.toBeUndefined();
+      await repos.handoffs.create("handoff-root", "conv-p", TEST_CREATOR);
+      await expect(repos.handoffs.create("handoff-root", "conv-other", TEST_CREATOR)).rejects.toBeInstanceOf(
+        PersistenceConflictError,
+      );
+      await expect(repos.handoffs.create("handoff-root", "conv-p", TEST_CREATOR)).resolves.toBeUndefined();
     });
 
     it("draft stale revision write is rejected", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-draft", "conv-p");
+      await repos.handoffs.create("handoff-draft", "conv-p", TEST_CREATOR);
       const draft = createDraft("handoff-draft", [
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
@@ -356,7 +364,7 @@ if (!url) {
 
     it("concurrent draft writes reject stale revision", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-concurrent", "conv-p");
+      await repos.handoffs.create("handoff-concurrent", "conv-p", TEST_CREATOR);
       const draft = createDraft("handoff-concurrent", [
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
@@ -382,7 +390,7 @@ if (!url) {
         ],
       };
       await repos.conversations.create(sensitive);
-      await repos.handoffs.create("handoff-secret", "conv-secret");
+      await repos.handoffs.create("handoff-secret", "conv-secret", TEST_CREATOR);
       await saveInitialDraft(
         repos,
         createDraft("handoff-secret", [
@@ -461,8 +469,8 @@ if (!url) {
     it("P17 — concurrent identical handoff root create", async () => {
       await repos.conversations.create(conversation);
       const [first, second] = await Promise.allSettled([
-        repos.handoffs.create("handoff-p17", "conv-p"),
-        repos.handoffs.create("handoff-p17", "conv-p"),
+        repos.handoffs.create("handoff-p17", "conv-p", TEST_CREATOR),
+        repos.handoffs.create("handoff-p17", "conv-p", TEST_CREATOR),
       ]);
       expect(first.status).toBe("fulfilled");
       expect(second.status).toBe("fulfilled");
@@ -480,8 +488,8 @@ if (!url) {
       };
       await repos.conversations.create(other);
       const results = await Promise.allSettled([
-        repos.handoffs.create("handoff-p18", "conv-p"),
-        repos.handoffs.create("handoff-p18", "conv-p18-other"),
+        repos.handoffs.create("handoff-p18", "conv-p", OWNER_A),
+        repos.handoffs.create("handoff-p18", "conv-p18-other", OWNER_B),
       ]);
       const fulfilled = results.filter((result) => result.status === "fulfilled");
       const rejected = results.filter(
@@ -494,7 +502,7 @@ if (!url) {
 
     it("P19 — concurrent initial draft writers", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p19", "conv-p");
+      await repos.handoffs.create("handoff-p19", "conv-p", TEST_CREATOR);
       const firstDraft = createDraft("handoff-p19", [
         item({ id: "web", type: "CONFIRMED", statement: "Web-first is confirmed." }),
       ]);
@@ -517,7 +525,7 @@ if (!url) {
 
     it("P20 — nonexistent source message rejected at publication", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p20", "conv-p");
+      await repos.handoffs.create("handoff-p20", "conv-p", TEST_CREATOR);
       await saveInitialDraft(
         repos,
         createDraft("handoff-p20", [
@@ -546,7 +554,7 @@ if (!url) {
         })),
       };
       await repos.conversations.create(other);
-      await repos.handoffs.create("handoff-p21", "conv-p");
+      await repos.handoffs.create("handoff-p21", "conv-p", TEST_CREATOR);
       await saveInitialDraft(
         repos,
         createDraft("handoff-p21", [
@@ -578,7 +586,7 @@ if (!url) {
         ],
       };
       await repos.conversations.create(excerptConversation);
-      await repos.handoffs.create("handoff-p22", "conv-p22");
+      await repos.handoffs.create("handoff-p22", "conv-p22", TEST_CREATOR);
       await saveInitialDraft(
         repos,
         createDraft("handoff-p22", [
@@ -610,7 +618,7 @@ if (!url) {
         ],
       };
       await repos.conversations.create(excerptConversation);
-      await repos.handoffs.create("handoff-p23", "conv-p23");
+      await repos.handoffs.create("handoff-p23", "conv-p23", TEST_CREATOR);
       await saveInitialDraft(
         repos,
         createDraft("handoff-p23", [
@@ -628,7 +636,7 @@ if (!url) {
 
     it("P24 — publication rejects changed draft revision", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p24", "conv-p");
+      await repos.handoffs.create("handoff-p24", "conv-p", TEST_CREATOR);
       let draft = createDraft("handoff-p24", [
         item({ id: "web", type: "CONFIRMED", statement: "Initial revision one." }),
       ]);
@@ -648,7 +656,7 @@ if (!url) {
 
     it("P25 — publication never publishes a revision newer than approved", async () => {
       await repos.conversations.create(conversation);
-      await repos.handoffs.create("handoff-p25", "conv-p");
+      await repos.handoffs.create("handoff-p25", "conv-p", TEST_CREATOR);
       let draft = createDraft("handoff-p25", [
         item({ id: "web", type: "CONFIRMED", statement: "Revision one baseline." }),
       ]);

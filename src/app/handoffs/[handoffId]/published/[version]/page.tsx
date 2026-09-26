@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchPublishedHandoff } from "../../../../../application/actions";
+import { requireOwnedHandoffPage } from "../../../../../application/creator-page-guards";
 import { listShareCapabilitiesAction } from "../../../../../application/share-actions";
 import { ShareCapabilityPanel } from "../../../../components/share-capability-panel";
 
@@ -13,6 +14,7 @@ export default async function PublishedPage({
   const version = Number(versionRaw);
   if (!Number.isInteger(version) || version <= 0) notFound();
 
+  await requireOwnedHandoffPage(handoffId);
   const published = await fetchPublishedHandoff(handoffId, version);
   if (!published) notFound();
 

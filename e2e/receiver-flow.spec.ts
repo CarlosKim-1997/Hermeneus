@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { devSignIn } from "./helpers/dev-auth";
 
 const transcript = `creator: I think web-first is the right call.
 assistant: That could work if the MVP stays small.
@@ -8,6 +9,7 @@ test.describe("Receiver flow", () => {
   test.skip(!process.env.TEST_DATABASE_URL && !process.env.DATABASE_URL, "DATABASE_URL required");
 
   test("pinned receiver view answers with citations and safe provenance", async ({ page }) => {
+    await devSignIn(page);
     await page.goto("/new");
     await page.getByLabel("Conversation transcript").fill(transcript);
     await page.getByRole("button", { name: "Import" }).click();

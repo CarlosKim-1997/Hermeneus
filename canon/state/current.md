@@ -2,17 +2,17 @@
 schema: state/v1
 status: READY
 areas:
-  - global
+  - handoff
 ---
 # Current Project State
 
 ## Current Position
 
-Milestones 1–8 are merged into `main` (baseline `ccb6810`). Version-pinned, revocable share capabilities gate `/share/[token]` with per-request authorization into the M5–M7 Receiver pipeline. Shared provenance omits internal conversation and message identifiers.
+Milestone 9 on PR #9 (`cursor/creator-ownership-m9-6f39`): Creator ownership, production dev-session hardening, Server Action IDOR tests, and M1–M8 migration backfill proof complete pending human merge review.
 
 ## Active Work
 
-None. T-008 is COMPLETE.
+None. T-009 verification complete on PR #9 (not merged).
 
 ## Blockers
 
@@ -20,13 +20,10 @@ None.
 
 ## Material Risks
 
-- No Creator authentication or ownership enforcement yet.
-- Direct Creator routes and internal `/receiver/[handoffId]/[version]` remain unauthenticated until a later milestone adds route authorization.
-- Share bearer secrets appear in share URLs (`/share/[token]`).
-- Hermeneus application code deliberately avoids logging raw share tokens; persisted metadata stores hash only.
-- Production infrastructure or access-log redaction for share URLs has not yet been verified.
-- This milestone is not production-safe public sharing.
+- M9 uses development-only signed session; refused for issuance and validation when `NODE_ENV=production`.
+- No external identity provider, MFA, account recovery, or verified share URL log redaction.
+- Pre-M9 Handoffs remain on `creator_legacy_pre_m9` (not claimable via dev login).
 
 ## Verification Basis
 
-On 2026-09-26: governance PASS; typecheck PASS; migrate PASS; build PASS. Deterministic counts: `test:share` 17; `npm test` 31; application 25; receiver 11; receiver-semantic 10; receiver-answer 22; integration 29; extraction 15; e2e 4. Shared provenance projection omits `messageId`, `sourceConversationId`, and `handoffId`; strengthened S13 passes. C-005 reflects application-controlled vs deferred infrastructure logging boundaries.
+Governance check; deterministic suites (`npm test` 14, `test:application` 25, `test:receiver` 11, `test:receiver-semantic` 10, `test:receiver-answer` 22, `test:share` 17, `test:auth` 34, `test:integration` 29, `test:extraction` 15); typecheck; migrate; build; E2E 5 passed. Auth evidence includes A7a/A7b production session rejection, SA1–SA10 Server Action IDOR, M9C1 pre-M9 backfill.
