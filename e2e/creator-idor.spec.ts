@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { devSignIn } from "./helpers/dev-auth";
+import { importTranscript } from "./helpers/import-handoff";
 
 const transcript = `creator: Web-first is confirmed for the MVP.`;
 
@@ -13,9 +14,7 @@ test.describe("Creator ownership IDOR", () => {
 
     await devSignIn(creatorA);
     await creatorA.goto("/new");
-    await creatorA.getByLabel("Conversation transcript").fill(transcript);
-    await creatorA.getByRole("button", { name: "Import" }).click();
-    await expect(creatorA.getByRole("heading", { name: "Creator Review" })).toBeVisible();
+    await importTranscript(creatorA, transcript);
     const handoffId = creatorA.url().split("/handoffs/")[1]?.split("/")[0];
     expect(handoffId).toBeTruthy();
 

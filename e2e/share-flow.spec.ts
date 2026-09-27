@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { devSignIn } from "./helpers/dev-auth";
+import { importTranscript } from "./helpers/import-handoff";
 
 const transcript = `creator: Web-first is confirmed for the MVP.
 assistant: Understood.`;
@@ -13,9 +14,7 @@ test.describe("Share capability flow", () => {
 
     await devSignIn(creator);
     await creator.goto("/new");
-    await creator.getByLabel("Conversation transcript").fill(transcript);
-    await creator.getByRole("button", { name: "Import" }).click();
-    await expect(creator.getByRole("heading", { name: "Creator Review" })).toBeVisible();
+    await importTranscript(creator, transcript);
 
     const reviewUrl = creator.url();
     const handoffId = reviewUrl.split("/handoffs/")[1]?.split("/")[0];

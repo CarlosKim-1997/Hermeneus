@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { devSignIn } from "./helpers/dev-auth";
+import { importTranscript } from "./helpers/import-handoff";
 
 const transcript = `creator: I think web-first is the right call.
 assistant: That could work if the MVP stays small.
@@ -11,9 +12,7 @@ test.describe("Creator extraction UI", () => {
   test("generate suggestion, accept, edit, save, publish", async ({ page }) => {
     await devSignIn(page);
     await page.goto("/new");
-    await page.getByLabel("Conversation transcript").fill(transcript);
-    await page.getByRole("button", { name: "Import" }).click();
-    await expect(page.getByRole("heading", { name: "Creator Review" })).toBeVisible();
+    await importTranscript(page, transcript);
 
     await page.getByRole("button", { name: "Generate AI suggestions" }).click();
     await expect(page.getByText("AI suggestion — not saved")).toBeVisible();
