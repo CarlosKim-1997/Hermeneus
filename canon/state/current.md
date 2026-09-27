@@ -1,6 +1,6 @@
 ---
 schema: state/v1
-status: VERIFYING
+status: READY
 areas:
   - handoff
 ---
@@ -8,15 +8,15 @@ areas:
 
 ## Current Position
 
-Milestones 1–9 merged at `e4b81cf`. Milestone 10 external identity bridge on PR #10: Auth.js `5.0.0-beta.32`, atomic external identity registration with Creator-id collision fail-closed, migration 005 forward reconciliation for early 004 databases, mapping UPDATE+DELETE immutability, explicit Host trust policy. Real Google OAuth smoke not yet run.
+Milestones 1–9 merged at `e4b81cf`. Milestone 10 external identity bridge on PR #10 (`cursor/external-identity-m10-6f39`): Auth.js `5.0.0-beta.32`, atomic external identity registration with Creator-id collision fail-closed, migration 005 forward reconciliation, mapping UPDATE+DELETE immutability, explicit Host trust policy, external-mode runtime loading fixes. **Real Google OAuth live smoke PASS** (first login, sign-out, same-account relogin with stable internal CreatorId, real UI Handoff ownership, anonymous M8 bearer regression on smoke Handoff).
 
 ## Active Work
 
-T-010 awaiting live Google OAuth verification.
+None. T-010 complete; PR #10 awaits human merge review (not merged).
 
 ## Blockers
 
-Live Google OAuth interactive smoke not yet completed.
+None.
 
 ## Material Risks
 
@@ -24,4 +24,4 @@ M10 does not imply MFA, recovery, account linking, rate limiting, or log redacti
 
 ## Verification Basis
 
-Deterministic: `test:auth` 61 (EI1–EI10 including EI6b/EI7/EI9 cardinality, M10M1/M10M2, ES, Auth.js options/trustHost, SA1–SA10, M9); external-mode `/login` runtime provider loading corrected (dynamic import, local dev verified). application 25; receiver 11; receiver-semantic 10; receiver-answer 22; share 17; integration 29; extraction 15; unit 14; E2E 5 (dev auth). `npm ls`: next-auth@5.0.0-beta.32, @auth/core@0.41.3.
+Live Google OAuth smoke PASS: first login; internal Creator mapping (cardinality 1); real UI Handoff ownership; sign-out removed Creator route access; same-account relogin reused internal CreatorId; no duplicate mapping/Creator; smoke Handoff ownership unchanged; anonymous `/share/[token]` Receiver load (revoke → unavailable). Deterministic: `test:auth` 61; unit 14; application 25; receiver 11; receiver-semantic 10; receiver-answer 22; share 17; integration 29; extraction 15; typecheck; build green. `npm ls`: next-auth@5.0.0-beta.32, @auth/core@0.41.3. E2E (5) not re-run on this Windows host (Playwright webServer uses bash env prefix).
