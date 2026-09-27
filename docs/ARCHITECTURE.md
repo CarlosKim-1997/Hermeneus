@@ -1,6 +1,6 @@
 # Architecture
 
-This note points at the Hermeneus layout. Durable rules are D-001 through D-004 and C-001 through C-004.
+This note describes the Hermeneus layout. Durable normative rules live in Repository Authority under `canon/`; this document is descriptive and may lag Canon until updated intentionally.
 
 ## Flow
 
@@ -144,7 +144,9 @@ ReceiverReadRepository + hybrid interpretation (deterministic / semantic)
 PostgreSQL adapter
 ```
 
-The Receiver page never receives `NormalizedConversation` or full raw source messages. Server actions return only `PublishedReceiverView`, answer payloads, and explicit provenance bundles. Receiver application paths do not provide Creator/raw-source navigation or data in the UI (no links into Creator review or publication surfaces). The Creator publication page may link into the pinned Receiver view; that asymmetry is intentional. Authentication and route authorization remain deferred—the app is local/development-only, and manually typing a Creator URL is not prevented.
+The Receiver page never receives `NormalizedConversation` or full raw source messages. Server actions return only `PublishedReceiverView`, answer payloads, and explicit provenance bundles. Receiver application paths do not provide Creator/raw-source navigation or data in the UI (no links into Creator review or publication surfaces). The Creator publication page may link into the pinned internal Receiver view; that asymmetry is intentional.
+
+Internal Receiver route `/receiver/[handoffId]/[version]` requires an authenticated Creator and Handoff ownership authorization (M9). External recipients use `/share/[token]` with independent bearer capability authorization (M8). External production identity integration (Auth.js + Google) is implemented but remains unverified against a live Google OAuth round-trip until T-010 completes.
 
 ## Creator UI (Milestones 3–4)
 

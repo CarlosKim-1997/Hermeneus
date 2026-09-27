@@ -33,7 +33,7 @@ C-006 ownership unchanged. C-007 mapping integrity. M8 share bearer independent.
 
 ## Verification
 
-Deterministic bridge on PR #10 head: next-auth@5.0.0-beta.32; transactional first-login (EI7/EI9); mapping UPDATE+DELETE immutability (EI6/EI6b); AUTH_TRUST_HOST policy; `test:auth` 58 green. Real Google OAuth interactive smoke not run — credentials unavailable.
+Deterministic bridge on PR #10 head: next-auth@5.0.0-beta.32; Creator insert fail-closed (no ON CONFLICT on candidate id, EI10); transactional first-login (EI7/EI9); mapping UPDATE+DELETE immutability via migrations 004+005 (EI6/EI6b, M10M1/M10M2); AUTH_TRUST_HOST policy; architecture doc drift corrected; `test:auth` 61 green. Real Google OAuth interactive smoke not run — credentials unavailable.
 
 ## Stop Conditions
 
