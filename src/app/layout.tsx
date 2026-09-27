@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { CreatorNav } from "./components/creator-nav";
 import { CreatorSessionBanner } from "./components/creator-session-banner";
 import "./globals.css";
 
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </p>
           </header>
           <CreatorSessionBanner />
+          <CreatorNav />
           {children}
         </main>
       </body>

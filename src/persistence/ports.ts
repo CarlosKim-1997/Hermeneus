@@ -1,5 +1,6 @@
 import type { DraftHandoff, PublishedHandoff } from "../handoff/schema.js";
 import type { NormalizedConversation } from "../import/types.js";
+import type { CreatorHandoffSummary } from "../handoff/creator-handoff-summary.js";
 import type { CreatorId } from "../creator/types.js";
 import type { ShareCapabilityMetadata, ShareCapabilityTarget } from "../share/types.js";
 import type { ProvenanceBundle, PublishedReceiverView } from "./receiver-types.js";
@@ -44,6 +45,7 @@ export interface HandoffRootRepository {
   create(handoffId: string, sourceConversationId: string, ownerCreatorId: CreatorId, createdAt?: string): Promise<void>;
   getSourceConversationId(handoffId: string): Promise<string | undefined>;
   getOwnerCreatorId(handoffId: string): Promise<CreatorId | undefined>;
+  listSummariesForOwner(ownerCreatorId: CreatorId): Promise<CreatorHandoffSummary[]>;
 }
 
 export interface ReceiverReadRepository {

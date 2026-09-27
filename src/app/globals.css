@@ -253,3 +253,51 @@ textarea {
   flex-wrap: wrap;
   margin-top: 1rem;
 }
+
+.creator-nav {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9375rem;
+}
+
+.library-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.button-link {
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+  background: #2563eb;
+  color: #fff !important;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.handoff-library-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.handoff-library-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.empty-state {
+  padding: 1rem 0;
+  color: #475569;
+}

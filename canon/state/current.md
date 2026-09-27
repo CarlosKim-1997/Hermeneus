@@ -8,7 +8,7 @@ areas:
 
 ## Current Position
 
-Milestones 1–10 merged into `main`. Milestone 9 at `e4b81cf`. Milestone 10 external identity bridge integrated via PR #10; merge commit `73c4e65746573f576f2d59b6f8dc9512bd58abbe`. Auth.js `5.0.0-beta.32`, external identity mapping, migration 005, live Google OAuth smoke PASS.
+Milestones 1–11 implemented on branch `cursor/creator-library-m11` (M10 merge commit `73c4e65746573f576f2d59b6f8dc9512bd58abbe`; M10 governance reconciliation `86ffc7d`). Milestone 11 Creator Handoff Library complete pending human PR merge.
 
 ## Active Work
 
@@ -20,8 +20,8 @@ None.
 
 ## Material Risks
 
-M10 does not imply MFA, recovery, account linking, rate limiting, or log redaction guarantees.
+Library must remain strictly owner-scoped at the repository query; no client-side filtering substitute.
 
 ## Verification Basis
 
-Live Google OAuth smoke PASS (M10). Deterministic: `test:auth` 61; unit 14; application 25; receiver 11; receiver-semantic 10; receiver-answer 22; share 17; integration 29; extraction 15; E2E 5; typecheck; build green. `npm ls`: next-auth@5.0.0-beta.32, @auth/core@0.41.3.
+M11 on `cursor/creator-library-m11`: governance PASS; `test:application` 32; `test:auth` 61; `test:receiver` 11; `test:receiver-semantic` 10; `test:receiver-answer` 22; `test:share` 17; `npm test` 14; `test:integration` 29; `test:extraction` 15; typecheck PASS; migrate PASS; build PASS; `test:e2e` 7 passed (library + anonymous redirect included). No live OpenAI or Google OAuth rerun for M11.
