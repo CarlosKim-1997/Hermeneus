@@ -6,7 +6,7 @@ import { CreatorUnauthenticatedError, HandoffAccessUnavailableError } from "./cr
 import type { CreatorPrincipal } from "../creator/types.js";
 
 export async function requireCreatorSessionPage(): Promise<CreatorPrincipal> {
-  const principal = await getCreatorSessionProvider().getCurrentPrincipal();
+  const principal = await (await getCreatorSessionProvider()).getCurrentPrincipal();
   if (!principal) redirect("/login");
   return principal;
 }
@@ -24,7 +24,7 @@ export async function requireOwnedHandoffPage(handoffId: string): Promise<Creato
 }
 
 export async function getOptionalCreatorSessionPage(): Promise<CreatorPrincipal | undefined> {
-  return getCreatorSessionProvider().getCurrentPrincipal();
+  return (await getCreatorSessionProvider()).getCurrentPrincipal();
 }
 
 export { CreatorUnauthenticatedError, HandoffAccessUnavailableError };

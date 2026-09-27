@@ -1,6 +1,6 @@
 # Architecture
 
-This note points at the Hermeneus layout. Durable rules are D-001 through D-004 and C-001 through C-004.
+This note describes the Hermeneus layout. Durable normative rules live in Repository Authority under `canon/`; this document is descriptive and may lag Canon until updated intentionally.
 
 ## Flow
 
@@ -60,19 +60,24 @@ Creator → Published Handoff vN
 
 Published Handoff immutability and Share Capability revocability are separate concerns. Shared Receiver requests authorize through the capability token on each view load, Q&A request, and provenance request. The shared surface does not expose internal `handoffId`.
 
-**Milestone 9 Creator authorization (development session):**
+**Creator authorization (authentication vs ownership):**
 
 ```text
-Creator path
-  authenticated Creator session → internal CreatorId
-  → Handoff ownership check (handoffs.owner_creator_id)
-  → Creator Review / Publish / Share management / Internal Receiver
+External Creator path (M10)
+  Google → Auth.js verified account → (provider, subject)
+  → creator_external_identities → internal CreatorId
+  → CreatorSessionProvider → C-006 Handoff ownership check
 
-Shared Receiver path (unchanged)
+Dev Creator path (M9, non-production)
+  signed dev cookie → internal CreatorId → ownership check
+
+Shared Receiver path (M8, unchanged)
   bearer token → active Share Capability → pinned version → M5–M7 pipeline
 ```
 
-Knowing a Handoff ID is not Creator authority. Knowing a Creator session is not share-link authority. Production authentication provider choice remains deferred; `CREATOR_AUTH_MODE=dev` is not production authentication.
+Three separate concepts: **authentication**, **ownership authorization** (`handoffs.owner_creator_id`), and **share capability authorization**. Knowing a Handoff ID is not Creator authority. Knowing a Creator session is not share-link authority. `CREATOR_AUTH_MODE=dev` is not production authentication.
+
+External Auth.js deployments should set `AUTH_TRUST_HOST=true` only when the platform or reverse proxy sanitizes and controls `Host` / `X-Forwarded-Host` headers. Hermeneus does not force `trustHost` when `AUTH_TRUST_HOST` is unset.
 
 Source conversation **import provider** (ChatGPT export, Claude, Gemini, generic text) is separate from **extraction model provider** (OpenAI in Milestone 4). Extraction adapters do not alter Handoff domain schemas.
 
@@ -139,7 +144,9 @@ ReceiverReadRepository + hybrid interpretation (deterministic / semantic)
 PostgreSQL adapter
 ```
 
-The Receiver page never receives `NormalizedConversation` or full raw source messages. Server actions return only `PublishedReceiverView`, answer payloads, and explicit provenance bundles. Receiver application paths do not provide Creator/raw-source navigation or data in the UI (no links into Creator review or publication surfaces). The Creator publication page may link into the pinned Receiver view; that asymmetry is intentional. Authentication and route authorization remain deferred—the app is local/development-only, and manually typing a Creator URL is not prevented.
+The Receiver page never receives `NormalizedConversation` or full raw source messages. Server actions return only `PublishedReceiverView`, answer payloads, and explicit provenance bundles. Receiver application paths do not provide Creator/raw-source navigation or data in the UI (no links into Creator review or publication surfaces). The Creator publication page may link into the pinned internal Receiver view; that asymmetry is intentional.
+
+Internal Receiver route `/receiver/[handoffId]/[version]` requires an authenticated Creator and Handoff ownership authorization (M9). External recipients use `/share/[token]` with independent bearer capability authorization (M8). External production identity integration (Auth.js + Google) is implemented but remains unverified against a live Google OAuth round-trip until T-010 completes.
 
 ## Creator UI (Milestones 3–4)
 

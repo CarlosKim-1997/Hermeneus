@@ -8,11 +8,11 @@ areas:
 
 ## Current Position
 
-Milestone 9 on PR #9 (`cursor/creator-ownership-m9-6f39`): Creator ownership, production dev-session hardening, Server Action IDOR tests, and M1–M8 migration backfill proof complete pending human merge review.
+Milestones 1–9 merged at `e4b81cf`. Milestone 10 external identity bridge on PR #10 (`cursor/external-identity-m10-6f39`): Auth.js `5.0.0-beta.32`, atomic external identity registration with Creator-id collision fail-closed, migration 005 forward reconciliation, mapping UPDATE+DELETE immutability, explicit Host trust policy, external-mode runtime loading fixes. **Real Google OAuth live smoke PASS** (first login, sign-out, same-account relogin with stable internal CreatorId, real UI Handoff ownership, anonymous M8 bearer regression on smoke Handoff).
 
 ## Active Work
 
-None. T-009 verification complete on PR #9 (not merged).
+None. T-010 complete; PR #10 awaits human merge review (not merged).
 
 ## Blockers
 
@@ -20,10 +20,8 @@ None.
 
 ## Material Risks
 
-- M9 uses development-only signed session; refused for issuance and validation when `NODE_ENV=production`.
-- No external identity provider, MFA, account recovery, or verified share URL log redaction.
-- Pre-M9 Handoffs remain on `creator_legacy_pre_m9` (not claimable via dev login).
+M10 does not imply MFA, recovery, account linking, rate limiting, or log redaction guarantees.
 
 ## Verification Basis
 
-Governance check; deterministic suites (`npm test` 14, `test:application` 25, `test:receiver` 11, `test:receiver-semantic` 10, `test:receiver-answer` 22, `test:share` 17, `test:auth` 34, `test:integration` 29, `test:extraction` 15); typecheck; migrate; build; E2E 5 passed. Auth evidence includes A7a/A7b production session rejection, SA1–SA10 Server Action IDOR, M9C1 pre-M9 backfill.
+Live Google OAuth smoke PASS: first login; internal Creator mapping (cardinality 1); real UI Handoff ownership; sign-out removed Creator route access; same-account relogin reused internal CreatorId; no duplicate mapping/Creator; smoke Handoff ownership unchanged; anonymous `/share/[token]` Receiver load (revoke → unavailable). Deterministic: `test:auth` 61; unit 14; application 25; receiver 11; receiver-semantic 10; receiver-answer 22; share 17; integration 29; extraction 15; typecheck; build green. Final Playwright E2E 5/5 PASS on cross-platform Node launcher (`scripts/start-e2e-server.mjs`). `npm ls`: next-auth@5.0.0-beta.32, @auth/core@0.41.3.

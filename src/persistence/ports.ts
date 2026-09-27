@@ -30,6 +30,16 @@ export interface CreatorRepository {
   exists(id: CreatorId): Promise<boolean>;
 }
 
+export interface ExternalIdentityRepository {
+  resolve(provider: string, subject: string): Promise<CreatorId | undefined>;
+  resolveOrCreate(input: {
+    provider: string;
+    subject: string;
+    candidateCreatorId: CreatorId;
+    createdAt: string;
+  }): Promise<CreatorId>;
+}
+
 export interface HandoffRootRepository {
   create(handoffId: string, sourceConversationId: string, ownerCreatorId: CreatorId, createdAt?: string): Promise<void>;
   getSourceConversationId(handoffId: string): Promise<string | undefined>;

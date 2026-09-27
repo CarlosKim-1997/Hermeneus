@@ -50,7 +50,35 @@ export async function devSignInAction(formData?: FormData) {
   }
 }
 
+export async function googleSignInAction(): Promise<void> {
+  const config = readCreatorAuthConfig();
+  if (config.mode !== "external") {
+    throw new Error("External authentication is not enabled.");
+  }
+  const { getHermeneusAuth } = await import("../auth/hermeneus-auth.js");
+  const auth = getHermeneusAuth();
+  if (!auth) {
+    throw new Error("External authentication is not configured.");
+  }
+  try {
+    await auth.signIn("google", { redirectTo: "/new" });
+  } catch (error) {
+    if (isRedirectError(error)) throw error;
+    throw error;
+  }
+}
+
 export async function signOutAction() {
+  const config = readCreatorAuthConfig();
+  if (config.mode === "external") {
+    const { getHermeneusAuth } = await import("../auth/hermeneus-auth.js");
+    const auth = getHermeneusAuth();
+    if (auth) {
+      await auth.signOut({ redirectTo: "/login" });
+    }
+    redirect("/login");
+  }
+
   const cookieStore = await cookies();
   cookieStore.set(CREATOR_SESSION_COOKIE_NAME, "", {
     httpOnly: true,
