@@ -25,7 +25,7 @@ Auth.js Google adapter, migration 004, external identity mapping, session bridge
 
 ## Authority
 
-Authorized on `cursor/external-identity-m10-6f39`. Not authorized to merge.
+Integrated into `main` via PR #10; merge commit `73c4e65746573f576f2d59b6f8dc9512bd58abbe`.
 
 ## Constraints
 
