@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { fetchPublishedHandoff } from "../../../../../application/actions";
-import { requireOwnedHandoffPage } from "../../../../../application/creator-page-guards";
-import { listShareCapabilitiesAction } from "../../../../../application/share-actions";
-import { ShareCapabilityPanel } from "../../../../components/share-capability-panel";
+import { fetchPublishedHandoff } from "../../../../../../application/actions";
+import { requireOwnedHandoffPage } from "../../../../../../application/creator-page-guards";
+import { listShareCapabilitiesAction } from "../../../../../../application/share-actions";
+import { ShareCapabilityPanel } from "../../../../../components/share-capability-panel";
 
 export default async function PublishedPage({
   params,

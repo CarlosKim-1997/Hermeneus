@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { requireCreatorSessionPage } from "../../application/creator-page-guards.js";
-import { getRepositories } from "../../application/runtime.js";
-import { listCreatorHandoffs } from "../../application/use-cases/list-creator-handoffs.js";
+import { requireCreatorSessionPage } from "../../../application/creator-page-guards.js";
+import { getRepositories } from "../../../application/runtime.js";
+import { listCreatorHandoffs } from "../../../application/use-cases/list-creator-handoffs.js";
 
 function formatWhen(iso: string) {
   return new Date(iso).toLocaleString();

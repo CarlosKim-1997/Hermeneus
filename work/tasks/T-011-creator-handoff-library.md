@@ -32,7 +32,7 @@ C-006 ownership unchanged. No client-side owner filtering. No delete/search/team
 
 ## Verification
 
-Governance PASS. Deterministic: application 32 (L1–L7 library), auth 61, receiver 11, receiver-semantic 10, receiver-answer 22, share 17, unit 14, integration 29, extraction 15. E2E 7 (library isolation, published link, anonymous `/handoffs` → login). typecheck, migrate, build PASS.
+Governance PASS. Deterministic: application 32 (L1–L7 library), auth 61, receiver 11, receiver-semantic 10, receiver-answer 22, share 17, unit 14, integration 29, extraction 15; migration 006 index. E2E 9 (library, anonymous redirect, logged-in share surface isolation, bearer revoke). Route group `(creator)` isolates Creator chrome from `/share/[token]`. typecheck, migrate, build PASS.
 
 ## Stop Conditions
 
