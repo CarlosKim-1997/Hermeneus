@@ -9,32 +9,6 @@ import { createPool } from "../../src/persistence/postgres/pool.js";
 
 const url = process.env.TEST_DATABASE_URL;
 
-async function syncExternalIdentityImmutabilityTrigger(pool: ReturnType<typeof createPool>) {
-  await pool.query(`
-    CREATE OR REPLACE FUNCTION creator_external_identities_immutable()
-    RETURNS TRIGGER
-    LANGUAGE plpgsql
-    AS $$
-    BEGIN
-      IF TG_OP = 'UPDATE' OR TG_OP = 'DELETE' THEN
-        RAISE EXCEPTION 'creator_external_identities rows are immutable';
-      END IF;
-      IF TG_OP = 'DELETE' THEN
-        RETURN OLD;
-      END IF;
-      RETURN NEW;
-    END;
-    $$;
-  `);
-  await pool.query(`DROP TRIGGER IF EXISTS creator_external_identities_immutable_trg ON creator_external_identities`);
-  await pool.query(`
-    CREATE TRIGGER creator_external_identities_immutable_trg
-      BEFORE UPDATE OR DELETE ON creator_external_identities
-      FOR EACH ROW
-      EXECUTE FUNCTION creator_external_identities_immutable();
-  `);
-}
-
 if (!url) {
   describe.skip("External identity mapping", () => {
     it("requires TEST_DATABASE_URL", () => undefined);
@@ -44,9 +18,8 @@ if (!url) {
     const pool = createPool(url);
     const repos = createPostgresRepositories(pool);
 
-    beforeAll(async () => {
+    beforeAll(() => {
       execSync("node scripts/migrate.mjs", { env: { ...process.env, TEST_DATABASE_URL: url }, stdio: "pipe" });
-      await syncExternalIdentityImmutabilityTrigger(pool);
     });
 
     beforeEach(async () => {
@@ -130,6 +103,25 @@ if (!url) {
       expect(mappingCount.rows[0]!.c).toBe(1);
       const creatorCount = await pool.query(`SELECT COUNT(*)::int AS c FROM creators`);
       expect(creatorCount.rows[0]!.c).toBe(1);
+    });
+
+    it("EI10 — candidate Creator ID collision fails closed", async () => {
+      const existingId = "creator_collision_existing";
+      await repos.creators.ensure({ id: existingId, createdAt: "2026-09-27T00:00:00.000Z" });
+      await expect(
+        repos.externalIdentities.resolveOrCreate({
+          provider: "google",
+          subject: "subject-collision-test",
+          candidateCreatorId: existingId,
+          createdAt: "2026-09-27T00:00:00.000Z",
+        }),
+      ).rejects.toThrow();
+      expect(await repos.externalIdentities.resolve("google", "subject-collision-test")).toBeUndefined();
+      expect(await repos.creators.exists(existingId)).toBe(true);
+      const mappingCount = await pool.query(
+        `SELECT COUNT(*)::int AS c FROM creator_external_identities WHERE provider = 'google' AND subject = 'subject-collision-test'`,
+      );
+      expect(mappingCount.rows[0]!.c).toBe(0);
     });
 
     it("EI9 — failed mapping registration rolls back Creator row", async () => {
