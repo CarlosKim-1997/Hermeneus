@@ -16,7 +16,7 @@ related_to:
 
 ## Constraint
 
-External identity mapping is keyed by verified `(provider, subject)`, is immutable once created, cannot be inferred or linked by email, and must resolve to an existing Hermeneus Creator before Creator authorization occurs.
+External identity mapping is keyed by verified `(provider, subject)`, is immutable once created (including no reassignment or deletion in M10), cannot be inferred or linked by email, and must resolve to an existing Hermeneus Creator before Creator authorization occurs.
 
 Provider session or OAuth token metadata must not enter Canonical Handoff content or Receiver model payloads.
 

@@ -12,7 +12,7 @@ export function createPostgresRepositories(pool: Pool) {
   const creators = new PostgresCreatorRepository(pool);
   return {
     creators,
-    externalIdentities: new PostgresExternalIdentityRepository(pool, creators),
+    externalIdentities: new PostgresExternalIdentityRepository(pool),
     conversations: new PostgresConversationRepository(pool),
     drafts: new PostgresDraftRepository(pool),
     handoffs: new PostgresHandoffRootRepository(pool),

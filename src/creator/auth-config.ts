@@ -80,3 +80,11 @@ export function isDevCreatorAuthAllowedInRuntime(): boolean {
 export function isExternalAuthModeSelected(): boolean {
   return readAuthMode() === "external";
 }
+
+export function readAuthTrustHostPolicy(): boolean | undefined {
+  const raw = process.env.AUTH_TRUST_HOST?.trim().toLowerCase();
+  if (!raw) return undefined;
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  throw new Error("AUTH_TRUST_HOST must be true or false when set");
+}

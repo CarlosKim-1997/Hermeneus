@@ -77,6 +77,8 @@ Shared Receiver path (M8, unchanged)
 
 Three separate concepts: **authentication**, **ownership authorization** (`handoffs.owner_creator_id`), and **share capability authorization**. Knowing a Handoff ID is not Creator authority. Knowing a Creator session is not share-link authority. `CREATOR_AUTH_MODE=dev` is not production authentication.
 
+External Auth.js deployments should set `AUTH_TRUST_HOST=true` only when the platform or reverse proxy sanitizes and controls `Host` / `X-Forwarded-Host` headers. Hermeneus does not force `trustHost` when `AUTH_TRUST_HOST` is unset.
+
 Source conversation **import provider** (ChatGPT export, Claude, Gemini, generic text) is separate from **extraction model provider** (OpenAI in Milestone 4). Extraction adapters do not alter Handoff domain schemas.
 
 ## Modules

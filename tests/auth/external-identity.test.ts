@@ -9,6 +9,32 @@ import { createPool } from "../../src/persistence/postgres/pool.js";
 
 const url = process.env.TEST_DATABASE_URL;
 
+async function syncExternalIdentityImmutabilityTrigger(pool: ReturnType<typeof createPool>) {
+  await pool.query(`
+    CREATE OR REPLACE FUNCTION creator_external_identities_immutable()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+    AS $$
+    BEGIN
+      IF TG_OP = 'UPDATE' OR TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION 'creator_external_identities rows are immutable';
+      END IF;
+      IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+      END IF;
+      RETURN NEW;
+    END;
+    $$;
+  `);
+  await pool.query(`DROP TRIGGER IF EXISTS creator_external_identities_immutable_trg ON creator_external_identities`);
+  await pool.query(`
+    CREATE TRIGGER creator_external_identities_immutable_trg
+      BEFORE UPDATE OR DELETE ON creator_external_identities
+      FOR EACH ROW
+      EXECUTE FUNCTION creator_external_identities_immutable();
+  `);
+}
+
 if (!url) {
   describe.skip("External identity mapping", () => {
     it("requires TEST_DATABASE_URL", () => undefined);
@@ -18,8 +44,9 @@ if (!url) {
     const pool = createPool(url);
     const repos = createPostgresRepositories(pool);
 
-    beforeAll(() => {
+    beforeAll(async () => {
       execSync("node scripts/migrate.mjs", { env: { ...process.env, TEST_DATABASE_URL: url }, stdio: "pipe" });
+      await syncExternalIdentityImmutabilityTrigger(pool);
     });
 
     beforeEach(async () => {
@@ -82,6 +109,14 @@ if (!url) {
       expect(await repos.externalIdentities.resolve("google", "subject-immutable")).toBe(creatorId);
     });
 
+    it("EI6b — mapping deletion rejected", async () => {
+      const creatorId = await resolveOrCreateCreatorForExternalIdentity(repos, { provider: "google", subject: "subject-no-delete" });
+      await expect(
+        pool.query(`DELETE FROM creator_external_identities WHERE provider = 'google' AND subject = 'subject-no-delete'`),
+      ).rejects.toThrow(/immutable/i);
+      expect(await repos.externalIdentities.resolve("google", "subject-no-delete")).toBe(creatorId);
+    });
+
     it("EI7 — concurrent first login resolves to one Creator", async () => {
       const results = await Promise.all(
         Array.from({ length: 8 }, () =>
@@ -93,6 +128,19 @@ if (!url) {
         `SELECT COUNT(*)::int AS c FROM creator_external_identities WHERE provider = 'google' AND subject = 'subject-concurrent'`,
       );
       expect(mappingCount.rows[0]!.c).toBe(1);
+      const creatorCount = await pool.query(`SELECT COUNT(*)::int AS c FROM creators`);
+      expect(creatorCount.rows[0]!.c).toBe(1);
+    });
+
+    it("EI9 — failed mapping registration rolls back Creator row", async () => {
+      process.env.HERMENEUS_TEST_SIMULATE_EXTERNAL_MAPPING_FAILURE = "1";
+      await expect(
+        resolveOrCreateCreatorForExternalIdentity(repos, { provider: "google", subject: "subject-mapping-failure" }),
+      ).rejects.toThrow(/simulated external identity mapping failure/i);
+      expect(await repos.externalIdentities.resolve("google", "subject-mapping-failure")).toBeUndefined();
+      const creatorCount = await pool.query(`SELECT COUNT(*)::int AS c FROM creators`);
+      expect(creatorCount.rows[0]!.c).toBe(0);
+      delete process.env.HERMENEUS_TEST_SIMULATE_EXTERNAL_MAPPING_FAILURE;
     });
 
     it("EI8 — no OAuth token columns in Hermeneus tables", async () => {
