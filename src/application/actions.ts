@@ -25,10 +25,15 @@ function mapAuthFailure(error: unknown) {
   return null;
 }
 
-export async function importConversationAction(formData: FormData) {
+export type ImportConversationFormState = { error: string } | null;
+
+export async function importConversationAction(
+  _prev: ImportConversationFormState,
+  formData: FormData,
+): Promise<ImportConversationFormState> {
   const transcript = String(formData.get("transcript") ?? "").trim();
   if (!transcript) {
-    return { ok: false as const, error: "Paste a conversation transcript to import." };
+    return { error: "Paste a conversation transcript to import." };
   }
   try {
     const principal = await requireCreatorPrincipalFromSession();
@@ -38,8 +43,11 @@ export async function importConversationAction(formData: FormData) {
   } catch (error) {
     if (isRedirectError(error)) throw error;
     const auth = mapAuthFailure(error);
-    if (auth) return auth;
-    return { ok: false as const, error: toCreatorFacingError(error).message };
+    if (auth) {
+      const message = typeof auth.error === "string" ? auth.error : auth.error.message;
+      return { error: message };
+    }
+    return { error: toCreatorFacingError(error).message };
   }
 }
 

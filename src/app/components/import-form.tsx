@@ -1,24 +1,23 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { importConversationAction } from "../../application/actions";
 
+function ImportSubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button className="primary" type="submit" disabled={pending}>
+      {pending ? "Importing..." : "Import"}
+    </button>
+  );
+}
+
 export function ImportForm() {
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [state, formAction] = useActionState(importConversationAction, null);
 
   return (
-    <form
-      action={(formData) => {
-        setError(null);
-        startTransition(async () => {
-          const result = await importConversationAction(formData);
-          if (result && "error" in result && result.error) {
-            setError(typeof result.error === "string" ? result.error : result.error.message);
-          }
-        });
-      }}
-    >
+    <form action={formAction}>
       <label htmlFor="transcript">Conversation transcript</label>
       <textarea
         id="transcript"
@@ -26,11 +25,13 @@ export function ImportForm() {
         placeholder={"creator: I think the service should...\nassistant: One possible direction is...\ncreator: No, I want..."}
         required
       />
-      {error ? <p className="error" role="alert">{error}</p> : null}
+      {state?.error ? (
+        <p className="error" role="alert">
+          {state.error}
+        </p>
+      ) : null}
       <div className="actions">
-        <button className="primary" type="submit" disabled={pending}>
-          {pending ? "Importing..." : "Import"}
-        </button>
+        <ImportSubmitButton />
       </div>
     </form>
   );
