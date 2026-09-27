@@ -44,7 +44,7 @@ export class PostgresExternalIdentityRepository implements ExternalIdentityRepos
         return lockedLookup.rows[0]!.creator_id;
       }
 
-      await client.query(`INSERT INTO creators (id, created_at) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING`, [
+      await client.query(`INSERT INTO creators (id, created_at) VALUES ($1, $2)`, [
         input.candidateCreatorId,
         input.createdAt,
       ]);
