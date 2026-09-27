@@ -8,7 +8,7 @@ areas:
 
 ## Current Position
 
-Milestones 1–10 merged into `main`. Milestone 9 at `e4b81cf`. Milestone 10 external identity bridge integrated via PR #10; merge commit `73c4e65746573f576f2d59b6f8dc9512bd58abbe`. Auth.js `5.0.0-beta.32`, external identity mapping, migration 005, live Google OAuth smoke PASS.
+Milestones 1–10 merged into `main` (M10 merge commit `73c4e65746573f576f2d59b6f8dc9512bd58abbe`). M10 merge truth reconciled on `main` via PR #11 (merge commit `53c92122622cffc5e7965bfb1759db374db762d1`). Milestone 11 Creator Handoff Library is complete on `cursor/creator-library-m11` pending human PR merge.
 
 ## Active Work
 
@@ -20,8 +20,8 @@ None.
 
 ## Material Risks
 
-M10 does not imply MFA, recovery, account linking, rate limiting, or log redaction guarantees.
+Share Capability and Creator surfaces must remain layout-isolated; library queries must stay owner-scoped in SQL.
 
 ## Verification Basis
 
-Live Google OAuth smoke PASS (M10). Deterministic: `test:auth` 61; unit 14; application 25; receiver 11; receiver-semantic 10; receiver-answer 22; share 17; integration 29; extraction 15; E2E 5; typecheck; build green. `npm ls`: next-auth@5.0.0-beta.32, @auth/core@0.41.3.
+M11 branch: governance PASS; unit 14; application 32; auth 61; receiver 11; receiver-semantic 10; receiver-answer 22; share 17; integration 29; extraction 15; migration 006; typecheck; build; E2E 9 (share-surface isolation included).

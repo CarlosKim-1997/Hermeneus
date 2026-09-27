@@ -332,15 +332,20 @@ if (!url) {
     it("R11 — Receiver surface module excludes Creator navigation affordances", () => {
       const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
       const receiverPage = readFileSync(
-        path.join(repoRoot, "src/app/receiver/[handoffId]/[version]/page.tsx"),
+        path.join(repoRoot, "src/app/(creator)/receiver/[handoffId]/[version]/page.tsx"),
         "utf8",
       );
+      const sharePage = readFileSync(path.join(repoRoot, "src/app/share/[token]/page.tsx"), "utf8");
+      const rootLayout = readFileSync(path.join(repoRoot, "src/app/layout.tsx"), "utf8");
       const receiverConsole = readFileSync(path.join(repoRoot, "src/app/components/receiver-console.tsx"), "utf8");
       for (const source of [receiverPage, receiverConsole]) {
         expect(source).not.toMatch(/\/handoffs\//);
         expect(source).not.toMatch(/View publication record/i);
         expect(source).not.toMatch(/Return to draft review/i);
         expect(source).not.toMatch(/Source Conversation/i);
+      }
+      for (const source of [sharePage, rootLayout]) {
+        expect(source).not.toMatch(/CreatorNav|CreatorSessionBanner/);
       }
     });
   });

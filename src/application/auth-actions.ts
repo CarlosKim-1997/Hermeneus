@@ -43,7 +43,7 @@ export async function devSignInAction(formData?: FormData) {
       secure: process.env.NODE_ENV === "production",
       maxAge: Math.floor(config.sessionTtlMs / 1000),
     });
-    redirect("/new");
+    redirect("/handoffs");
   } catch (error) {
     if (isRedirectError(error)) throw error;
     throw error;
@@ -61,7 +61,7 @@ export async function googleSignInAction(): Promise<void> {
     throw new Error("External authentication is not configured.");
   }
   try {
-    await auth.signIn("google", { redirectTo: "/new" });
+    await auth.signIn("google", { redirectTo: "/handoffs" });
   } catch (error) {
     if (isRedirectError(error)) throw error;
     throw error;

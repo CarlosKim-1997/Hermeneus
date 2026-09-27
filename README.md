@@ -2,51 +2,27 @@
 
 Hermeneus turns a conversation in which a human developed an idea with an AI into a creator-reviewed, provider-neutral handoff that another human can check through a constrained interpreter.
 
-It is not a chat product and does not reproduce ChatGPT, Claude, Gemini, or another provider's conversational UX. Source systems are providers. The working name is Hermeneus. "Got it?" is a possible later understanding-check label, not the product name.
+It is not a chat product and does not reproduce ChatGPT, Claude, Gemini, or another provider's conversational UX. Source systems are providers. The working name is Hermeneus.
 
-Normative product rules live in `canon/`. This file is an explanation, not authority. Start with `AGENTS.md` and `canon/state/current.md`.
+**Normative product rules live in `canon/`.** This file is descriptive, not authority. Start with `AGENTS.md` and `canon/state/current.md`.
 
 ## Authority inside the product
 
-Published Canonical Handoff, then draft handoff, then normalized conversation, then raw imported source. Raw history is provenance. See D-003, C-001, and C-002.
+Published Canonical Handoff, then draft handoff, then normalized conversation, then raw imported source. Raw history is provenance.
 
 Extraction proposes a draft. Only explicit creator approval publishes a version, and that version is immutable.
 
-## Receiver
+## Creator workflow (through Milestone 11)
 
-Before answering, the receiver classifies the question as exactly one of `SUPPORTED`, `DERIVED`, `OPEN`, or `UNKNOWN`. `UNKNOWN` is a successful outcome. The receiver does not fill gaps or argue for the proposal. See D-004 and C-003.
+- **Import & review:** Generic text import (`creator:` / `assistant:` / `other:`), normalized conversation, Creator review UI, draft edits, immutable publication (PostgreSQL).
+- **Handoff Library:** Authenticated Creators open `/handoffs` to see only Handoffs they own, resume Review, or open the latest published version; `/new` creates another Handoff.
+- **Live extraction (optional):** OpenAI-backed Handoff extraction suggestions when configured; deterministic fixture mode for tests.
+- **Ownership & auth:** Creator session (dev cookie locally, Google OAuth via Auth.js in external mode); server-side Handoff ownership on every protected path (M9).
+- **External identity (M10):** Google subject mapped to stable internal `creator_*` identity; no email authority or automatic linking.
 
-## Milestone 1
+## Receiver (M5–M7)
 
-Implemented now:
-
-- generic text import (`creator:` / `assistant:` / `other:` lines)
-- normalized conversation
-- draft edits and immutable publication
-- PostgreSQL persistence for conversations, drafts, and published versions
-- local Creator web UI for manual Handoff review and publication (`npm run dev`)
-- receiver views without automatic source excerpts; explicit provenance lookup
-- deterministic answerability and grounding
-- fixtures for superseded exploration, unknown facts, explicit open questions, unsupported implications, transcript conflicts, creator edits, and published immutability
-
-Not implemented:
-
-- live model extraction or Receiver AI chat
-- authentication, public sharing, or production-safe deployment
-- ChatGPT, Claude, or Gemini export parsers
-- scraping, web search, vector search, teams, billing, or a "Got it?" quiz
-
-## Deferred privacy controls
-
-These are requirements, not current behavior:
-
-- raw transcripts stay private by default
-- share identifiers become high-entropy opaque values
-- receiver pages are not indexed by search engines
-- the creator can delete imported data and handoffs
-- provenance views show only the relevant excerpt
-
-Secrets do not belong in source, Canon, tasks, or reports. Do not treat this milestone as a production privacy implementation.
+Version-pinned internal Receiver (`/receiver/[handoffId]/[version]`) and **Share Capability** bearer surface (`/share/[token]`) for external recipients. Deterministic interpretation by default; optional OpenAI semantic selection (M6) and grounded answer expression (M7) when configured. Receiver classifies questions as `SUPPORTED`, `DERIVED`, `OPEN`, or `UNKNOWN`.
 
 ## Checks
 
@@ -54,14 +30,15 @@ Secrets do not belong in source, Canon, tasks, or reports. Do not treat this mil
 node tooling/governance/check.mjs
 npm test
 npm run test:application
+npm run test:auth
 npm run typecheck
 npm run migrate
-TEST_DATABASE_URL=... npm run test:integration
 npm run build
+npm run test:e2e
 ```
 
-Set `DATABASE_URL` for the Creator UI and `TEST_DATABASE_URL` for PostgreSQL-backed tests. See `.env.example` for placeholder variable names only.
+Set `DATABASE_URL` for the app and `TEST_DATABASE_URL` for PostgreSQL-backed tests. See `.env.example` for variable names only (no secrets).
 
-The Creator UI is for local development only. Do not deploy it publicly without authentication and privacy controls.
+External Google OAuth requires `CREATOR_AUTH_MODE=external` and Auth.js variables in `.env.local` (never commit secrets).
 
-The unit test suite does not need an API key.
+The Creator UI remains intended for controlled deployment: use authentication, HTTPS, and privacy controls before any public exposure.

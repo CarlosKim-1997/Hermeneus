@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
-import { isReceiverSemanticModeConfigured } from "../../../../application/receiver-interpreter-config";
-import { fetchReceiverPublishedViewAction } from "../../../../application/receiver-actions";
-import { requireOwnedHandoffPage } from "../../../../application/creator-page-guards";
-import { ReceiverConsole } from "../../../components/receiver-console";
+import { isReceiverSemanticModeConfigured } from "../../../../../application/receiver-interpreter-config";
+import { fetchReceiverPublishedViewAction } from "../../../../../application/receiver-actions";
+import { requireOwnedHandoffPage } from "../../../../../application/creator-page-guards";
+import { ReceiverConsole } from "../../../../components/receiver-console";
 
 export default async function ReceiverPage({
   params,
