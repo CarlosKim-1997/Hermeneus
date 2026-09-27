@@ -3,7 +3,7 @@ import { getCreatorSessionProvider } from "./creator-session-factory.js";
 import { CreatorUnauthenticatedError } from "./creator-auth-errors.js";
 
 export async function requireCreatorPrincipalFromSession(): Promise<CreatorPrincipal> {
-  const principal = await getCreatorSessionProvider().getCurrentPrincipal();
+  const principal = await (await getCreatorSessionProvider()).getCurrentPrincipal();
   if (!principal) {
     throw new CreatorUnauthenticatedError();
   }

@@ -125,13 +125,15 @@ if (!url) {
 
     it("A6 — dev auth disabled yields no principal", async () => {
       setCreatorSessionProviderForTests({ getCurrentPrincipal: async () => undefined });
-      const principal = await (await import("../../src/application/creator-session-factory.js")).getCreatorSessionProvider().getCurrentPrincipal();
+      const factory = await import("../../src/application/creator-session-factory.js");
+      const principal = await (await factory.getCreatorSessionProvider()).getCurrentPrincipal();
       expect(principal).toBeUndefined();
     });
 
     it("A8 — sign-out provider returns undefined", async () => {
       setCreatorSessionProviderForTests({ getCurrentPrincipal: async () => undefined });
-      const principal = await (await import("../../src/application/creator-session-factory.js")).getCreatorSessionProvider().getCurrentPrincipal();
+      const factory = await import("../../src/application/creator-session-factory.js");
+      const principal = await (await factory.getCreatorSessionProvider()).getCurrentPrincipal();
       expect(principal).toBeUndefined();
     });
   });

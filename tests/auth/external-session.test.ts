@@ -51,7 +51,7 @@ describe("External session adapter (ES)", () => {
   it("ES6 — disabled mode remains unavailable", async () => {
     vi.stubEnv("CREATOR_AUTH_MODE", "disabled");
     setCreatorSessionProviderForTests(undefined);
-    expect(await getCreatorSessionProvider().getCurrentPrincipal()).toBeUndefined();
+    expect(await (await getCreatorSessionProvider()).getCurrentPrincipal()).toBeUndefined();
     vi.unstubAllEnvs();
   });
 });

@@ -1,21 +1,20 @@
-import { createRequire } from "node:module";
 import type { CreatorSessionProvider } from "../creator/session-provider.js";
 import { readCreatorAuthConfig } from "../creator/auth-config.js";
 import { CookieCreatorSessionProvider } from "./creator-session-cookie-provider.js";
 
-const require = createRequire(import.meta.url);
-
 let testOverride: CreatorSessionProvider | null | undefined;
 let cachedExternalProvider: CreatorSessionProvider | undefined;
+let externalProviderPromise: Promise<CreatorSessionProvider> | undefined;
 
-function loadExternalProvider(): CreatorSessionProvider {
-  if (!cachedExternalProvider) {
-    const { AuthJsCreatorSessionProvider } = require("./creator-session-external-provider.js") as {
-      AuthJsCreatorSessionProvider: new () => CreatorSessionProvider;
-    };
-    cachedExternalProvider = new AuthJsCreatorSessionProvider();
+async function loadExternalProvider(): Promise<CreatorSessionProvider> {
+  if (cachedExternalProvider) return cachedExternalProvider;
+  if (!externalProviderPromise) {
+    externalProviderPromise = import("./creator-session-external-provider.js").then(({ AuthJsCreatorSessionProvider }) => {
+      cachedExternalProvider = new AuthJsCreatorSessionProvider();
+      return cachedExternalProvider;
+    });
   }
-  return cachedExternalProvider;
+  return externalProviderPromise;
 }
 
 export function setCreatorSessionProviderForTests(provider: CreatorSessionProvider | null | undefined) {
@@ -26,7 +25,7 @@ const disabledProvider: CreatorSessionProvider = {
   getCurrentPrincipal: async () => undefined,
 };
 
-export function getCreatorSessionProvider(): CreatorSessionProvider {
+export async function getCreatorSessionProvider(): Promise<CreatorSessionProvider> {
   if (testOverride !== undefined) {
     return testOverride ?? disabledProvider;
   }
