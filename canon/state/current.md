@@ -8,7 +8,7 @@ areas:
 
 ## Current Position
 
-Milestones 1–10 merged into `main` (M10 merge commit `73c4e65746573f576f2d59b6f8dc9512bd58abbe`). Milestone 11 Creator Handoff Library complete on `cursor/creator-library-m11` pending human merge after M10 reconciliation lands on `main`.
+Milestones 1–10 merged into `main` (M10 merge commit `73c4e65746573f576f2d59b6f8dc9512bd58abbe`). M10 merge truth reconciled on `main` via PR #11 (merge commit `53c92122622cffc5e7965bfb1759db374db762d1`). Milestone 11 Creator Handoff Library is complete on `cursor/creator-library-m11` pending human PR merge.
 
 ## Active Work
 
