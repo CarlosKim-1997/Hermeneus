@@ -72,4 +72,4 @@ Stop if baseline SHA differs materially, runtime/product files would change, or 
 
 ## Completion Criteria
 
-Normalization artifacts committed; structural checker PASS; audit report published; draft PR opened unmerged; no new normative Canon.
+Normalization artifacts committed; structural checker PASS; audit report recorded; draft PR opened unmerged; no new normative Canon.

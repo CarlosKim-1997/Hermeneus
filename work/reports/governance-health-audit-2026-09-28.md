@@ -88,5 +88,6 @@ Preserved actionable risks evidenced in repository Canon and constraints (e.g. C
 
 ## Post-repair verification
 
-- `node tooling/governance/check.mjs` — run after edits (expect PASS)
+- `node tooling/governance/check.mjs` — PASS
+- `git diff --check` — clean
 - Semantic scan: COMPLETE Tasks T-001–T-011 for merge-outcome Authority phrasing — only T-007–T-010 required repair in this episode
