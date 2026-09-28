@@ -8,7 +8,7 @@ areas:
 
 ## Current Position
 
-Milestones 1–10 merged into `main` (M10 merge commit `73c4e65746573f576f2d59b6f8dc9512bd58abbe`). M10 merge truth reconciled on `main` via PR #11 (merge commit `53c92122622cffc5e7965bfb1759db374db762d1`). Milestone 11 Creator Handoff Library is complete on `cursor/creator-library-m11` pending human PR merge.
+Milestones 1–11 are integrated into `main`. Latest integration: Milestone 11 (Creator Handoff Library) at merge commit `ee0b366218051eb938acbd4d280713fc3a04cbdb`. The repository is ready for the next human-authorized milestone or maintenance work; no feature milestone is actively in progress.
 
 ## Active Work
 
@@ -20,8 +20,11 @@ None.
 
 ## Material Risks
 
-Share Capability and Creator surfaces must remain layout-isolated; library queries must stay owner-scoped in SQL.
+- Production hardening (including deployment-level protections beyond the current development vertical slices) remains incomplete.
+- Share Capability infrastructure and access-log redaction for share URLs remain deferred (see C-005).
+- Data lifecycle and deletion semantics for Creators and Handoffs are not fully specified in Canon.
+- Hosted CI is not configured in this repository; verification remains local/agent-driven.
 
 ## Verification Basis
 
-M11 branch: governance PASS; unit 14; application 32; auth 61; receiver 11; receiver-semantic 10; receiver-answer 22; share 17; integration 29; extraction 15; migration 006; typecheck; build; E2E 9 (share-surface isolation included).
+M1–M11 integration is present on `main` at `ee0b366218051eb938acbd4d280713fc3a04cbdb`. Milestone 11 was verified on its integration branch with deterministic regression and E2E before merge. Governance record normalization (T-012) was structural and documentary only; product behavior unchanged.

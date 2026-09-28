@@ -27,7 +27,7 @@ Out of scope: production auth provider, ownership transfer, teams, MFA, rate lim
 
 ## Authority
 
-Integrated into `main` via PR #9; merge commit `e4b81cf71ae22059599e64c9a6ec0ec089c3060e`.
+Authorized on `cursor/creator-ownership-m9-6f39`. Not authorized to merge.
 
 ## Constraints
 
