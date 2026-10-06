@@ -7,7 +7,7 @@ import {
   loadReceiverPublishedView,
 } from "./use-cases/receiver-qa.js";
 import { toReceiverFacingError } from "./receiver-errors.js";
-import { requireCreatorPrincipalFromSession } from "./creator-action-auth.js";
+import { requireActiveCreatorPrincipal } from "./creator-action-auth.js";
 import { requireOwnedHandoff } from "./authorize-handoff.js";
 import { CreatorUnauthenticatedError, HandoffAccessUnavailableError } from "./creator-auth-errors.js";
 
@@ -24,7 +24,7 @@ function mapAuthFailure(error: unknown) {
 export async function fetchReceiverPublishedViewAction(handoffId: string, version: number) {
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     await requireOwnedHandoff(repos, principal, handoffId);
     return loadReceiverPublishedView(repos, handoffId, version);
   } catch (error) {
@@ -46,7 +46,7 @@ export async function askReceiverQuestionAction(input: {
   }
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     await requireOwnedHandoff(repos, principal, input.handoffId);
     const answer = await askReceiverQuestion(repos, { ...input, question });
     if (!answer) {
@@ -67,7 +67,7 @@ export async function fetchReceiverProvenanceAction(input: {
 }) {
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     await requireOwnedHandoff(repos, principal, input.handoffId);
     const bundle = await fetchReceiverProvenance(repos, input);
     if (!bundle) {

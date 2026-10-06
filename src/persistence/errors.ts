@@ -43,6 +43,15 @@ export class HandoffLifecycleUnavailableError extends Error {
   }
 }
 
+export class CreatorLifecycleUnavailableError extends Error {
+  readonly code = "CREATOR_LIFECYCLE_UNAVAILABLE";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "CreatorLifecycleUnavailableError";
+  }
+}
+
 /** Retained-state provenance rows that reference missing or impossible source data. Does not detect arbitrary direct-SQL provenance deletion without an expected row count. */
 export class ProvenanceIntegrityError extends Error {
   readonly code = "PROVENANCE_INTEGRITY";

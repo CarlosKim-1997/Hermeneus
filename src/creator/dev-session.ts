@@ -1,5 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import type { CreatorPrincipal } from "./types.js";
+export type VerifiedDevSession = {
+  creatorId: string;
+};
 
 export const CREATOR_SESSION_COOKIE_NAME = "hermeneus_creator_session";
 
@@ -30,7 +32,7 @@ export function createSignedSessionToken(input: {
   return `${payloadB64}.${signature}`;
 }
 
-export function verifySignedSessionToken(token: string, secret: string, nowMs = Date.now()): CreatorPrincipal | undefined {
+export function verifySignedSessionToken(token: string, secret: string, nowMs = Date.now()): VerifiedDevSession | undefined {
   const parts = token.split(".");
   if (parts.length !== 2) return undefined;
   const [payloadB64, signature] = parts;

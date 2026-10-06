@@ -17,9 +17,12 @@ export async function importAndCreateHandoff(repos: Repos, ownerCreatorId: Creat
   });
   const conversation = { ...normalized, id: conversationId };
 
-  await repos.conversations.create(conversation);
-  await repos.handoffs.create(handoffId, conversationId, ownerCreatorId);
-  const saved = await repos.drafts.save(createDraft(handoffId, []));
+  const saved = await repos.importHandoff.importHandoffAtomic({
+    ownerCreatorId,
+    conversation,
+    handoffId,
+    draft: createDraft(handoffId, []),
+  });
 
   return { handoffId, conversationId, revision: saved.revision };
 }

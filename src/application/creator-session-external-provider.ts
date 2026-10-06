@@ -14,6 +14,6 @@ export class AuthJsCreatorSessionProvider implements CreatorSessionProvider {
 
     const session = await auth.auth();
     const repos = getRepositories();
-    return resolveCreatorPrincipalFromExternalSession(session, (id) => repos.creators.exists(id));
+    return resolveCreatorPrincipalFromExternalSession(session, (id) => repos.creators.getLifecycleStatus(id));
   }
 }

@@ -3,6 +3,7 @@ import { draftHandoffSchema, type DraftHandoff } from "../../handoff/schema.js";
 import type { CreatorId } from "../../creator/types.js";
 import { HandoffLifecycleUnavailableError } from "../errors.js";
 import type { HandoffSourceState } from "../handoff-source-state.js";
+import { lockActiveCreatorMutation } from "./active-creator-mutation.js";
 
 export type SourceErasureResult = {
   handoffId: string;
@@ -60,6 +61,7 @@ export class PostgresHandoffErasureRepository {
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
+      await lockActiveCreatorMutation(client, ownerCreatorId);
       const row = await assertOwnerLocked(client, handoffId, ownerCreatorId);
 
       if (row.source_erased_at !== null && row.source_conversation_id === null) {
@@ -130,6 +132,7 @@ export class PostgresHandoffErasureRepository {
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
+      await lockActiveCreatorMutation(client, ownerCreatorId);
       const row = await assertOwnerLocked(client, handoffId, ownerCreatorId);
       const sourceConversationId = row.source_conversation_id;
 

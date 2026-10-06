@@ -11,3 +11,10 @@ export class HandoffAccessUnavailableError extends Error {
     this.name = "HandoffAccessUnavailableError";
   }
 }
+
+export class CreatorLifecycleBlockedError extends Error {
+  constructor(message = "This Creator account is unavailable for workspace access.") {
+    super(message);
+    this.name = "CreatorLifecycleBlockedError";
+  }
+}

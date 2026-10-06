@@ -1,13 +1,13 @@
 import type { CreatorAuthConfig } from "./auth-config.js";
 import { isDevCreatorAuthAllowedInRuntime } from "./auth-config.js";
 import { verifySignedSessionToken } from "./dev-session.js";
-import type { CreatorPrincipal } from "./types.js";
+import type { VerifiedDevSession } from "./dev-session.js";
 
-export function resolveDevSessionPrincipal(input: {
+export function resolveDevSessionCredential(input: {
   sessionToken: string | undefined;
   config: CreatorAuthConfig;
   nowMs?: number;
-}): CreatorPrincipal | undefined {
+}): VerifiedDevSession | undefined {
   if (!isDevCreatorAuthAllowedInRuntime()) {
     return undefined;
   }

@@ -1,7 +1,7 @@
 import type { DraftHandoff, PublishedHandoff } from "../handoff/schema.js";
 import type { NormalizedConversation } from "../import/types.js";
 import type { CreatorHandoffSummary } from "../handoff/creator-handoff-summary.js";
-import type { CreatorId } from "../creator/types.js";
+import type { CreatorId, CreatorLifecycleStatus } from "../creator/types.js";
 import type { ShareCapabilityMetadata, ShareCapabilityTarget } from "../share/types.js";
 import type { HandoffSourceState } from "./handoff-source-state.js";
 import type { ProvenanceBundle, PublishedReceiverView } from "./receiver-types.js";
@@ -30,6 +30,21 @@ export interface PublishedHandoffRepository {
 export interface CreatorRepository {
   ensure(input: { id: CreatorId; createdAt: string }): Promise<void>;
   exists(id: CreatorId): Promise<boolean>;
+  getLifecycleStatus(id: CreatorId): Promise<CreatorLifecycleStatus | undefined>;
+}
+
+export interface ImportHandoffRepository {
+  importHandoffAtomic(input: {
+    ownerCreatorId: CreatorId;
+    conversation: NormalizedConversation;
+    handoffId: string;
+    draft: DraftHandoff;
+  }): Promise<{ revision: number }>;
+}
+
+export interface AccountErasureRepository {
+  enterErasingPhase(creatorId: CreatorId): Promise<{ alreadyErasing: boolean }>;
+  completeAccountErasure(creatorId: CreatorId): Promise<void>;
 }
 
 export interface ExternalIdentityRepository {

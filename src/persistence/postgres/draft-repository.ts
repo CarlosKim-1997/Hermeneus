@@ -2,6 +2,7 @@ import type { Pool } from "pg";
 import { draftHandoffSchema, type DraftHandoff } from "../../handoff/schema.js";
 import { PersistenceConflictError, SourceBackedDraftRejectedError } from "../errors.js";
 import type { DraftRepository, DraftSaveResult } from "../ports.js";
+import { lockActiveCreatorMutation } from "./active-creator-mutation.js";
 
 function draftHasSourceReferences(draft: DraftHandoff): boolean {
   return draft.items.some((item) => item.sources.length > 0);
@@ -15,6 +16,14 @@ export class PostgresDraftRepository implements DraftRepository {
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
+      const ownerRow = await client.query<{ owner_creator_id: string }>(
+        `SELECT owner_creator_id FROM handoffs WHERE id = $1`,
+        [parsed.id],
+      );
+      if (ownerRow.rowCount === 0) {
+        throw new PersistenceConflictError(`Draft ${parsed.id} does not exist for expected revision ${expectedRevision ?? 0}`);
+      }
+      await lockActiveCreatorMutation(client, ownerRow.rows[0]!.owner_creator_id);
       const handoff = await client.query<{ source_erased_at: Date | null }>(
         `SELECT source_erased_at FROM handoffs WHERE id = $1 FOR UPDATE`,
         [parsed.id],
