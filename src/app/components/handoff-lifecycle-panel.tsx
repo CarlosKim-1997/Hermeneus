@@ -47,8 +47,9 @@ export function HandoffLifecyclePanel({ handoffId, sourceRetained }: Props) {
         <div className="lifecycle-block">
           <h3>Erase Source</h3>
           <p>
-            Permanently deletes the imported source conversation and all provenance for this Handoff. Approved
-            canonical meaning and existing Share links remain. This cannot be undone.
+            Permanently removes this Handoff&apos;s access to the imported source conversation and all provenance for
+            this Handoff. If no other Handoff still uses the same physical source, that source is deleted as well.
+            Approved canonical meaning and existing Share links remain. This cannot be undone.
           </p>
           {!showEraseConfirm ? (
             <button type="button" className="danger" onClick={() => setShowEraseConfirm(true)} disabled={pending}>

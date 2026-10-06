@@ -2,14 +2,14 @@ import { ExtractionError } from "../extraction/errors.js";
 import { SourceUnavailableError } from "../persistence/errors.js";
 
 export type ExtractionFacingError = {
-  code: ExtractionError["code"];
+  code: ExtractionError["code"] | "SOURCE_UNAVAILABLE";
   message: string;
 };
 
 export function toExtractionFacingError(error: unknown): ExtractionFacingError {
   if (error instanceof SourceUnavailableError) {
     return {
-      code: "MODEL_OUTPUT_INVALID",
+      code: "SOURCE_UNAVAILABLE",
       message: error.message,
     };
   }
