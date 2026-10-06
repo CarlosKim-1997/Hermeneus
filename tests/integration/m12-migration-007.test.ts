@@ -1,3 +1,5 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,6 +8,12 @@ import { createDraft } from "../../src/handoff/draft.js";
 import type { HandoffItem } from "../../src/handoff/schema.js";
 import { createPostgresRepositories } from "../../src/persistence/postgres/create-repositories.js";
 import { createPool } from "../../src/persistence/postgres/pool.js";
+import {
+  runPreflightOnClient,
+  validateLegacyPublishedSnapshot,
+} from "../../scripts/preflight-m12-provenance.mjs";
+
+const execFileAsync = promisify(execFile);
 
 const url = process.env.TEST_DATABASE_URL;
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -92,6 +100,40 @@ async function seedLegacyPublished(client: import("pg").PoolClient) {
   return snapshot;
 }
 
+async function applyMigration007(client: import("pg").PoolClient) {
+  const sql007 = await readFile(migration007, "utf8");
+  await client.query("BEGIN");
+  try {
+    await client.query(sql007);
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  }
+}
+
+async function expectMigration007Fails(client: import("pg").PoolClient, pattern?: RegExp) {
+  const sql007 = await readFile(migration007, "utf8");
+  await expect(async () => {
+    await client.query("BEGIN");
+    try {
+      await client.query(sql007);
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    }
+  }).rejects.toThrow(pattern);
+}
+
+async function assertNoCommittedProvenanceTable(client: import("pg").PoolClient) {
+  const reg = await client.query(`SELECT to_regclass('public.published_handoff_provenance') AS t`);
+  if (reg.rows[0].t) {
+    const prov = await client.query(`SELECT 1 FROM published_handoff_provenance LIMIT 1`);
+    expect(prov.rowCount).toBe(0);
+  }
+}
+
 if (!url) {
   describe.skip("M12 migration 007 harness", () => {
     it("requires TEST_DATABASE_URL", () => undefined);
@@ -110,15 +152,12 @@ if (!url) {
       }
     });
 
-    it("M16-1/M16-2/M16-3 — canonical preservation and provenance backfill", async () => {
+    it("M16-1 — canonical preservation after migration", async () => {
       const client = await pool.connect();
       try {
         await applyMigrationsThrough(client, "006_creator_handoff_library_index.sql");
         const legacySnapshot = await seedLegacyPublished(client);
-        const sql007 = await readFile(migration007, "utf8");
-        await client.query("BEGIN");
-        await client.query(sql007);
-        await client.query("COMMIT");
+        await applyMigration007(client);
 
         const after = await client.query(`SELECT snapshot_json FROM published_handoff_versions WHERE handoff_id = 'hd-m16'`);
         const snapshot = after.rows[0].snapshot_json;
@@ -128,6 +167,19 @@ if (!url) {
         expect(snapshot.items[0].id).toBe("web");
         expect(snapshot.items[0].statement).toBe(legacySnapshot.items[0].statement);
         expect(snapshot.items[0].sources).toBeUndefined();
+        expect(snapshot.items[1].id).toBe("empty");
+        expect(snapshot.items[1].sources).toBeUndefined();
+      } finally {
+        client.release();
+      }
+    });
+
+    it("M16-2 — provenance backfill", async () => {
+      const client = await pool.connect();
+      try {
+        await applyMigrationsThrough(client, "006_creator_handoff_library_index.sql");
+        await seedLegacyPublished(client);
+        await applyMigration007(client);
 
         const prov = await client.query(
           `SELECT item_id, source_index, message_id, excerpt FROM published_handoff_provenance WHERE handoff_id = 'hd-m16' ORDER BY item_id, source_index`,
@@ -135,6 +187,105 @@ if (!url) {
         expect(prov.rowCount).toBe(1);
         expect(prov.rows[0].message_id).toBe("conv-m16:m1");
         expect(prov.rows[0].excerpt).toBe("Actually, web first.");
+      } finally {
+        client.release();
+      }
+    });
+
+    it("M16-3 — empty sources migrate with zero provenance rows", async () => {
+      const client = await pool.connect();
+      try {
+        await applyMigrationsThrough(client, "006_creator_handoff_library_index.sql");
+        await seedLegacyPublished(client);
+        await applyMigration007(client);
+
+        const prov = await client.query(
+          `SELECT COUNT(*)::int AS c FROM published_handoff_provenance WHERE handoff_id = 'hd-m16' AND item_id = 'empty'`,
+        );
+        expect(prov.rows[0].c).toBe(0);
+      } finally {
+        client.release();
+      }
+    });
+
+    it("M16-4 — multiple refs and duplicate message positions stay distinct", async () => {
+      const client = await pool.connect();
+      try {
+        await applyMigrationsThrough(client, "006_creator_handoff_library_index.sql");
+        const creator = "creator_m16_dup";
+        await client.query(`INSERT INTO creators (id, created_at) VALUES ($1, NOW())`, [creator]);
+        await client.query(
+          `INSERT INTO source_conversations (id, provider, imported_at) VALUES ('conv-m16-dup', 'generic-text', NOW())`,
+        );
+        await client.query(
+          `INSERT INTO source_messages (id, conversation_id, ordinal, role, content, source_provider)
+           VALUES ('conv-m16-dup:m1', 'conv-m16-dup', 0, 'creator', 'Alpha. Beta repeat Alpha.', 'generic-text')`,
+        );
+        await client.query(
+          `INSERT INTO handoffs (id, source_conversation_id, created_at, owner_creator_id)
+           VALUES ('hd-m16-dup', 'conv-m16-dup', NOW(), $1)`,
+          [creator],
+        );
+        await client.query(
+          `INSERT INTO published_handoff_versions (handoff_id, version, published_at, snapshot_json)
+           VALUES ('hd-m16-dup', 1, '2026-09-25T00:00:00.000Z', $1::jsonb)`,
+          [
+            JSON.stringify({
+              handoffId: "hd-m16-dup",
+              version: 1,
+              publishedAt: "2026-09-25T00:00:00.000Z",
+              items: [
+                {
+                  id: "multi",
+                  type: "CONFIRMED",
+                  statement: "Multi-source item.",
+                  priority: "CORE",
+                  createdBy: "CREATOR",
+                  sources: [
+                    { messageId: "conv-m16-dup:m1", excerpt: "Alpha." },
+                    { messageId: "conv-m16-dup:m1", excerpt: "Beta repeat" },
+                    { messageId: "conv-m16-dup:m1" },
+                  ],
+                },
+              ],
+            }),
+          ],
+        );
+        await applyMigration007(client);
+
+        const prov = await client.query(
+          `SELECT source_index, message_id, excerpt FROM published_handoff_provenance
+           WHERE handoff_id = 'hd-m16-dup' AND item_id = 'multi'
+           ORDER BY source_index ASC`,
+        );
+        expect(prov.rowCount).toBe(3);
+        expect(prov.rows.map((row) => row.source_index)).toEqual([0, 1, 2]);
+        expect(prov.rows.every((row) => row.message_id === "conv-m16-dup:m1")).toBe(true);
+        expect(prov.rows[0].excerpt).toBe("Alpha.");
+        expect(prov.rows[1].excerpt).toBe("Beta repeat");
+        expect(prov.rows[2].excerpt).toBeNull();
+      } finally {
+        client.release();
+      }
+    });
+
+    it("preflight PASS on valid legacy 001–006 fixture", async () => {
+      const client = await pool.connect();
+      try {
+        await applyMigrationsThrough(client, "006_creator_handoff_library_index.sql");
+        await seedLegacyPublished(client);
+        const pub = await client.query(
+          `SELECT handoff_id, version, snapshot_json, published_at FROM published_handoff_versions WHERE handoff_id = 'hd-m16'`,
+        );
+        expect(() => validateLegacyPublishedSnapshot(pub.rows[0].snapshot_json, pub.rows[0])).not.toThrow();
+        const stats = await runPreflightOnClient(client);
+        expect(stats.publishedVersions).toBe(1);
+        expect(stats.sourceReferences).toBe(1);
+        const { stdout } = await execFileAsync("node", ["scripts/preflight-m12-provenance.mjs"], {
+          cwd: root,
+          env: { ...process.env, TEST_DATABASE_URL: url },
+        });
+        expect(stdout).toMatch(/preflight PASS/i);
       } finally {
         client.release();
       }
@@ -173,23 +324,8 @@ if (!url) {
             }),
           ],
         );
-        const sql007 = await readFile(migration007, "utf8");
-        await expect(async () => {
-          await client.query("BEGIN");
-          try {
-            await client.query(sql007);
-            await client.query("COMMIT");
-          } catch (error) {
-            await client.query("ROLLBACK");
-            throw error;
-          }
-        }).rejects.toThrow(/missing source message/i);
-
-        const reg = await client.query(`SELECT to_regclass('public.published_handoff_provenance') AS t`);
-        if (reg.rows[0].t) {
-          const prov = await client.query(`SELECT 1 FROM published_handoff_provenance LIMIT 1`);
-          expect(prov.rowCount).toBe(0);
-        }
+        await expectMigration007Fails(client, /missing source message/i);
+        await assertNoCommittedProvenanceTable(client);
         const snap = await client.query(
           `SELECT snapshot_json->'items'->0 ? 'sources' AS has_sources FROM published_handoff_versions WHERE handoff_id = 'hd-m16-bad'`,
         );
@@ -199,14 +335,143 @@ if (!url) {
       }
     });
 
+    it("M16-6 — wrong conversation reference blocks migration", async () => {
+      const client = await pool.connect();
+      try {
+        await applyMigrationsThrough(client, "006_creator_handoff_library_index.sql");
+        await client.query(`INSERT INTO creators (id, created_at) VALUES ('creator_m16_wrong', NOW())`);
+        await client.query(
+          `INSERT INTO source_conversations (id, provider, imported_at) VALUES ('conv-a', 'generic-text', NOW()), ('conv-b', 'generic-text', NOW())`,
+        );
+        await client.query(
+          `INSERT INTO source_messages (id, conversation_id, ordinal, role, content, source_provider)
+           VALUES ('conv-b:m1', 'conv-b', 0, 'creator', 'Wrong conv content.', 'generic-text')`,
+        );
+        await client.query(
+          `INSERT INTO handoffs (id, source_conversation_id, created_at, owner_creator_id)
+           VALUES ('hd-m16-wrong', 'conv-a', NOW(), 'creator_m16_wrong')`,
+        );
+        const legacyJson = {
+          handoffId: "hd-m16-wrong",
+          version: 1,
+          publishedAt: "2026-09-25T00:00:00.000Z",
+          items: [
+            {
+              id: "web",
+              type: "CONFIRMED",
+              statement: "Wrong conv ref.",
+              priority: "CORE",
+              createdBy: "CREATOR",
+              sources: [{ messageId: "conv-b:m1", excerpt: "Wrong conv" }],
+            },
+          ],
+        };
+        await client.query(
+          `INSERT INTO published_handoff_versions (handoff_id, version, published_at, snapshot_json)
+           VALUES ('hd-m16-wrong', 1, '2026-09-25T00:00:00.000Z', $1::jsonb)`,
+          [JSON.stringify(legacyJson)],
+        );
+        expect(() =>
+          validateLegacyPublishedSnapshot(legacyJson, {
+            handoff_id: "hd-m16-wrong",
+            version: 1,
+            published_at: new Date("2026-09-25T00:00:00.000Z"),
+          }),
+        ).not.toThrow();
+        await expect(runPreflightOnClient(client)).rejects.toThrow(/wrong conversation/i);
+
+        await expectMigration007Fails(client, /wrong conversation/i);
+        await assertNoCommittedProvenanceTable(client);
+        const after = await client.query(`SELECT snapshot_json FROM published_handoff_versions WHERE handoff_id = 'hd-m16-wrong'`);
+        expect(after.rows[0].snapshot_json).toEqual(legacyJson);
+      } finally {
+        client.release();
+      }
+    });
+
+    it("M16-7 — malformed legacy snapshot rejected by preflight and migration", async () => {
+      const client = await pool.connect();
+      try {
+        await applyMigrationsThrough(client, "006_creator_handoff_library_index.sql");
+        await client.query(`INSERT INTO creators (id, created_at) VALUES ('creator_m16_mal', NOW())`);
+        await client.query(
+          `INSERT INTO source_conversations (id, provider, imported_at) VALUES ('conv-mal', 'generic-text', NOW())`,
+        );
+        await client.query(
+          `INSERT INTO handoffs (id, source_conversation_id, created_at, owner_creator_id)
+           VALUES ('hd-m16-mal-type', 'conv-mal', NOW(), 'creator_m16_mal')`,
+        );
+        const badType = {
+          handoffId: "hd-m16-mal-type",
+          version: 1,
+          publishedAt: "2026-09-25T00:00:00.000Z",
+          items: [
+            {
+              id: "x",
+              type: "NOT_A_REAL_TYPE",
+              statement: "Bad type.",
+              priority: "CORE",
+              createdBy: "CREATOR",
+              sources: [],
+            },
+          ],
+        };
+        await client.query(
+          `INSERT INTO published_handoff_versions (handoff_id, version, published_at, snapshot_json)
+           VALUES ('hd-m16-mal-type', 1, '2026-09-25T00:00:00.000Z', $1::jsonb)`,
+          [JSON.stringify(badType)],
+        );
+
+        expect(() =>
+          validateLegacyPublishedSnapshot(badType, {
+            handoff_id: "hd-m16-mal-type",
+            version: 1,
+            published_at: new Date("2026-09-25T00:00:00.000Z"),
+          }),
+        ).toThrow(/invalid type/i);
+
+        await expectMigration007Fails(client, /invalid item type/i);
+        await assertNoCommittedProvenanceTable(client);
+        const row = await client.query(
+          `SELECT snapshot_json FROM published_handoff_versions WHERE handoff_id = 'hd-m16-mal-type'`,
+        );
+        expect(row.rows[0].snapshot_json).toEqual(badType);
+      } finally {
+        client.release();
+      }
+    });
+
+    it("M16-7b — invalid priority blocked by preflight validator", async () => {
+      const badPriority = {
+        handoffId: "hd-m16-mal-pri",
+        version: 1,
+        publishedAt: "2026-09-25T00:00:00.000Z",
+        items: [
+          {
+            id: "y",
+            type: "CONFIRMED",
+            statement: "Bad priority.",
+            priority: "LOW",
+            createdBy: "CREATOR",
+            sources: [],
+          },
+        ],
+      };
+      expect(() =>
+        validateLegacyPublishedSnapshot(badPriority, {
+          handoff_id: "hd-m16-mal-pri",
+          version: 1,
+          published_at: new Date("2026-09-25T00:00:00.000Z"),
+        }),
+      ).toThrow(/invalid priority/i);
+    });
+
     it("M16-8 — Published UPDATE remains rejected after migration", async () => {
       const client = await pool.connect();
       try {
         await applyMigrationsThrough(client, "006_creator_handoff_library_index.sql");
         await seedLegacyPublished(client);
-        await client.query("BEGIN");
-        await client.query(await readFile(migration007, "utf8"));
-        await client.query("COMMIT");
+        await applyMigration007(client);
         await expect(
           client.query(`UPDATE published_handoff_versions SET snapshot_json = snapshot_json WHERE handoff_id = 'hd-m16'`),
         ).rejects.toThrow(/immutable/i);
@@ -247,17 +512,8 @@ if (!url) {
            VALUES ('hd-m16-rb', 1, '2026-09-25T00:00:00.000Z', $1::jsonb)`,
           [JSON.stringify(legacyJson)],
         );
-        const sql007 = await readFile(migration007, "utf8");
-        await expect(async () => {
-          await client.query("BEGIN");
-          try {
-            await client.query(sql007);
-            await client.query("COMMIT");
-          } catch (error) {
-            await client.query("ROLLBACK");
-            throw error;
-          }
-        }).rejects.toThrow();
+        await expectMigration007Fails(client);
+        await assertNoCommittedProvenanceTable(client);
         const after = await client.query(
           `SELECT snapshot_json FROM published_handoff_versions WHERE handoff_id = 'hd-m16-rb'`,
         );
@@ -316,6 +572,75 @@ if (!url) {
 
     afterAll(async () => {
       await pool.end();
+    });
+
+    it("publication provenance rollback — failed provenance insert rolls back published version", async () => {
+      const client = await pool.connect();
+      try {
+        await client.query(
+          "TRUNCATE share_capabilities, published_handoff_provenance, published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creators RESTART IDENTITY CASCADE",
+        );
+        await client.query(`
+          CREATE OR REPLACE FUNCTION test_reject_provenance_insert()
+          RETURNS TRIGGER LANGUAGE plpgsql AS $$
+          BEGIN
+            IF NEW.handoff_id = 'hd-prov-fail' THEN
+              RAISE EXCEPTION 'test injected provenance insert failure';
+            END IF;
+            RETURN NEW;
+          END;
+          $$;
+        `);
+        await client.query(`
+          CREATE TRIGGER test_reject_provenance_insert
+          BEFORE INSERT ON published_handoff_provenance
+          FOR EACH ROW EXECUTE FUNCTION test_reject_provenance_insert();
+        `);
+      } finally {
+        client.release();
+      }
+
+      await repos.creators.ensure({ id: "creator_fail", createdAt: "2026-09-25T00:00:00.000Z" });
+      await repos.conversations.create({
+        id: "conv-fail",
+        source: { provider: "generic-text", importedAt: "2026-09-25T00:00:00.000Z" },
+        messages: [
+          {
+            id: "conv-fail:m1",
+            role: "creator",
+            content: "Inject failure path.",
+            source: { provider: "generic-text" },
+          },
+        ],
+      });
+      await repos.handoffs.create("hd-prov-fail", "conv-fail", "creator_fail");
+      await repos.drafts.save(
+        createDraft("hd-prov-fail", [
+          item({
+            id: "web",
+            type: "CONFIRMED",
+            statement: "Should not publish.",
+            sources: [{ messageId: "conv-fail:m1", excerpt: "Inject failure" }],
+          }),
+        ]),
+      );
+
+      await expect(repos.published.publish("hd-prov-fail", "2026-09-25T00:00:00.000Z", 1)).rejects.toThrow(
+        /test injected provenance insert failure/i,
+      );
+
+      const pub = await pool.query(`SELECT 1 FROM published_handoff_versions WHERE handoff_id = 'hd-prov-fail'`);
+      expect(pub.rowCount).toBe(0);
+      const prov = await pool.query(`SELECT 1 FROM published_handoff_provenance WHERE handoff_id = 'hd-prov-fail'`);
+      expect(prov.rowCount).toBe(0);
+
+      const cleanup = await pool.connect();
+      try {
+        await cleanup.query(`DROP TRIGGER IF EXISTS test_reject_provenance_insert ON published_handoff_provenance`);
+        await cleanup.query(`DROP FUNCTION IF EXISTS test_reject_provenance_insert()`);
+      } finally {
+        cleanup.release();
+      }
     });
 
     it("publish writes canonical snapshot and provenance rows atomically", async () => {

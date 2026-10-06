@@ -150,7 +150,9 @@ Tables:
 
 Publication runs in a transaction: lock the handoff row, lock the draft row, verify expected revision, validate provenance, compute the next version, insert canonical snapshot **and** provenance rows atomically.
 
-Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without provenance. Provenance is fetched separately through `getProvenance` from `published_handoff_provenance` (retained vs `unavailable_erased`). Receiver routes always pin an explicit version (`/receiver/[handoffId]/[version]`); there is no “latest” Receiver lookup. Receiver Q&A calls OpenAI only when explicitly configured; it cannot fill `OPEN` or `UNKNOWN` beyond the approved Handoff.
+Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without provenance. Provenance is fetched separately through `getProvenance` from `published_handoff_provenance` (retained vs `unavailable_erased`). Requested item IDs are filtered to IDs that exist on the pinned Published version; unknown IDs are omitted rather than synthesized. Retained provenance rows that reference missing source messages raise `ProvenanceIntegrityError`. Migration and preflight reject malformed legacy Published snapshots; publication writes canonical snapshots and provenance rows in one transaction. Intentional provenance removal will be an authorized erasure operation (T-017); the system does not infer row-count invariants for arbitrary direct-SQL provenance deletion.
+
+Receiver routes always pin an explicit version (`/receiver/[handoffId]/[version]`); there is no “latest” Receiver lookup. Receiver Q&A calls OpenAI only when explicitly configured; it cannot fill `OPEN` or `UNKNOWN` beyond the approved Handoff.
 
 ## Receiver UI (Milestone 5)
 

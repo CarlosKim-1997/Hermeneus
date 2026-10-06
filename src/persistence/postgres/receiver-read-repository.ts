@@ -55,6 +55,19 @@ export class PostgresReceiverReadRepository implements ReceiverReadRepository {
 
     await this.ensurePublishedExists(handoffId, version);
 
+    const snapshotResult = await this.pool.query<{ snapshot_json: unknown }>(
+      `SELECT snapshot_json
+       FROM published_handoff_versions
+       WHERE handoff_id = $1 AND version = $2`,
+      [handoffId, version],
+    );
+    const published = publishedHandoffSchema.parse(snapshotResult.rows[0]!.snapshot_json);
+    const canonicalItemIds = new Set(published.items.map((item) => item.id));
+    const selectedItemIds = uniqueItemIds.filter((id) => canonicalItemIds.has(id));
+    if (selectedItemIds.length === 0) {
+      return { availability: "retained", handoffId, version, items: [] };
+    }
+
     const provenanceRows = await this.pool.query<{
       item_id: string;
       source_index: number;
@@ -65,7 +78,7 @@ export class PostgresReceiverReadRepository implements ReceiverReadRepository {
        FROM published_handoff_provenance
        WHERE handoff_id = $1 AND version = $2 AND item_id = ANY($3::text[])
        ORDER BY item_id ASC, source_index ASC`,
-      [handoffId, version, uniqueItemIds],
+      [handoffId, version, selectedItemIds],
     );
 
     const rowsByItem = new Map<string, typeof provenanceRows.rows>();
@@ -85,7 +98,7 @@ export class PostgresReceiverReadRepository implements ReceiverReadRepository {
           );
     const roleById = new Map(roles.rows.map((row) => [row.id, row.role]));
 
-    const items = uniqueItemIds.map((itemId) => {
+    const items = selectedItemIds.map((itemId) => {
       const itemRows = rowsByItem.get(itemId) ?? [];
       const references: ProvenanceReference[] = itemRows.map((row) => {
         const role = roleById.get(row.message_id);

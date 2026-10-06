@@ -41,7 +41,7 @@ T-015 engineering contract and M12 Canon (D-009, C-008, etc.) bound semantics. N
 - `git diff --check` — clean
 - `npm run typecheck` — PASS
 - `npm run preflight:m12-provenance` — PASS (test DB, read-only)
-- `npm run test:integration` — PASS (35 tests, including M12 migration 007 harness M16-1–M16-10)
+- `npm run test:integration` — PASS (M12 harness: M16-1–M16-10, M16-7b, preflight fixture, publication provenance rollback)
 - `npm run test:share` — PASS (17)
 - `npm run test:application` — PASS (32)
 - `npm run test:receiver` — PASS (11)

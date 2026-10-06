@@ -223,6 +223,28 @@ if (!url) {
       expect(JSON.stringify(provenance)).not.toMatch(/SECRET exploratory salary discussion/);
     });
 
+    it("P8b — unknown requested item IDs are omitted from provenance results", async () => {
+      await repos.conversations.create(conversation);
+      await repos.handoffs.create("handoff-p8b", "conv-p", TEST_CREATOR);
+      await saveInitialDraft(
+        repos,
+        createDraft("handoff-p8b", [
+          item({
+            id: "web",
+            type: "CONFIRMED",
+            statement: "Web-first is confirmed.",
+            sources: [{ messageId: "conv-p:m3", excerpt: "Actually, web first." }],
+          }),
+        ]),
+      );
+      await publishCurrentDraft(repos, "handoff-p8b", "2026-09-25T00:00:00.000Z");
+      const provenance = await repos.receiver.getProvenance("handoff-p8b", 1, ["web", "does-not-exist"]);
+      expect(provenance.availability).toBe("retained");
+      if (provenance.availability !== "retained") return;
+      expect(provenance.items).toHaveLength(1);
+      expect(provenance.items[0]?.itemId).toBe("web");
+    });
+
     it("P9 — transcript/canonical conflict survives persistence", async () => {
       await repos.conversations.create(conversation);
       await repos.handoffs.create("handoff-p9", "conv-p", TEST_CREATOR);
