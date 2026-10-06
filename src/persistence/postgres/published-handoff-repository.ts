@@ -10,6 +10,7 @@ import { PersistenceConflictError } from "../errors.js";
 import type { PublishedHandoffRepository } from "../ports.js";
 import type { Queryable } from "./pool.js";
 import { validatePublicationProvenance } from "./validate-publication-provenance.js";
+import { lockActiveCreatorMutation } from "./active-creator-mutation.js";
 
 export class PostgresPublishedHandoffRepository implements PublishedHandoffRepository {
   constructor(private readonly pool: Pool) {}
@@ -22,6 +23,14 @@ export class PostgresPublishedHandoffRepository implements PublishedHandoffRepos
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
+      const ownerRow = await client.query<{ owner_creator_id: string }>(
+        `SELECT owner_creator_id FROM handoffs WHERE id = $1`,
+        [handoffId],
+      );
+      if (ownerRow.rowCount === 0) {
+        throw new Error(`No handoff exists for ${handoffId}`);
+      }
+      await lockActiveCreatorMutation(client, ownerRow.rows[0]!.owner_creator_id);
       await client.query("SELECT id FROM handoffs WHERE id = $1 FOR UPDATE", [handoffId]);
 
       const draftResult = await client.query<{ revision: number; snapshot_json: unknown }>(

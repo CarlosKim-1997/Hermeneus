@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { isDevCreatorAuthAllowedInRuntime } from "../../src/creator/auth-config.js";
 import { createSignedSessionToken, verifySignedSessionToken } from "../../src/creator/dev-session.js";
 import { readCreatorAuthConfig } from "../../src/creator/auth-config.js";
-import { resolveDevSessionPrincipal } from "../../src/creator/resolve-dev-session-principal.js";
+import { resolveDevSessionCredential } from "../../src/creator/resolve-dev-session-principal.js";
 import { LEGACY_PRE_M9_CREATOR_ID } from "../../src/creator/types.js";
 import { requireOwnedHandoff } from "../../src/application/authorize-handoff.js";
 import { CreatorUnauthenticatedError, HandoffAccessUnavailableError } from "../../src/application/creator-auth-errors.js";
@@ -119,7 +119,7 @@ if (!url) {
       });
       const config = readCreatorAuthConfig();
       expect(config.mode).toBe("dev");
-      expect(resolveDevSessionPrincipal({ sessionToken: token, config, nowMs: now })).toBeUndefined();
+      expect(resolveDevSessionCredential({ sessionToken: token, config, nowMs: now })).toBeUndefined();
       vi.unstubAllEnvs();
     });
 
@@ -188,8 +188,8 @@ if (!url) {
 
     it("O6/O7 — owner vs non-owner review access", async () => {
       const imported = await importAndCreateHandoff(repos, CREATOR_A, "creator: hello");
-      await expect(requireOwnedHandoff(repos, { creatorId: CREATOR_A }, imported.handoffId)).resolves.toBeTruthy();
-      await expect(requireOwnedHandoff(repos, { creatorId: CREATOR_B }, imported.handoffId)).rejects.toBeInstanceOf(
+      await expect(requireOwnedHandoff(repos, { creatorId: CREATOR_A, lifecycleStatus: "active" as const }, imported.handoffId)).resolves.toBeTruthy();
+      await expect(requireOwnedHandoff(repos, { creatorId: CREATOR_B, lifecycleStatus: "active" as const }, imported.handoffId)).rejects.toBeInstanceOf(
         HandoffAccessUnavailableError,
       );
       expect(await loadCreatorReview(repos, imported.handoffId)).toBeTruthy();
@@ -206,10 +206,10 @@ if (!url) {
       const imported = await importAndCreateHandoff(repos, CREATOR_A, "creator: web first");
       const revision = await repos.drafts.getRevision(imported.handoffId);
       await repos.published.publish(imported.handoffId, "2026-09-25T12:00:00.000Z", revision!);
-      await expect(requireOwnedHandoff(repos, { creatorId: CREATOR_A }, imported.handoffId)).resolves.toBeTruthy();
+      await expect(requireOwnedHandoff(repos, { creatorId: CREATOR_A, lifecycleStatus: "active" as const }, imported.handoffId)).resolves.toBeTruthy();
       const issued = await issueShareCapability(repos, { handoffId: imported.handoffId, version: 1 });
       expect(issued.rawToken).toMatch(/^hsh_/);
-      await expect(requireOwnedHandoff(repos, { creatorId: CREATOR_B }, imported.handoffId)).rejects.toBeInstanceOf(
+      await expect(requireOwnedHandoff(repos, { creatorId: CREATOR_B, lifecycleStatus: "active" as const }, imported.handoffId)).rejects.toBeInstanceOf(
         HandoffAccessUnavailableError,
       );
     });
@@ -219,7 +219,7 @@ if (!url) {
       const revision = await repos.drafts.getRevision(imported.handoffId);
       await repos.published.publish(imported.handoffId, "2026-09-25T12:00:00.000Z", revision!);
       const issued = await issueShareCapability(repos, { handoffId: imported.handoffId, version: 1 });
-      await expect(requireOwnedHandoff(repos, { creatorId: CREATOR_B }, imported.handoffId)).rejects.toBeInstanceOf(
+      await expect(requireOwnedHandoff(repos, { creatorId: CREATOR_B, lifecycleStatus: "active" as const }, imported.handoffId)).rejects.toBeInstanceOf(
         HandoffAccessUnavailableError,
       );
       expect(issued.metadata.id).toBeTruthy();
@@ -227,7 +227,7 @@ if (!url) {
 
     it("O20/O21 — direct Receiver Q&A requires owner", async () => {
       const imported = await importAndCreateHandoff(repos, CREATOR_A, "creator: confirmed web");
-      await expect(requireOwnedHandoff(repos, { creatorId: CREATOR_B }, imported.handoffId)).rejects.toBeInstanceOf(
+      await expect(requireOwnedHandoff(repos, { creatorId: CREATOR_B, lifecycleStatus: "active" as const }, imported.handoffId)).rejects.toBeInstanceOf(
         HandoffAccessUnavailableError,
       );
     });
@@ -248,7 +248,7 @@ if (!url) {
       await repos.published.publish(imported.handoffId, "2026-09-25T12:00:00.000Z", revision!);
       const issued = await issueShareCapability(repos, { handoffId: imported.handoffId, version: 1 });
       await revokeShareCapability(repos, { capabilityId: issued.metadata.id });
-      setCreatorSessionProviderForTests({ getCurrentPrincipal: async () => ({ creatorId: CREATOR_A }) });
+      setCreatorSessionProviderForTests({ getCurrentPrincipal: async () => ({ creatorId: CREATOR_A, lifecycleStatus: "active" as const }) });
       const outcome = await askSharedReceiverQuestion(repos, { token: issued.rawToken, question: "Web?" });
       expect(outcome).toEqual({ kind: "unavailable" });
     });

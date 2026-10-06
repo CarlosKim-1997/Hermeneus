@@ -86,7 +86,7 @@ if (!url) {
       const creatorId = await resolveOrCreateCreatorForExternalIdentity(repos, { provider: "google", subject: "subject-no-delete" });
       await expect(
         pool.query(`DELETE FROM creator_external_identities WHERE provider = 'google' AND subject = 'subject-no-delete'`),
-      ).rejects.toThrow(/immutable/i);
+      ).rejects.toThrow(/not erasing/i);
       expect(await repos.externalIdentities.resolve("google", "subject-no-delete")).toBe(creatorId);
     });
 

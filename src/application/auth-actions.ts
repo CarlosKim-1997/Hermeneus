@@ -27,7 +27,9 @@ export async function devSignInAction(formData?: FormData) {
   try {
     const repos = getRepositories();
     const createdAt = new Date().toISOString();
+    const lifecycleBefore = await repos.creators.getLifecycleStatus(creatorId);
     await repos.creators.ensure({ id: creatorId, createdAt });
+    const lifecycleAfter = (await repos.creators.getLifecycleStatus(creatorId)) ?? "active";
     const issuedAt = Date.now();
     const token = createSignedSessionToken({
       creatorId,
@@ -43,6 +45,9 @@ export async function devSignInAction(formData?: FormData) {
       secure: process.env.NODE_ENV === "production",
       maxAge: Math.floor(config.sessionTtlMs / 1000),
     });
+    if (lifecycleBefore === "erasing" || lifecycleAfter === "erasing") {
+      redirect("/account" as "/handoffs");
+    }
     redirect("/handoffs");
   } catch (error) {
     if (isRedirectError(error)) throw error;

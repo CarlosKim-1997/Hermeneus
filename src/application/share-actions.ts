@@ -14,9 +14,13 @@ import {
   SHARE_UNAVAILABLE_MESSAGE,
 } from "./use-cases/shared-receiver-qa.js";
 import { toReceiverFacingError } from "./receiver-errors.js";
-import { requireCreatorPrincipalFromSession } from "./creator-action-auth.js";
+import { requireActiveCreatorPrincipal } from "./creator-action-auth.js";
 import { requireOwnedHandoff } from "./authorize-handoff.js";
-import { CreatorUnauthenticatedError, HandoffAccessUnavailableError } from "./creator-auth-errors.js";
+import {
+  CreatorLifecycleBlockedError,
+  CreatorUnauthenticatedError,
+  HandoffAccessUnavailableError,
+} from "./creator-auth-errors.js";
 
 function mapCreatorAuthFailure(error: unknown) {
   if (error instanceof CreatorUnauthenticatedError) {
@@ -25,13 +29,16 @@ function mapCreatorAuthFailure(error: unknown) {
   if (error instanceof HandoffAccessUnavailableError) {
     return { ok: false as const, error: { code: "NOT_FOUND" as const, message: "This Handoff is unavailable." } };
   }
+  if (error instanceof CreatorLifecycleBlockedError) {
+    return { ok: false as const, error: { code: "NOT_FOUND" as const, message: "This Handoff is unavailable." } };
+  }
   return null;
 }
 
 export async function issueShareCapabilityAction(input: { handoffId: string; version: number }) {
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     await requireOwnedHandoff(repos, principal, input.handoffId);
     const issued = await issueShareCapability(repos, input);
     return {
@@ -53,7 +60,7 @@ export async function issueShareCapabilityAction(input: { handoffId: string; ver
 export async function listShareCapabilitiesAction(input: { handoffId: string; version: number }) {
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     await requireOwnedHandoff(repos, principal, input.handoffId);
     const capabilities = await listShareCapabilitiesForVersion(repos, input.handoffId, input.version);
     return { ok: true as const, capabilities };
@@ -67,7 +74,7 @@ export async function listShareCapabilitiesAction(input: { handoffId: string; ve
 export async function revokeShareCapabilityAction(input: { capabilityId: string }) {
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     const metadata = await repos.shareCapabilities.getMetadataById(input.capabilityId);
     if (!metadata) {
       return { ok: false as const, error: { code: "NOT_FOUND" as const, message: "Share capability was not found." } };

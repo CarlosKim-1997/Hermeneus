@@ -12,15 +12,22 @@ import { generateHandoffExtractionProposal } from "./use-cases/generate-extracti
 import { getHandoffExtractor } from "./extraction-factory.js";
 import { toExtractionFacingError } from "./extraction-user-errors.js";
 import type { HandoffItem } from "../handoff/schema.js";
-import { requireCreatorPrincipalFromSession } from "./creator-action-auth.js";
+import { requireActiveCreatorPrincipal } from "./creator-action-auth.js";
 import { requireOwnedHandoff } from "./authorize-handoff.js";
-import { CreatorUnauthenticatedError, HandoffAccessUnavailableError } from "./creator-auth-errors.js";
+import {
+  CreatorLifecycleBlockedError,
+  CreatorUnauthenticatedError,
+  HandoffAccessUnavailableError,
+} from "./creator-auth-errors.js";
 
 function mapAuthFailure(error: unknown) {
   if (error instanceof CreatorUnauthenticatedError) {
     return { ok: false as const, error: { code: "UNAUTHENTICATED" as const, message: "Sign in to continue." } };
   }
   if (error instanceof HandoffAccessUnavailableError) {
+    return { ok: false as const, error: { code: "NOT_FOUND" as const, message: "This Handoff is unavailable." } };
+  }
+  if (error instanceof CreatorLifecycleBlockedError) {
     return { ok: false as const, error: { code: "NOT_FOUND" as const, message: "This Handoff is unavailable." } };
   }
   return null;
@@ -37,7 +44,7 @@ export async function importConversationAction(
     return { error: "Paste a conversation transcript to import." };
   }
   try {
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     const repos = getRepositories();
     const result = await importAndCreateHandoff(repos, principal.creatorId, transcript);
     redirect(`/handoffs/${result.handoffId}/review`);
@@ -59,7 +66,7 @@ export async function saveDraftAction(input: {
 }) {
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     await requireOwnedHandoff(repos, principal, input.handoffId);
     const result = await saveCreatorDraft(repos, input.handoffId, input.items, input.expectedRevision);
     return { ok: true as const, revision: result.revision };
@@ -73,7 +80,7 @@ export async function saveDraftAction(input: {
 export async function publishHandoffAction(handoffId: string, expectedDraftRevision: number) {
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     await requireOwnedHandoff(repos, principal, handoffId);
     const published = await publishHandoff(repos, handoffId, expectedDraftRevision);
     redirect(`/handoffs/${handoffId}/published/${published.version}`);
@@ -88,11 +95,15 @@ export async function publishHandoffAction(handoffId: string, expectedDraftRevis
 export async function fetchCreatorReview(handoffId: string) {
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     await requireOwnedHandoff(repos, principal, handoffId);
     return loadCreatorReview(repos, handoffId);
   } catch (error) {
-    if (error instanceof HandoffAccessUnavailableError || error instanceof CreatorUnauthenticatedError) {
+    if (
+      error instanceof HandoffAccessUnavailableError ||
+      error instanceof CreatorUnauthenticatedError ||
+      error instanceof CreatorLifecycleBlockedError
+    ) {
       return undefined;
     }
     throw error;
@@ -102,11 +113,15 @@ export async function fetchCreatorReview(handoffId: string) {
 export async function fetchPublishedHandoff(handoffId: string, version: number) {
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     await requireOwnedHandoff(repos, principal, handoffId);
     return loadPublishedHandoff(repos, handoffId, version);
   } catch (error) {
-    if (error instanceof HandoffAccessUnavailableError || error instanceof CreatorUnauthenticatedError) {
+    if (
+      error instanceof HandoffAccessUnavailableError ||
+      error instanceof CreatorUnauthenticatedError ||
+      error instanceof CreatorLifecycleBlockedError
+    ) {
       return undefined;
     }
     throw error;
@@ -116,7 +131,7 @@ export async function fetchPublishedHandoff(handoffId: string, version: number) 
 export async function eraseSourceAction(handoffId: string) {
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     await requireOwnedHandoff(repos, principal, handoffId);
     const result = await eraseHandoffSource(repos, principal.creatorId, handoffId);
     return { ok: true as const, revision: result.draftRevision, idempotent: result.idempotent };
@@ -130,7 +145,7 @@ export async function eraseSourceAction(handoffId: string) {
 export async function deleteHandoffAction(handoffId: string) {
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     await requireOwnedHandoff(repos, principal, handoffId);
     await deleteWholeHandoff(repos, principal.creatorId, handoffId);
     redirect("/handoffs");
@@ -145,7 +160,7 @@ export async function deleteHandoffAction(handoffId: string) {
 export async function generateExtractionSuggestionsAction(handoffId: string) {
   try {
     const repos = getRepositories();
-    const principal = await requireCreatorPrincipalFromSession();
+    const principal = await requireActiveCreatorPrincipal();
     await requireOwnedHandoff(repos, principal, handoffId);
     const extractor = getHandoffExtractor();
     const result = await generateHandoffExtractionProposal(repos, extractor, handoffId);

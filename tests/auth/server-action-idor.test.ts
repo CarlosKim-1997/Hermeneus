@@ -49,7 +49,8 @@ function item(partial: Pick<HandoffItem, "id" | "type" | "statement"> & Partial<
 
 function sessionAs(creatorId: string | undefined) {
   setCreatorSessionProviderForTests({
-    getCurrentPrincipal: async () => (creatorId ? { creatorId } : undefined),
+    getCurrentPrincipal: async () =>
+      creatorId ? { creatorId, lifecycleStatus: "active" as const } : undefined,
   });
 }
 

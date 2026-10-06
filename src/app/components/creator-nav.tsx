@@ -7,8 +7,13 @@ export async function CreatorNav() {
 
   return (
     <nav className="creator-nav" aria-label="Creator">
-      <Link href="/handoffs">Handoffs</Link>
-      <Link href="/new">New Handoff</Link>
+      {principal.lifecycleStatus === "active" ? (
+        <>
+          <Link href="/handoffs">Handoffs</Link>
+          <Link href="/new">New Handoff</Link>
+        </>
+      ) : null}
+      <Link href={"/account" as "/handoffs"}>Account</Link>
     </nav>
   );
 }
