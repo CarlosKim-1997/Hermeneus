@@ -1,7 +1,7 @@
 ---
 schema: task/v1
 id: T-017
-status: IN_PROGRESS
+status: COMPLETE
 areas:
   - handoff
 depends_on:
@@ -37,7 +37,28 @@ M12 Canon and T-015/T-016 engineering contracts bound semantics. Destructive ope
 
 ## Verification
 
-Recorded after implementation completes.
+Representative adversarial completion evidence (reconciliation HEAD):
+
+- **Source Erasure:** E17-S1–S4, S5, S6, S7, S8, S9, S10 (in-flight model + post-check), S11 (internal + shared surface), S12 (transaction rollback via injected trigger).
+- **Concurrency:** draft save→erase and erase→draft save; publish→erase and erase→publish; provenance read→erase and erase→provenance read via `repos.receiver.getProvenance`.
+- **Whole-Handoff:** H1 multi-version/multi-share delete with SQL counts; H2 shared view/Q&A/provenance fail closed; H3–H5; H6 delete rollback; H7 share vs delete linearization (FOR SHARE hold + concurrent paths).
+- **Security:** SA11–SA14 server-action auth for erase/delete (anonymous UNAUTHENTICATED; non-owner NOT_FOUND, no mutation).
+- **Application:** U15 `SOURCE_UNAVAILABLE` extraction facing code; E17-CR1 `loadCreatorReview` `kind: "erased"` without source identifiers.
+- **E2E:** `e2e/handoff-lifecycle.spec.ts` (erase source UX; delete two-step confirm).
+
+Commands (all PASS except noted):
+
+- `node tooling/governance/check.mjs` — PASS
+- `git diff --check` — PASS
+- `npm run typecheck` — PASS
+- `npm run test:integration` — 72 PASS
+- `npm run test:share` — 17 PASS
+- `npm run test:application` — 34 PASS
+- `npm run test:auth` — 65 PASS
+- `npm run test:receiver` — 11 PASS
+- `npm test` — 14 PASS
+- `npm run test:e2e` — 10/11 PASS; unrelated env flake: `share-surface-isolation.spec.ts` revoked-share case
+- `npx playwright test e2e/handoff-lifecycle.spec.ts` — 2 PASS
 
 ## Stop Conditions
 
