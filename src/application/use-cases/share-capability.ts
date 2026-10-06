@@ -31,13 +31,22 @@ export async function issueShareCapability(
   const rawToken = generateShareToken();
   const tokenHash = hashShareToken(rawToken);
   const createdAt = new Date().toISOString();
-  const metadata = await repos.shareCapabilities.create({
+  let metadata;
+  try {
+    metadata = await repos.shareCapabilities.create({
     id: generateOpaqueId("shcap"),
     handoffId: input.handoffId,
     version: input.version,
     tokenHash,
     createdAt,
   });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("unavailable")) {
+      throw new ShareCapabilityError("NOT_PUBLISHED", "Only a published Handoff version can be shared.");
+    }
+    throw error;
+  }
 
   return { metadata, rawToken };
 }

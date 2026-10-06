@@ -31,13 +31,34 @@ export class PostgresShareCapabilityRepository implements ShareCapabilityReposit
     tokenHash: string;
     createdAt: string;
   }): Promise<ShareCapabilityMetadata> {
-    const result = await this.pool.query<Row>(
-      `INSERT INTO share_capabilities (id, handoff_id, version, token_hash, created_at)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, handoff_id, version, token_hash, created_at, revoked_at`,
-      [input.id, input.handoffId, input.version, input.tokenHash, input.createdAt],
-    );
-    return mapMetadata(result.rows[0]!);
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const handoff = await client.query(`SELECT 1 FROM handoffs WHERE id = $1 FOR SHARE`, [input.handoffId]);
+      if (handoff.rowCount === 0) {
+        throw new Error(`Handoff ${input.handoffId} is unavailable for share issuance`);
+      }
+      const published = await client.query(
+        `SELECT 1 FROM published_handoff_versions WHERE handoff_id = $1 AND version = $2`,
+        [input.handoffId, input.version],
+      );
+      if (published.rowCount === 0) {
+        throw new Error(`Published version ${input.version} is unavailable for handoff ${input.handoffId}`);
+      }
+      const result = await client.query<Row>(
+        `INSERT INTO share_capabilities (id, handoff_id, version, token_hash, created_at)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, handoff_id, version, token_hash, created_at, revoked_at`,
+        [input.id, input.handoffId, input.version, input.tokenHash, input.createdAt],
+      );
+      await client.query("COMMIT");
+      return mapMetadata(result.rows[0]!);
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async resolveActiveByTokenHash(tokenHash: string): Promise<ShareCapabilityTarget | undefined> {

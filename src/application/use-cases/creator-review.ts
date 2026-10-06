@@ -5,7 +5,8 @@ import type { getRepositories } from "../runtime.js";
 
 type Repos = ReturnType<typeof getRepositories>;
 
-export type CreatorReviewState = {
+export type CreatorReviewStateRetained = {
+  kind: "retained";
   handoffId: string;
   conversationId: string;
   revision: number;
@@ -13,19 +14,49 @@ export type CreatorReviewState = {
   sourceConversation: NonNullable<Awaited<ReturnType<CreatorSourceRead["getSourceConversation"]>>>;
 };
 
+export type CreatorReviewStateErased = {
+  kind: "erased";
+  handoffId: string;
+  revision: number;
+  draft: ReturnType<typeof draftHandoffSchema.parse>;
+  erasedAt: string;
+};
+
+export type CreatorReviewState = CreatorReviewStateRetained | CreatorReviewStateErased;
+
+export function requireRetainedCreatorReview(
+  state: CreatorReviewState | undefined,
+): CreatorReviewStateRetained {
+  if (!state || state.kind !== "retained") {
+    throw new Error("Expected retained creator review state");
+  }
+  return state;
+}
+
 export async function loadCreatorReview(repos: Repos, handoffId: string): Promise<CreatorReviewState | undefined> {
-  const conversationId = await repos.handoffs.getSourceConversationId(handoffId);
-  if (!conversationId) return undefined;
+  const sourceState = await repos.handoffs.getHandoffSourceState(handoffId);
+  if (!sourceState) return undefined;
 
   const draft = await repos.drafts.get(handoffId);
   const revision = await repos.drafts.getRevision(handoffId);
   if (!draft || revision === undefined) return undefined;
 
+  if (sourceState.kind === "erased") {
+    return { kind: "erased", handoffId, revision, draft, erasedAt: sourceState.erasedAt };
+  }
+
   const sourceRead = new CreatorSourceRead(repos.conversations);
-  const sourceConversation = await sourceRead.getSourceConversation(conversationId);
+  const sourceConversation = await sourceRead.getSourceConversation(sourceState.conversationId);
   if (!sourceConversation) return undefined;
 
-  return { handoffId, conversationId, revision, draft, sourceConversation };
+  return {
+    kind: "retained",
+    handoffId,
+    conversationId: sourceState.conversationId,
+    revision,
+    draft,
+    sourceConversation,
+  };
 }
 
 function sourcesEqual(
@@ -39,7 +70,6 @@ function resolveCreatedBy(
   incoming: HandoffItem,
   previous: HandoffItem | undefined,
 ): HandoffItem["createdBy"] {
-  // Untrusted browser payloads cannot establish machine origin on first save.
   if (!previous) return "CREATOR";
   if (previous.createdBy !== "EXTRACTION") return "CREATOR";
   const unchanged =

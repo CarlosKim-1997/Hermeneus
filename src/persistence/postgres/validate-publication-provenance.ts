@@ -16,9 +16,13 @@ export async function validatePublicationProvenance(
   }
   const row = handoff.rows[0]!;
   if (row.source_erased_at !== null || row.source_conversation_id === null) {
-    throw new ProvenanceValidationError(
-      `Handoff ${handoffId} source is unavailable; cannot publish source-backed provenance`,
-    );
+    const hasSourceReferences = draft.items.some((item) => item.sources.length > 0);
+    if (hasSourceReferences) {
+      throw new ProvenanceValidationError(
+        `Handoff ${handoffId} source is unavailable; cannot publish source-backed provenance`,
+      );
+    }
+    return;
   }
   const conversationId = row.source_conversation_id;
   const messageIds = [...new Set(draft.items.flatMap((item) => item.sources.map((source) => source.messageId)))];

@@ -130,7 +130,22 @@ Receiver
 
 Legacy Published snapshots that embedded `sources` inside JSON are migrated in a controlled maintenance-window transaction (`007_published_provenance_split.sql`). Preflight: `npm run preflight:m12-provenance`.
 
-`handoffs.source_erased_at` and nullable `source_conversation_id` exist as **storage foundation** for T-017; Erase Source / Delete Handoff / Delete Account are **not** implemented in T-016.
+**M12 T-017 — Handoff-level erasure (implemented):**
+
+```text
+Erase Source (one transaction)
+  → strip Draft provenance + bump revision
+  → DELETE Published provenance for all versions (canonical snapshots unchanged)
+  → handoffs.source_conversation_id = NULL, source_erased_at set
+  → DELETE physical source_conversation when no retained Handoff references remain
+
+Delete Handoff (one transaction)
+  → hard DELETE share_capabilities
+  → DELETE published provenance + published versions + draft + handoff root
+  → orphan source_conversation removed when unreferenced
+```
+
+Creator Account Erasure remains unimplemented (T-018).
 
 ## Answerability
 
@@ -150,7 +165,7 @@ Tables:
 
 Publication runs in a transaction: lock the handoff row, lock the draft row, verify expected revision, validate provenance, compute the next version, insert canonical snapshot **and** provenance rows atomically.
 
-Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without provenance. Provenance is fetched separately through `getProvenance` from `published_handoff_provenance` (retained vs `unavailable_erased`). Requested item IDs are filtered to IDs that exist on the pinned Published version; unknown IDs are omitted rather than synthesized. Retained provenance rows that reference missing source messages raise `ProvenanceIntegrityError`. Migration and preflight reject malformed legacy Published snapshots; publication writes canonical snapshots and provenance rows in one transaction. Intentional provenance removal will be an authorized erasure operation (T-017); the system does not infer row-count invariants for arbitrary direct-SQL provenance deletion.
+Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without provenance. Provenance is fetched separately through `getProvenance` from `published_handoff_provenance` (retained vs `unavailable_erased`). Requested item IDs are filtered to IDs that exist on the pinned Published version; unknown IDs are omitted rather than synthesized. Retained provenance rows that reference missing source messages raise `ProvenanceIntegrityError`. Migration and preflight reject malformed legacy Published snapshots; publication writes canonical snapshots and provenance rows in one transaction. Source Erasure removes Published provenance through the authorized erasure transaction; the system does not infer row-count invariants for arbitrary direct-SQL provenance deletion.
 
 Receiver routes always pin an explicit version (`/receiver/[handoffId]/[version]`); there is no “latest” Receiver lookup. Receiver Q&A calls OpenAI only when explicitly configured; it cannot fill `OPEN` or `UNKNOWN` beyond the approved Handoff.
 

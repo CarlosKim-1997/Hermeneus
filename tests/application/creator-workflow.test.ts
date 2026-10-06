@@ -4,7 +4,11 @@ import { createDraft, updateItem } from "../../src/handoff/draft.js";
 import type { HandoffItem } from "../../src/handoff/schema.js";
 import { closePool, getRepositories } from "../../src/application/runtime.js";
 import { importAndCreateHandoff } from "../../src/application/use-cases/import-conversation.js";
-import { loadCreatorReview, saveCreatorDraft } from "../../src/application/use-cases/creator-review.js";
+import {
+  loadCreatorReview,
+  requireRetainedCreatorReview,
+  saveCreatorDraft,
+} from "../../src/application/use-cases/creator-review.js";
 import { loadPublishedHandoff, publishHandoff } from "../../src/application/use-cases/publish-handoff.js";
 import { ProvenanceValidationError } from "../../src/persistence/errors.js";
 import { PersistenceConflictError } from "../../src/persistence/errors.js";
@@ -61,7 +65,7 @@ if (!url) {
       const review = await loadCreatorReview(repos, imported.handoffId);
       expect(review?.draft.items).toEqual([]);
       expect(review?.revision).toBe(1);
-      expect(review?.sourceConversation.messages.length).toBeGreaterThan(0);
+      expect(requireRetainedCreatorReview(review).sourceConversation.messages.length).toBeGreaterThan(0);
     });
 
     it("U2 — manual item editing persists", async () => {
@@ -97,7 +101,7 @@ if (!url) {
     it("U4 — provenance attachment publishes", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -118,7 +122,7 @@ if (!url) {
     it("U5 — fabricated excerpt fails publication", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       await saveCreatorDraft(
         repos,
         imported.handoffId,

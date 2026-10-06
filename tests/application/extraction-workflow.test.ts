@@ -6,7 +6,11 @@ import { setHandoffExtractorForTests } from "../../src/application/extraction-fa
 import { fixtureExtractor } from "../../src/extraction/fixture-extractor.js";
 import { ExtractionError } from "../../src/extraction/errors.js";
 import { importAndCreateHandoff } from "../../src/application/use-cases/import-conversation.js";
-import { loadCreatorReview, saveCreatorDraft } from "../../src/application/use-cases/creator-review.js";
+import {
+  loadCreatorReview,
+  requireRetainedCreatorReview,
+  saveCreatorDraft,
+} from "../../src/application/use-cases/creator-review.js";
 import { generateHandoffExtractionProposal } from "../../src/application/use-cases/generate-extraction-proposal.js";
 import { createPool } from "../../src/persistence/postgres/pool.js";
 
@@ -58,7 +62,7 @@ if (!url) {
     it("U10 — generation does not modify draft", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const before = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = before!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(before).sourceConversation.messages.at(-1)!.id;
       const extractor = fixtureExtractor([
         {
           type: "CONFIRMED",
@@ -77,7 +81,7 @@ if (!url) {
     it("U11 — accept suggestion persists draft content (client save uses CREATOR origin)", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       const extractor = fixtureExtractor([
         {
           type: "CONFIRMED",
@@ -97,7 +101,7 @@ if (!url) {
     it("U12 — creator edit changes origin when persisted EXTRACTION item exists", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       const extractionItem = {
         id: "extracted_item",
         type: "CONFIRMED" as const,
@@ -130,7 +134,7 @@ if (!url) {
         1,
       );
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       setHandoffExtractorForTests(
         fixtureExtractor([
           {

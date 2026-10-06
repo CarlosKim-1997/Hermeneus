@@ -21,7 +21,11 @@ import { setCreatorSessionProviderForTests } from "../../src/application/creator
 import { setHandoffExtractorForTests } from "../../src/application/extraction-factory.js";
 import { setReceiverSemanticInterpreterForTests } from "../../src/application/receiver-interpreter-factory.js";
 import { importAndCreateHandoff } from "../../src/application/use-cases/import-conversation.js";
-import { loadCreatorReview, saveCreatorDraft } from "../../src/application/use-cases/creator-review.js";
+import {
+  loadCreatorReview,
+  requireRetainedCreatorReview,
+  saveCreatorDraft,
+} from "../../src/application/use-cases/creator-review.js";
 import { publishHandoff } from "../../src/application/use-cases/publish-handoff.js";
 import { issueShareCapability } from "../../src/application/use-cases/share-capability.js";
 import { loadSharedReceiverView } from "../../src/application/use-cases/shared-receiver-qa.js";
@@ -50,7 +54,7 @@ function sessionAs(creatorId: string | undefined) {
 async function seedPublishedHandoff(repos: ReturnType<typeof createPostgresRepositories>) {
   const imported = await importAndCreateHandoff(repos, CREATOR_A, "creator: Web-first confirmed for the MVP.");
   const review = await loadCreatorReview(repos, imported.handoffId);
-  const message = review!.sourceConversation.messages[0]!;
+  const message = requireRetainedCreatorReview(review).sourceConversation.messages[0]!;
   await saveCreatorDraft(
     repos,
     imported.handoffId,

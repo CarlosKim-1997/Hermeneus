@@ -26,14 +26,24 @@ type Props = {
   handoffId: string;
   initialRevision: number;
   initialItems: HandoffItem[];
-  sourceConversation: NormalizedConversation;
+  reviewKind: "retained" | "erased";
+  sourceConversation?: NormalizedConversation;
+  erasedAt?: string;
 };
 
 function newItemId() {
   return `item_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
 }
 
-export function ReviewEditor({ handoffId, initialRevision, initialItems, sourceConversation }: Props) {
+export function ReviewEditor({
+  handoffId,
+  initialRevision,
+  initialItems,
+  reviewKind,
+  sourceConversation,
+  erasedAt,
+}: Props) {
+  const sourceErased = reviewKind === "erased";
   const [revision, setRevision] = useState(initialRevision);
   const [items, setItems] = useState<HandoffItem[]>(initialItems);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -45,8 +55,12 @@ export function ReviewEditor({ handoffId, initialRevision, initialItems, sourceC
   const [pending, startTransition] = useTransition();
 
   const messageOptions = useMemo(
-    () => sourceConversation.messages.map((message) => ({ id: message.id, label: `${message.role}: ${message.content.slice(0, 80)}` })),
-    [sourceConversation.messages],
+    () =>
+      sourceConversation?.messages.map((message) => ({
+        id: message.id,
+        label: `${message.role}: ${message.content.slice(0, 80)}`,
+      })) ?? [],
+    [sourceConversation],
   );
 
   function updateItem(index: number, patch: Partial<HandoffItem>) {
@@ -149,61 +163,77 @@ export function ReviewEditor({ handoffId, initialRevision, initialItems, sourceC
     <div className="grid-two">
       <section className="panel panel-source" aria-labelledby="source-heading">
         <h2 id="source-heading">Source Conversation</h2>
-        <p>Provenance only. This is not the published Handoff.</p>
-        {sourceConversation.messages.map((message) => (
-          <article key={message.id} className="message">
-            <div className="message-role">{message.role}</div>
-            <div>{message.content}</div>
-          </article>
-        ))}
+        {sourceErased ? (
+          <>
+            <p className="notice">
+              <strong>Source erased / provenance unavailable.</strong>
+              {erasedAt ? ` Erased ${new Date(erasedAt).toLocaleString()}.` : null} Canonical Draft items remain editable
+              without source references.
+            </p>
+          </>
+        ) : (
+          <>
+            <p>Provenance only. This is not the published Handoff.</p>
+            {sourceConversation?.messages.map((message) => (
+              <article key={message.id} className="message">
+                <div className="message-role">{message.role}</div>
+                <div>{message.content}</div>
+              </article>
+            ))}
+          </>
+        )}
       </section>
 
       <section className="panel panel-draft" aria-labelledby="draft-heading">
         <h2 id="draft-heading">Handoff Draft</h2>
-        <div className="extraction-panel">
-          <h3>AI suggestions (optional)</h3>
-          <p className="notice">
-            Generate AI suggestions sends the imported conversation to the configured external model provider.
-            Suggestions are proposals only — not saved and not published until you accept them, edit the draft, save,
-            and explicitly approve publication.
-          </p>
-          <div className="actions">
-            <button type="button" onClick={generateSuggestions} disabled={pending}>
-              Generate AI suggestions
-            </button>
-            {suggestions.length ? (
-              <button type="button" onClick={acceptAllSuggestions} disabled={pending}>
-                Add all suggestions to draft
-              </button>
-            ) : null}
-          </div>
-          {extractionMessage ? <p role="status">{extractionMessage}</p> : null}
-          {extractionError ? (
-            <p className="error" role="alert">
-              {extractionError}
+        {!sourceErased ? (
+          <div className="extraction-panel">
+            <h3>AI suggestions (optional)</h3>
+            <p className="notice">
+              Generate AI suggestions sends the imported conversation to the configured external model provider.
+              Suggestions are proposals only — not saved and not published until you accept them, edit the draft, save,
+              and explicitly approve publication.
             </p>
-          ) : null}
-          {suggestions.map((suggestion) => (
-            <div key={suggestion.id} className="item-card suggestion-card">
-              <p className="suggestion-label">AI suggestion — not saved</p>
-              <p>
-                <strong>{suggestion.type}</strong> — {suggestion.statement}
-              </p>
-              <p style={{ color: "#64748b", fontSize: "0.9rem" }}>
-                Provenance:{" "}
-                {suggestion.sources.map((source) => `${source.messageId} (“${source.excerpt ?? ""}”)`).join("; ")}
-              </p>
-              <div className="actions">
-                <button type="button" onClick={() => acceptSuggestion(suggestion)}>
-                  Add to draft
+            <div className="actions">
+              <button type="button" onClick={generateSuggestions} disabled={pending}>
+                Generate AI suggestions
+              </button>
+              {suggestions.length ? (
+                <button type="button" onClick={acceptAllSuggestions} disabled={pending}>
+                  Add all suggestions to draft
                 </button>
-                <button type="button" className="danger" onClick={() => dismissSuggestion(suggestion.id)}>
-                  Dismiss
-                </button>
-              </div>
+              ) : null}
             </div>
-          ))}
-        </div>
+            {extractionMessage ? <p role="status">{extractionMessage}</p> : null}
+            {extractionError ? (
+              <p className="error" role="alert">
+                {extractionError}
+              </p>
+            ) : null}
+            {suggestions.map((suggestion) => (
+              <div key={suggestion.id} className="item-card suggestion-card">
+                <p className="suggestion-label">AI suggestion — not saved</p>
+                <p>
+                  <strong>{suggestion.type}</strong> — {suggestion.statement}
+                </p>
+                <p style={{ color: "#64748b", fontSize: "0.9rem" }}>
+                  Provenance:{" "}
+                  {suggestion.sources.map((source) => `${source.messageId} (“${source.excerpt ?? ""}”)`).join("; ")}
+                </p>
+                <div className="actions">
+                  <button type="button" onClick={() => acceptSuggestion(suggestion)}>
+                    Add to draft
+                  </button>
+                  <button type="button" className="danger" onClick={() => dismissSuggestion(suggestion.id)}>
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="notice">AI extraction is unavailable because source provenance was erased.</p>
+        )}
         <p>
           Draft revision: <strong>{revision}</strong>
         </p>
@@ -248,6 +278,7 @@ export function ReviewEditor({ handoffId, initialRevision, initialItems, sourceC
               ))}
             </select>
 
+            {!sourceErased ? (
             <fieldset style={{ marginTop: "0.75rem", border: "1px solid #e5e7eb", borderRadius: 6, padding: "0.75rem" }}>
               <legend>Provenance</legend>
               {(item.sources.length ? item.sources : [{ messageId: "", excerpt: "" }]).map((source, sourceIndex) => (
@@ -285,6 +316,11 @@ export function ReviewEditor({ handoffId, initialRevision, initialItems, sourceC
                 </div>
               ))}
             </fieldset>
+            ) : (
+              <p className="muted" style={{ marginTop: "0.75rem" }}>
+                No source provenance (source erased).
+              </p>
+            )}
 
             <div className="actions">
               <button type="button" className="danger" onClick={() => removeItem(index)}>

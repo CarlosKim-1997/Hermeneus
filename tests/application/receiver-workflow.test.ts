@@ -6,7 +6,11 @@ import path from "node:path";
 import type { HandoffItem } from "../../src/handoff/schema.js";
 import { closePool, getRepositories } from "../../src/application/runtime.js";
 import { importAndCreateHandoff } from "../../src/application/use-cases/import-conversation.js";
-import { loadCreatorReview, saveCreatorDraft } from "../../src/application/use-cases/creator-review.js";
+import {
+  loadCreatorReview,
+  requireRetainedCreatorReview,
+  saveCreatorDraft,
+} from "../../src/application/use-cases/creator-review.js";
 import { publishHandoff } from "../../src/application/use-cases/publish-handoff.js";
 import {
   askReceiverQuestion,
@@ -180,7 +184,7 @@ if (!url) {
     it("R6 — safe provenance returns approved excerpt only", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -211,7 +215,7 @@ if (!url) {
     it("R7 — provenance without excerpt marks excerptAvailable false", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -298,7 +302,7 @@ if (!url) {
     it("R10 — serialized Receiver state excludes raw secret material", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcriptWithSecret);
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       await saveCreatorDraft(
         repos,
         imported.handoffId,
