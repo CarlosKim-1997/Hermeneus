@@ -56,6 +56,7 @@ test.describe("Share surface isolation", () => {
 
     await page.goto(`/handoffs/${handoffId}/published/1`);
     await page.getByRole("button", { name: "Revoke" }).first().click();
+    await expect(page.getByRole("listitem").filter({ hasText: /revoked/i })).toBeVisible();
 
     await page.goto(sharePath);
     await expect(page.getByRole("heading", { name: "Shared Receiver" })).toHaveCount(0);

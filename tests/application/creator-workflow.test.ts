@@ -4,8 +4,13 @@ import { createDraft, updateItem } from "../../src/handoff/draft.js";
 import type { HandoffItem } from "../../src/handoff/schema.js";
 import { closePool, getRepositories } from "../../src/application/runtime.js";
 import { importAndCreateHandoff } from "../../src/application/use-cases/import-conversation.js";
-import { loadCreatorReview, saveCreatorDraft } from "../../src/application/use-cases/creator-review.js";
+import {
+  loadCreatorReview,
+  requireRetainedCreatorReview,
+  saveCreatorDraft,
+} from "../../src/application/use-cases/creator-review.js";
 import { loadPublishedHandoff, publishHandoff } from "../../src/application/use-cases/publish-handoff.js";
+import { eraseHandoffSource } from "../../src/application/use-cases/handoff-erasure.js";
 import { ProvenanceValidationError } from "../../src/persistence/errors.js";
 import { PersistenceConflictError } from "../../src/persistence/errors.js";
 import { createPool } from "../../src/persistence/postgres/pool.js";
@@ -61,7 +66,7 @@ if (!url) {
       const review = await loadCreatorReview(repos, imported.handoffId);
       expect(review?.draft.items).toEqual([]);
       expect(review?.revision).toBe(1);
-      expect(review?.sourceConversation.messages.length).toBeGreaterThan(0);
+      expect(requireRetainedCreatorReview(review).sourceConversation.messages.length).toBeGreaterThan(0);
     });
 
     it("U2 — manual item editing persists", async () => {
@@ -97,7 +102,7 @@ if (!url) {
     it("U4 — provenance attachment publishes", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       await saveCreatorDraft(
         repos,
         imported.handoffId,
@@ -115,10 +120,32 @@ if (!url) {
       expect(published.version).toBe(1);
     });
 
+    it("E17-CR1 — loadCreatorReview after Source Erasure is erased without source identifiers", async () => {
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
+      await saveCreatorDraft(
+        repos,
+        imported.handoffId,
+        [item({ id: "web", type: "CONFIRMED", statement: "Canonical retained." })],
+        1,
+      );
+      const erasedAt = "2026-10-06T12:00:00.000Z";
+      await eraseHandoffSource(repos, APP_CREATOR, imported.handoffId);
+      const review = await loadCreatorReview(repos, imported.handoffId);
+      expect(review?.kind).toBe("erased");
+      if (review?.kind !== "erased") throw new Error("expected erased review");
+      expect(review.handoffId).toBe(imported.handoffId);
+      expect(review.revision).toBeGreaterThanOrEqual(2);
+      expect(review.draft.items[0]?.statement).toBe("Canonical retained.");
+      expect(review.draft.items[0]?.sources).toEqual([]);
+      expect(review.erasedAt).toBeTruthy();
+      expect(Object.keys(review)).toEqual(["kind", "handoffId", "revision", "draft", "erasedAt"]);
+      expect(JSON.stringify(review)).not.toMatch(/conversationId|sourceConversation|messages/i);
+    });
+
     it("U5 — fabricated excerpt fails publication", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       await saveCreatorDraft(
         repos,
         imported.handoffId,

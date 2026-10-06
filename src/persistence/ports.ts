@@ -55,6 +55,16 @@ export interface ReceiverReadRepository {
   getProvenance(handoffId: string, version: number, itemIds: string[]): Promise<ProvenanceBundle>;
 }
 
+export interface HandoffErasureRepository {
+  eraseSource(handoffId: string, ownerCreatorId: CreatorId, erasedAt: string): Promise<{
+    handoffId: string;
+    sourceState: HandoffSourceState;
+    draftRevision: number;
+    idempotent: boolean;
+  }>;
+  deleteHandoff(handoffId: string, ownerCreatorId: CreatorId): Promise<void>;
+}
+
 export interface ShareCapabilityRepository {
   create(input: {
     id: string;

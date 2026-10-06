@@ -2,6 +2,8 @@ import { execSync } from "node:child_process";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HandoffItem } from "../../src/handoff/schema.js";
 import {
+  deleteHandoffAction,
+  eraseSourceAction,
   fetchCreatorReview,
   fetchPublishedHandoff,
   generateExtractionSuggestionsAction,
@@ -21,7 +23,11 @@ import { setCreatorSessionProviderForTests } from "../../src/application/creator
 import { setHandoffExtractorForTests } from "../../src/application/extraction-factory.js";
 import { setReceiverSemanticInterpreterForTests } from "../../src/application/receiver-interpreter-factory.js";
 import { importAndCreateHandoff } from "../../src/application/use-cases/import-conversation.js";
-import { loadCreatorReview, saveCreatorDraft } from "../../src/application/use-cases/creator-review.js";
+import {
+  loadCreatorReview,
+  requireRetainedCreatorReview,
+  saveCreatorDraft,
+} from "../../src/application/use-cases/creator-review.js";
 import { publishHandoff } from "../../src/application/use-cases/publish-handoff.js";
 import { issueShareCapability } from "../../src/application/use-cases/share-capability.js";
 import { loadSharedReceiverView } from "../../src/application/use-cases/shared-receiver-qa.js";
@@ -50,7 +56,7 @@ function sessionAs(creatorId: string | undefined) {
 async function seedPublishedHandoff(repos: ReturnType<typeof createPostgresRepositories>) {
   const imported = await importAndCreateHandoff(repos, CREATOR_A, "creator: Web-first confirmed for the MVP.");
   const review = await loadCreatorReview(repos, imported.handoffId);
-  const message = review!.sourceConversation.messages[0]!;
+  const message = requireRetainedCreatorReview(review).sourceConversation.messages[0]!;
   await saveCreatorDraft(
     repos,
     imported.handoffId,
@@ -210,6 +216,58 @@ if (!url) {
         error: { code: "NOT_FOUND", message: "This Handoff is unavailable." },
       });
       expect(messageId).toBeTruthy();
+    });
+
+    it("SA11 — anonymous eraseSourceAction unauthenticated", async () => {
+      const { handoffId } = await seedPublishedHandoff(repos);
+      sessionAs(undefined);
+      const provBefore = await pool.query(
+        `SELECT COUNT(*)::int AS c FROM published_handoff_provenance WHERE handoff_id = $1`,
+        [handoffId],
+      );
+      const result = await eraseSourceAction(handoffId);
+      expect(result).toEqual({
+        ok: false,
+        error: { code: "UNAUTHENTICATED", message: "Sign in to continue." },
+      });
+      const provAfter = await pool.query(
+        `SELECT COUNT(*)::int AS c FROM published_handoff_provenance WHERE handoff_id = $1`,
+        [handoffId],
+      );
+      expect(provAfter.rows[0].c).toBe(provBefore.rows[0].c);
+    });
+
+    it("SA12 — non-owner eraseSourceAction unavailable", async () => {
+      const { handoffId } = await seedPublishedHandoff(repos);
+      sessionAs(CREATOR_B);
+      const result = await eraseSourceAction(handoffId);
+      expect(result).toEqual({
+        ok: false,
+        error: { code: "NOT_FOUND", message: "This Handoff is unavailable." },
+      });
+      expect((await repos.handoffs.getHandoffSourceState(handoffId))?.kind).toBe("retained");
+    });
+
+    it("SA13 — anonymous deleteHandoffAction unauthenticated", async () => {
+      const { handoffId } = await seedPublishedHandoff(repos);
+      sessionAs(undefined);
+      const result = await deleteHandoffAction(handoffId);
+      expect(result).toEqual({
+        ok: false,
+        error: { code: "UNAUTHENTICATED", message: "Sign in to continue." },
+      });
+      expect(await repos.handoffs.getOwnerCreatorId(handoffId)).toBe(CREATOR_A);
+    });
+
+    it("SA14 — non-owner deleteHandoffAction unavailable", async () => {
+      const { handoffId } = await seedPublishedHandoff(repos);
+      sessionAs(CREATOR_B);
+      const result = await deleteHandoffAction(handoffId);
+      expect(result).toEqual({
+        ok: false,
+        error: { code: "NOT_FOUND", message: "This Handoff is unavailable." },
+      });
+      expect(await repos.handoffs.getOwnerCreatorId(handoffId)).toBe(CREATOR_A);
     });
 
     it("SA10 — anonymous saveDraftAction unauthenticated", async () => {

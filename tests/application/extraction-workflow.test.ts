@@ -6,8 +6,15 @@ import { setHandoffExtractorForTests } from "../../src/application/extraction-fa
 import { fixtureExtractor } from "../../src/extraction/fixture-extractor.js";
 import { ExtractionError } from "../../src/extraction/errors.js";
 import { importAndCreateHandoff } from "../../src/application/use-cases/import-conversation.js";
-import { loadCreatorReview, saveCreatorDraft } from "../../src/application/use-cases/creator-review.js";
+import {
+  loadCreatorReview,
+  requireRetainedCreatorReview,
+  saveCreatorDraft,
+} from "../../src/application/use-cases/creator-review.js";
 import { generateHandoffExtractionProposal } from "../../src/application/use-cases/generate-extraction-proposal.js";
+import { toExtractionFacingError } from "../../src/application/extraction-user-errors.js";
+import { SourceUnavailableError } from "../../src/persistence/errors.js";
+import { eraseHandoffSource } from "../../src/application/use-cases/handoff-erasure.js";
 import { createPool } from "../../src/persistence/postgres/pool.js";
 
 const url = process.env.TEST_DATABASE_URL;
@@ -58,7 +65,7 @@ if (!url) {
     it("U10 — generation does not modify draft", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const before = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = before!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(before).sourceConversation.messages.at(-1)!.id;
       const extractor = fixtureExtractor([
         {
           type: "CONFIRMED",
@@ -77,7 +84,7 @@ if (!url) {
     it("U11 — accept suggestion persists draft content (client save uses CREATOR origin)", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       const extractor = fixtureExtractor([
         {
           type: "CONFIRMED",
@@ -97,7 +104,7 @@ if (!url) {
     it("U12 — creator edit changes origin when persisted EXTRACTION item exists", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       const extractionItem = {
         id: "extracted_item",
         type: "CONFIRMED" as const,
@@ -130,7 +137,7 @@ if (!url) {
         1,
       );
       const review = await loadCreatorReview(repos, imported.handoffId);
-      const messageId = review!.sourceConversation.messages.at(-1)!.id;
+      const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
       setHandoffExtractorForTests(
         fixtureExtractor([
           {
@@ -156,6 +163,31 @@ if (!url) {
       const after = await loadCreatorReview(repos, imported.handoffId);
       expect(after?.draft.items).toHaveLength(1);
       expect(after?.draft.items[0]?.id).toBe("manual");
+    });
+
+    it("U15 — source-erased extraction maps to SOURCE_UNAVAILABLE (not model invalid)", async () => {
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
+      await eraseHandoffSource(repos, APP_CREATOR, imported.handoffId);
+      let called = false;
+      const extractor = fixtureExtractor([
+        {
+          type: "CONFIRMED",
+          statement: "Should not run.",
+          priority: "CORE",
+          sources: [{ messageId: "x", excerpt: "x" }],
+        },
+      ]);
+      try {
+        await generateHandoffExtractionProposal(repos, extractor, imported.handoffId);
+        called = true;
+      } catch (error) {
+        expect(error).toBeInstanceOf(SourceUnavailableError);
+        expect(toExtractionFacingError(error)).toEqual({
+          code: "SOURCE_UNAVAILABLE",
+          message: "Source provenance has been erased for this Handoff. AI suggestions are no longer available.",
+        });
+      }
+      expect(called).toBe(false);
     });
 
     it("U14 — invalid proposal does not mutate draft", async () => {

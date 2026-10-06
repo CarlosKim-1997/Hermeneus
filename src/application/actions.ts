@@ -6,6 +6,7 @@ import { toCreatorFacingError } from "./user-errors.js";
 import { getRepositories } from "./runtime.js";
 import { importAndCreateHandoff } from "./use-cases/import-conversation.js";
 import { loadCreatorReview, saveCreatorDraft } from "./use-cases/creator-review.js";
+import { deleteWholeHandoff, eraseHandoffSource } from "./use-cases/handoff-erasure.js";
 import { loadPublishedHandoff, publishHandoff } from "./use-cases/publish-handoff.js";
 import { generateHandoffExtractionProposal } from "./use-cases/generate-extraction-proposal.js";
 import { getHandoffExtractor } from "./extraction-factory.js";
@@ -109,6 +110,35 @@ export async function fetchPublishedHandoff(handoffId: string, version: number) 
       return undefined;
     }
     throw error;
+  }
+}
+
+export async function eraseSourceAction(handoffId: string) {
+  try {
+    const repos = getRepositories();
+    const principal = await requireCreatorPrincipalFromSession();
+    await requireOwnedHandoff(repos, principal, handoffId);
+    const result = await eraseHandoffSource(repos, principal.creatorId, handoffId);
+    return { ok: true as const, revision: result.draftRevision, idempotent: result.idempotent };
+  } catch (error) {
+    const auth = mapAuthFailure(error);
+    if (auth) return auth;
+    return { ok: false as const, error: toCreatorFacingError(error) };
+  }
+}
+
+export async function deleteHandoffAction(handoffId: string) {
+  try {
+    const repos = getRepositories();
+    const principal = await requireCreatorPrincipalFromSession();
+    await requireOwnedHandoff(repos, principal, handoffId);
+    await deleteWholeHandoff(repos, principal.creatorId, handoffId);
+    redirect("/handoffs");
+  } catch (error) {
+    if (isRedirectError(error)) throw error;
+    const auth = mapAuthFailure(error);
+    if (auth) return auth;
+    return { ok: false as const, error: toCreatorFacingError(error) };
   }
 }
 

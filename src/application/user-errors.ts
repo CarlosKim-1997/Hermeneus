@@ -1,7 +1,11 @@
-import { PersistenceConflictError, ProvenanceValidationError } from "../persistence/errors.js";
+import {
+  PersistenceConflictError,
+  ProvenanceValidationError,
+  SourceBackedDraftRejectedError,
+} from "../persistence/errors.js";
 
 export type CreatorFacingError = {
-  code: "CONFLICT" | "PROVENANCE" | "UNKNOWN";
+  code: "CONFLICT" | "PROVENANCE" | "SOURCE_REJECTED" | "UNKNOWN";
   message: string;
 };
 
@@ -25,6 +29,13 @@ export function toCreatorFacingError(error: unknown): CreatorFacingError {
     return {
       code: "PROVENANCE",
       message: error.message,
+    };
+  }
+  if (error instanceof SourceBackedDraftRejectedError) {
+    return {
+      code: "SOURCE_REJECTED",
+      message:
+        "This Handoff's source was erased. Remove source references from the draft or reload the current saved draft.",
     };
   }
   return {

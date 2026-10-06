@@ -7,6 +7,7 @@ import { PostgresHandoffRootRepository } from "./handoff-root-repository.js";
 import { PostgresPublishedHandoffRepository } from "./published-handoff-repository.js";
 import { PostgresReceiverReadRepository } from "./receiver-read-repository.js";
 import { PostgresShareCapabilityRepository } from "./share-capability-repository.js";
+import { PostgresHandoffErasureRepository } from "./handoff-erasure-repository.js";
 
 export function createPostgresRepositories(pool: Pool) {
   const creators = new PostgresCreatorRepository(pool);
@@ -19,5 +20,6 @@ export function createPostgresRepositories(pool: Pool) {
     published: new PostgresPublishedHandoffRepository(pool),
     receiver: new PostgresReceiverReadRepository(pool),
     shareCapabilities: new PostgresShareCapabilityRepository(pool),
+    erasure: new PostgresHandoffErasureRepository(pool),
   };
 }
