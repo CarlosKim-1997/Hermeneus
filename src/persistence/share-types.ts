@@ -1,5 +1,5 @@
 import type { HandoffItemType, HandoffPriority } from "../handoff/schema.js";
-import type { ProvenanceBundle, ReceiverItem } from "./receiver-types.js";
+import { isRetainedProvenance, type ProvenanceBundle, type ReceiverItem } from "./receiver-types.js";
 
 export type SharedProvenanceReference = {
   role: "creator" | "assistant" | "other";
@@ -38,6 +38,9 @@ export function toSharedReceiverView(input: {
 }
 
 export function toSharedProvenanceBundle(bundle: ProvenanceBundle): SharedProvenanceBundle {
+  if (!isRetainedProvenance(bundle)) {
+    return { items: [] };
+  }
   return {
     items: bundle.items.map((entry) => ({
       itemId: entry.itemId,

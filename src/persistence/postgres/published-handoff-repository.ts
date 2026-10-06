@@ -1,5 +1,11 @@
 import type { Pool } from "pg";
-import { draftHandoffSchema, publishedHandoffSchema, type PublishedHandoff } from "../../handoff/schema.js";
+import {
+  draftHandoffSchema,
+  publishedHandoffSchema,
+  toPublishedCanonicalItems,
+  type DraftHandoff,
+  type PublishedHandoff,
+} from "../../handoff/schema.js";
 import { PersistenceConflictError } from "../errors.js";
 import type { PublishedHandoffRepository } from "../ports.js";
 import type { Queryable } from "./pool.js";
@@ -49,7 +55,7 @@ export class PostgresPublishedHandoffRepository implements PublishedHandoffRepos
         handoffId,
         version,
         publishedAt,
-        items: structuredClone(draft.items),
+        items: toPublishedCanonicalItems(draft.items),
       });
 
       await client.query(
@@ -57,6 +63,18 @@ export class PostgresPublishedHandoffRepository implements PublishedHandoffRepos
          VALUES ($1, $2, $3, $4::jsonb)`,
         [handoffId, version, publishedAt, JSON.stringify(snapshot)],
       );
+
+      for (const item of draft.items) {
+        for (const [sourceIndex, source] of item.sources.entries()) {
+          await client.query(
+            `INSERT INTO published_handoff_provenance
+               (handoff_id, version, item_id, source_index, message_id, excerpt)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [handoffId, version, item.id, sourceIndex, source.messageId, source.excerpt ?? null],
+          );
+        }
+      }
+
       await client.query("COMMIT");
       return snapshot;
     } catch (error) {

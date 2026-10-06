@@ -53,7 +53,7 @@ if (!url) {
 
     beforeEach(async () => {
       await pool.query(
-        "TRUNCATE published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creators RESTART IDENTITY CASCADE",
+        "TRUNCATE published_handoff_provenance, published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creators RESTART IDENTITY CASCADE",
       );
       await repos.creators.ensure({ id: APP_CREATOR, createdAt: "2026-09-25T00:00:00.000Z" });
     });
@@ -201,7 +201,9 @@ if (!url) {
         version: 1,
         itemIds: ["web"],
       });
-      expect(provenance?.items[0]?.references[0]?.excerpt).toBe("Actually, web first.");
+      expect(provenance?.availability).toBe("retained");
+      if (provenance?.availability !== "retained") return;
+      expect(provenance.items[0]?.references[0]?.excerpt).toBe("Actually, web first.");
       expect(JSON.stringify(provenance)).not.toContain(SECRET_MARKER);
       expect(provenance?.items[0]?.references[0]).not.toHaveProperty("content");
     });
@@ -230,7 +232,9 @@ if (!url) {
         version: 1,
         itemIds: ["web"],
       });
-      const reference = provenance?.items[0]?.references[0];
+      expect(provenance?.availability).toBe("retained");
+      if (provenance?.availability !== "retained") return;
+      const reference = provenance.items[0]?.references[0];
       expect(reference?.excerptAvailable).toBe(false);
       expect(reference?.excerpt).toBeUndefined();
       expect(JSON.stringify(provenance)).not.toContain(SECRET_MARKER);

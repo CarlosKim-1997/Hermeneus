@@ -21,7 +21,8 @@ export type ProvenanceReference = {
   excerptAvailable: boolean;
 };
 
-export type ProvenanceBundle = {
+export type RetainedProvenanceBundle = {
+  availability: "retained";
   handoffId: string;
   version: number;
   items: Array<{
@@ -30,6 +31,19 @@ export type ProvenanceBundle = {
   }>;
 };
 
+export type UnavailableErasedProvenanceBundle = {
+  availability: "unavailable_erased";
+  handoffId: string;
+  version: number;
+  items: [];
+};
+
+export type ProvenanceBundle = RetainedProvenanceBundle | UnavailableErasedProvenanceBundle;
+
 export function toReceiverItems<T extends ReceiverItem>(items: T[]): ReceiverItem[] {
   return items.map(({ id, type, statement, priority }) => ({ id, type, statement, priority }));
+}
+
+export function isRetainedProvenance(bundle: ProvenanceBundle): bundle is RetainedProvenanceBundle {
+  return bundle.availability === "retained";
 }

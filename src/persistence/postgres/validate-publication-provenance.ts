@@ -7,14 +7,20 @@ export async function validatePublicationProvenance(
   handoffId: string,
   draft: DraftHandoff,
 ): Promise<void> {
-  const handoff = await db.query<{ source_conversation_id: string }>(
-    "SELECT source_conversation_id FROM handoffs WHERE id = $1",
+  const handoff = await db.query<{ source_conversation_id: string | null; source_erased_at: Date | null }>(
+    "SELECT source_conversation_id, source_erased_at FROM handoffs WHERE id = $1",
     [handoffId],
   );
   if (handoff.rowCount === 0) {
     throw new ProvenanceValidationError(`Handoff ${handoffId} does not exist`);
   }
-  const conversationId = handoff.rows[0].source_conversation_id;
+  const row = handoff.rows[0]!;
+  if (row.source_erased_at !== null || row.source_conversation_id === null) {
+    throw new ProvenanceValidationError(
+      `Handoff ${handoffId} source is unavailable; cannot publish source-backed provenance`,
+    );
+  }
+  const conversationId = row.source_conversation_id;
   const messageIds = [...new Set(draft.items.flatMap((item) => item.sources.map((source) => source.messageId)))];
 
   if (messageIds.length === 0) return;
@@ -25,7 +31,7 @@ export async function validatePublicationProvenance(
      WHERE id = ANY($1::text[])`,
     [messageIds],
   );
-  const byId = new Map(messages.rows.map((row) => [row.id, row]));
+  const byId = new Map(messages.rows.map((messageRow) => [messageRow.id, messageRow]));
 
   for (const item of draft.items) {
     for (const source of item.sources) {

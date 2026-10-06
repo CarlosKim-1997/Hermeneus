@@ -25,7 +25,8 @@
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "governance": "node tooling/governance/check.mjs",
-    "migrate": "node scripts/migrate.mjs"
+    "migrate": "node scripts/migrate.mjs",
+    "preflight:m12-provenance": "node scripts/preflight-m12-provenance.mjs"
   },
   "dependencies": {
     "next": "^15.5.3",

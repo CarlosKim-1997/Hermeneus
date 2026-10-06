@@ -46,7 +46,7 @@ if (!url) {
 
     beforeEach(async () => {
       await pool.query(
-        "TRUNCATE published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creators RESTART IDENTITY CASCADE",
+        "TRUNCATE published_handoff_provenance, published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creators RESTART IDENTITY CASCADE",
       );
       await repos.creators.ensure({ id: APP_CREATOR, createdAt: "2026-09-25T00:00:00.000Z" });
     });

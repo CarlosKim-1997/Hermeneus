@@ -89,7 +89,7 @@ if (!url) {
 
     beforeEach(async () => {
       await pool.query(
-        "TRUNCATE share_capabilities, published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creators RESTART IDENTITY CASCADE",
+        "TRUNCATE share_capabilities, published_handoff_provenance, published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creators RESTART IDENTITY CASCADE",
       );
       await repos.creators.ensure({ id: TEST_CREATOR, createdAt: "2026-09-25T00:00:00.000Z" });
       await repos.creators.ensure({ id: OWNER_A, createdAt: "2026-09-25T00:00:00.000Z" });
@@ -213,12 +213,36 @@ if (!url) {
       );
       await publishCurrentDraft(repos, "handoff-p8", "2026-09-25T00:00:00.000Z");
       const provenance = await repos.receiver.getProvenance("handoff-p8", 1, ["web"]);
+      expect(provenance.availability).toBe("retained");
+      if (provenance.availability !== "retained") return;
       expect(provenance.items).toHaveLength(1);
       expect(provenance.items[0]?.references).toHaveLength(1);
       expect(provenance.items[0]?.references[0]?.messageId).toBe("conv-p:m3");
       expect(provenance.items[0]?.references[0]?.excerpt).toBe("Actually, web first.");
       expect(provenance.items[0]?.references[0]).not.toHaveProperty("content");
       expect(JSON.stringify(provenance)).not.toMatch(/SECRET exploratory salary discussion/);
+    });
+
+    it("P8b — unknown requested item IDs are omitted from provenance results", async () => {
+      await repos.conversations.create(conversation);
+      await repos.handoffs.create("handoff-p8b", "conv-p", TEST_CREATOR);
+      await saveInitialDraft(
+        repos,
+        createDraft("handoff-p8b", [
+          item({
+            id: "web",
+            type: "CONFIRMED",
+            statement: "Web-first is confirmed.",
+            sources: [{ messageId: "conv-p:m3", excerpt: "Actually, web first." }],
+          }),
+        ]),
+      );
+      await publishCurrentDraft(repos, "handoff-p8b", "2026-09-25T00:00:00.000Z");
+      const provenance = await repos.receiver.getProvenance("handoff-p8b", 1, ["web", "does-not-exist"]);
+      expect(provenance.availability).toBe("retained");
+      if (provenance.availability !== "retained") return;
+      expect(provenance.items).toHaveLength(1);
+      expect(provenance.items[0]?.itemId).toBe("web");
     });
 
     it("P9 — transcript/canonical conflict survives persistence", async () => {
@@ -304,6 +328,8 @@ if (!url) {
       };
       await expect(repos.conversations.create(conflicting)).rejects.toBeInstanceOf(PersistenceConflictError);
       const provenance = await repos.receiver.getProvenance("handoff-p13", 1, ["web"]);
+      expect(provenance.availability).toBe("retained");
+      if (provenance.availability !== "retained") return;
       expect(provenance.items[0]?.references[0]?.excerpt).toBe("Actually, web first.");
     });
 
@@ -404,6 +430,8 @@ if (!url) {
       );
       await publishCurrentDraft(repos, "handoff-secret", "2026-09-25T00:00:00.000Z");
       const provenance = await repos.receiver.getProvenance("handoff-secret", 1, ["web"]);
+      expect(provenance.availability).toBe("retained");
+      if (provenance.availability !== "retained") return;
       expect(JSON.stringify(provenance)).toMatch(/relevant approved sentence/);
       expect(JSON.stringify(provenance)).not.toMatch(/SECRET PRIVATE MATERIAL/);
       expect(provenance.items[0]?.references[0]).not.toHaveProperty("content");

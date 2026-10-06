@@ -1,4 +1,10 @@
-import { draftHandoffSchema, publishedHandoffSchema, type DraftHandoff, type PublishedHandoff } from "./schema.js";
+import {
+  draftHandoffSchema,
+  publishedHandoffSchema,
+  toPublishedCanonicalItems,
+  type DraftHandoff,
+  type PublishedHandoff,
+} from "./schema.js";
 
 export class PublicationLedger {
   private readonly versions = new Map<string, PublishedHandoff[]>();
@@ -10,7 +16,7 @@ export class PublicationLedger {
       handoffId: parsed.id,
       version: prior.length + 1,
       publishedAt,
-      items: structuredClone(parsed.items),
+      items: structuredClone(toPublishedCanonicalItems(parsed.items)),
     });
     const frozen = deepFreeze(snapshot);
     this.versions.set(parsed.id, [...prior, frozen]);

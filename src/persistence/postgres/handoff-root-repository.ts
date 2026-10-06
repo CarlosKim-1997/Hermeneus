@@ -1,5 +1,6 @@
 import type { CreatorHandoffSummary } from "../../handoff/creator-handoff-summary.js";
 import type { CreatorId } from "../../creator/types.js";
+import type { HandoffSourceState } from "../handoff-source-state.js";
 import { PersistenceConflictError } from "../errors.js";
 import type { HandoffRootRepository } from "../ports.js";
 import type { Queryable } from "./pool.js";
@@ -37,12 +38,24 @@ export class PostgresHandoffRootRepository implements HandoffRootRepository {
   }
 
   async getSourceConversationId(handoffId: string): Promise<string | undefined> {
-    const existing = await this.db.query<{ source_conversation_id: string }>(
-      "SELECT source_conversation_id FROM handoffs WHERE id = $1",
+    const state = await this.getHandoffSourceState(handoffId);
+    return state?.kind === "retained" ? state.conversationId : undefined;
+  }
+
+  async getHandoffSourceState(handoffId: string): Promise<HandoffSourceState | undefined> {
+    const existing = await this.db.query<{ source_conversation_id: string | null; source_erased_at: Date | null }>(
+      "SELECT source_conversation_id, source_erased_at FROM handoffs WHERE id = $1",
       [handoffId],
     );
     if (existing.rowCount === 0) return undefined;
-    return existing.rows[0].source_conversation_id;
+    const row = existing.rows[0]!;
+    if (row.source_erased_at) {
+      return { kind: "erased", erasedAt: row.source_erased_at.toISOString() };
+    }
+    if (row.source_conversation_id) {
+      return { kind: "retained", conversationId: row.source_conversation_id };
+    }
+    return undefined;
   }
 
   async getOwnerCreatorId(handoffId: string): Promise<CreatorId | undefined> {
