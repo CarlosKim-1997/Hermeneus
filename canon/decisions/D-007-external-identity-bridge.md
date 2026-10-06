@@ -1,7 +1,7 @@
 ---
 schema: decision/v1
 id: D-007
-status: ACTIVE
+status: SUPERSEDED
 areas:
   - handoff
 implements:
