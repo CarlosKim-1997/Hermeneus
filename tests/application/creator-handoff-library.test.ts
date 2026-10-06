@@ -41,7 +41,7 @@ if (!url) {
 
     beforeEach(async () => {
       await pool.query(
-        "TRUNCATE share_capabilities, published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creator_external_identities RESTART IDENTITY CASCADE",
+        "TRUNCATE share_capabilities, published_handoff_provenance, published_handoff_versions, handoff_drafts, handoffs, source_messages, source_conversations, creator_external_identities RESTART IDENTITY CASCADE",
       );
       await pool.query("DELETE FROM creators WHERE id NOT IN ($1)", [LEGACY]);
       await repos.creators.ensure({ id: CREATOR_A, createdAt: "2026-01-01T00:00:00.000Z" });

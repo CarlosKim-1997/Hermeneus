@@ -15,3 +15,12 @@ export class ProvenanceValidationError extends Error {
     this.name = "ProvenanceValidationError";
   }
 }
+
+export class ProvenanceIntegrityError extends Error {
+  readonly code = "PROVENANCE_INTEGRITY";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "ProvenanceIntegrityError";
+  }
+}

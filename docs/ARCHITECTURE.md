@@ -113,6 +113,25 @@ Live extraction sends the persisted source conversation to the configured extern
 
 Publication locks the handoff and draft rows, verifies the expected draft revision, validates provenance, and inserts the next immutable version. Editing the draft afterward does not change earlier versions.
 
+**M12 T-016 — Published meaning vs provenance (storage foundation):**
+
+```text
+Draft JSON
+  canonical item fields + sources[]
+
+Publish transaction
+  ├─ published_handoff_versions.snapshot_json (canonical items only; no sources)
+  └─ published_handoff_provenance (per item/source_index: message_id, excerpt)
+
+Receiver
+  getPublishedView → canonical items only
+  getProvenance → side table (+ explicit unavailable_erased when source_erased_at is set)
+```
+
+Legacy Published snapshots that embedded `sources` inside JSON are migrated in a controlled maintenance-window transaction (`007_published_provenance_split.sql`). Preflight: `npm run preflight:m12-provenance`.
+
+`handoffs.source_erased_at` and nullable `source_conversation_id` exist as **storage foundation** for T-017; Erase Source / Delete Handoff / Delete Account are **not** implemented in T-016.
+
 ## Answerability
 
 Lexical overlap with approved items supports a direct answer. A single conservative derivation covers "web search is disabled" implying the receiver will not browse. Staffing is not derived from a client choice. If nothing qualifies, the result is `UNKNOWN`. An `OPEN` item at the best overlap stays unresolved.
@@ -126,11 +145,12 @@ Tables:
 - `source_conversations` / `source_messages` — normalized provenance
 - `handoffs` — root linked to a source conversation
 - `handoff_drafts` — editable JSON snapshot with revision counter
-- `published_handoff_versions` — immutable JSON snapshots; `BEFORE UPDATE` trigger rejects mutation
+- `published_handoff_versions` — immutable **canonical-only** JSON snapshots; `BEFORE UPDATE` trigger rejects mutation
+- `published_handoff_provenance` — immutable-until-erasure Published source references (FK to published version, RESTRICT on messages)
 
-Publication runs in a transaction: lock the handoff row, lock the draft row, verify expected revision, validate provenance, compute the next version, insert only.
+Publication runs in a transaction: lock the handoff row, lock the draft row, verify expected revision, validate provenance, compute the next version, insert canonical snapshot **and** provenance rows atomically.
 
-Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without `sources`. Provenance is fetched separately through `getProvenance` and returns receiver-safe excerpts only. Receiver routes always pin an explicit version (`/receiver/[handoffId]/[version]`); there is no “latest” Receiver lookup. Receiver Q&A calls OpenAI only when explicitly configured; it cannot fill `OPEN` or `UNKNOWN` beyond the approved Handoff.
+Receiver reads use `ReceiverReadRepository.getPublishedView`, which returns items without provenance. Provenance is fetched separately through `getProvenance` from `published_handoff_provenance` (retained vs `unavailable_erased`). Receiver routes always pin an explicit version (`/receiver/[handoffId]/[version]`); there is no “latest” Receiver lookup. Receiver Q&A calls OpenAI only when explicitly configured; it cannot fill `OPEN` or `UNKNOWN` beyond the approved Handoff.
 
 ## Receiver UI (Milestone 5)
 

@@ -3,6 +3,7 @@ import type { NormalizedConversation } from "../import/types.js";
 import type { CreatorHandoffSummary } from "../handoff/creator-handoff-summary.js";
 import type { CreatorId } from "../creator/types.js";
 import type { ShareCapabilityMetadata, ShareCapabilityTarget } from "../share/types.js";
+import type { HandoffSourceState } from "./handoff-source-state.js";
 import type { ProvenanceBundle, PublishedReceiverView } from "./receiver-types.js";
 
 export type DraftSaveResult = {
@@ -44,6 +45,7 @@ export interface ExternalIdentityRepository {
 export interface HandoffRootRepository {
   create(handoffId: string, sourceConversationId: string, ownerCreatorId: CreatorId, createdAt?: string): Promise<void>;
   getSourceConversationId(handoffId: string): Promise<string | undefined>;
+  getHandoffSourceState(handoffId: string): Promise<HandoffSourceState | undefined>;
   getOwnerCreatorId(handoffId: string): Promise<CreatorId | undefined>;
   listSummariesForOwner(ownerCreatorId: CreatorId): Promise<CreatorHandoffSummary[]>;
 }

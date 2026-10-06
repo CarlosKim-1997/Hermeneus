@@ -77,7 +77,7 @@ export async function fetchReceiverProvenance(
   if (!view) return undefined;
   const uniqueIds = [...new Set(input.itemIds.filter(Boolean))];
   if (uniqueIds.length === 0) {
-    return { handoffId: input.handoffId, version: input.version, items: [] };
+    return { availability: "retained", handoffId: input.handoffId, version: input.version, items: [] };
   }
   return repos.receiver.getProvenance(input.handoffId, input.version, uniqueIds);
 }

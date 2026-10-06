@@ -20,21 +20,29 @@ export const sourceReferenceSchema = z
   })
   .strict();
 
-export const handoffItemSchema = z
+const canonicalHandoffItemBaseSchema = z
   .object({
     id: z.string().min(1),
     type: handoffItemTypeSchema,
     statement: z.string().min(1),
     priority: handoffPrioritySchema,
     createdBy: z.enum(["EXTRACTION", "CREATOR"]),
-    sources: z.array(sourceReferenceSchema),
   })
   .strict();
+
+export const draftHandoffItemSchema = canonicalHandoffItemBaseSchema.extend({
+  sources: z.array(sourceReferenceSchema),
+});
+
+export const publishedCanonicalItemSchema = canonicalHandoffItemBaseSchema.strict();
+
+/** @deprecated Prefer `DraftHandoffItem` for draft payloads; alias retained for compatibility. */
+export const handoffItemSchema = draftHandoffItemSchema;
 
 export const draftHandoffSchema = z
   .object({
     id: z.string().min(1),
-    items: z.array(handoffItemSchema),
+    items: z.array(draftHandoffItemSchema),
   })
   .strict();
 
@@ -43,13 +51,25 @@ export const publishedHandoffSchema = z
     handoffId: z.string().min(1),
     version: z.number().int().positive(),
     publishedAt: z.string().min(1),
-    items: z.array(handoffItemSchema),
+    items: z.array(publishedCanonicalItemSchema),
   })
   .strict();
 
 export type HandoffItemType = z.infer<typeof handoffItemTypeSchema>;
 export type HandoffPriority = z.infer<typeof handoffPrioritySchema>;
 export type SourceReference = z.infer<typeof sourceReferenceSchema>;
-export type HandoffItem = z.infer<typeof handoffItemSchema>;
+export type DraftHandoffItem = z.infer<typeof draftHandoffItemSchema>;
+export type PublishedCanonicalItem = z.infer<typeof publishedCanonicalItemSchema>;
+export type HandoffItem = DraftHandoffItem;
 export type DraftHandoff = z.infer<typeof draftHandoffSchema>;
 export type PublishedHandoff = z.infer<typeof publishedHandoffSchema>;
+
+export function toPublishedCanonicalItems(items: DraftHandoffItem[]): PublishedCanonicalItem[] {
+  return items.map(({ id, type, statement, priority, createdBy }) => ({
+    id,
+    type,
+    statement,
+    priority,
+    createdBy,
+  }));
+}
