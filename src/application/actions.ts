@@ -99,7 +99,11 @@ export async function fetchCreatorReview(handoffId: string) {
     await requireOwnedHandoff(repos, principal, handoffId);
     return loadCreatorReview(repos, handoffId);
   } catch (error) {
-    if (error instanceof HandoffAccessUnavailableError || error instanceof CreatorUnauthenticatedError) {
+    if (
+      error instanceof HandoffAccessUnavailableError ||
+      error instanceof CreatorUnauthenticatedError ||
+      error instanceof CreatorLifecycleBlockedError
+    ) {
       return undefined;
     }
     throw error;
@@ -113,7 +117,11 @@ export async function fetchPublishedHandoff(handoffId: string, version: number) 
     await requireOwnedHandoff(repos, principal, handoffId);
     return loadPublishedHandoff(repos, handoffId, version);
   } catch (error) {
-    if (error instanceof HandoffAccessUnavailableError || error instanceof CreatorUnauthenticatedError) {
+    if (
+      error instanceof HandoffAccessUnavailableError ||
+      error instanceof CreatorUnauthenticatedError ||
+      error instanceof CreatorLifecycleBlockedError
+    ) {
       return undefined;
     }
     throw error;
