@@ -150,10 +150,12 @@ Exact naming may vary; invariant: **published canonical storage types must not a
 ```text
 handoffs.source_conversation_id  NULL after Source Erasure (approved)
 handoffs.source_erased_at         TIMESTAMPTZ NULL
-creators.lifecycle_status        active | erasing | erased  (T-018; specified here for coherence)
+creators.lifecycle_status        active | erasing   (T-018; durable in-row states only)
 ```
 
-Semantics:
+**Creator Account Erasure lifecycle (Canon-aligned):** `active` → `erasing` → **Creator row deleted**. There is **no** normal in-row `erased` state. Completed account erasure **removes** the Creator record (C-009 ordering). The durable **`erasing`** state exists so Phase 2 failure remains fail-safe and retryable without auto-restore to `active`.
+
+Semantics (Handoff source):
 
 - Retained source: `source_conversation_id IS NOT NULL` && `source_erased_at IS NULL`.
 - Source Erasure complete: `source_erased_at IS NOT NULL` && **`source_conversation_id IS NULL`** (do not retain erased opaque ID for audit).
@@ -215,10 +217,16 @@ Uses **two-phase fail-safe lifecycle** (§4) + Phase 2 destructive atomic transa
 Phase 2 (when `lifecycle_status = erasing`):
 
 1. Creator-scoped **exclusive** lock; verify **`erasing`**.
-2. One atomic transaction: for each owned Handoff, Whole-Handoff Erasure steps; GC orphaned sources; DELETE external identity mappings (§5); DELETE Creator row; set lifecycle **`erased`** or delete row per schema choice in T-018.
-3. **COMMIT** or full **ROLLBACK** — on failure Creator stays **`erasing`**, never auto-**`active`**.
+2. One atomic transaction (C-009 order, unambiguous success post-condition):
+   - erase all owned Handoffs and Creator-specific provenance (Whole-Handoff Erasure per Handoff);
+   - garbage-collect orphaned source data as required;
+   - **DELETE** all external identity mappings for this Creator (§5);
+   - **DELETE** the Creator row;
+3. **COMMIT**.
 
-Re-login creates new Creator lifecycle (D-010).
+On Phase 2 failure: **ROLLBACK** all Phase 2 destructive work; the existing Creator row remains **`erasing`**; no automatic transition to **`active`**; retry/recovery remains possible.
+
+Successful completion leaves **no Creator row** (not `lifecycle_status = erased`). Re-login creates a **new** Creator lifecycle (D-010).
 
 ---
 
@@ -288,7 +296,7 @@ Read-only operations need not take the lock unless a specific invariant requires
 - **Normal lifecycle:** UPDATE and DELETE on `creator_external_identities` **forbidden**.
 - **Account erasure:** DELETE **allowed only if** referenced `creators.lifecycle_status = 'erasing'` (JOIN on `creator_id`).
 - UPDATE remains **forbidden**.
-- Creator row deleted **after** mappings removed (Phase 2 ordering).
+- Mappings are deleted **before** the Creator row (Phase 2 ordering). After successful Phase 2 the Creator row is gone — there is no remaining row to authorize further mapping DELETE on that identity.
 
 **Primary security control:** application-layer authenticated Account Erasure authorization (C-006, owner session).
 
@@ -300,9 +308,11 @@ Read-only operations need not take the lock unless a specific invariant requires
 
 **Decision:** Dev and external modes must both validate Creator **exists** and **`lifecycle_status = active`** before Creator-owned mutations. Dev may differ in **credential mechanism**, not lifecycle semantics.
 
-Implement via centralized `requireActiveCreator` after session resolution (§4 mutation template).
+A session whose `CreatorId` no longer has a Creator row (account erasure completed) must resolve as **unavailable/unauthenticated** for Creator-owned operations — same for external and dev auth.
 
-External session: extend beyond `exists` to lifecycle. Dev session: add same check (currently missing).
+Implement via centralized `requireActiveCreator` after session resolution (§4 mutation template): row missing or lifecycle ≠ `active` → reject.
+
+External session: extend beyond `exists` to lifecycle. Dev session: add existence + lifecycle check (currently missing).
 
 ---
 
@@ -481,7 +491,7 @@ Post-commit GC failure is **out of scope** — physical delete is **in-transacti
 |------|--------|
 | **T-016** | Published provenance table; canonical-only published snapshots; **maintenance-window transactional migration**; TypeScript published/draft/provenance type split; read-path split. **Does not** implement Account Erasure locking/orchestration. |
 | **T-017** | **Erase Source** + **Delete Handoff** use cases/API; in-txn source delete; hard DELETE share rows; destructive UX for source vs handoff (§0.3). Participates in Creator **shared** lock once T-018 introduces lifecycle column — or handoff-only locks until T-018 if lifecycle column absent (T-018 adds full protocol). |
-| **T-018** | `lifecycle_status`; two-phase Account Erasure; Creator shared/exclusive lock on **all** mutation paths; identity trigger per §5; dev/external parity; **Delete Account** UX (typed `DELETE`). |
+| **T-018** | `lifecycle_status` (`active` \| `erasing` only); two-phase Account Erasure ending in **Creator row DELETE**; Creator shared/exclusive lock on **all** mutation paths; identity trigger per §5; dev/external parity; **Delete Account** UX (typed `DELETE`). |
 
 Slice boundaries unchanged unless T-016 evidence forces safer split.
 
@@ -498,7 +508,7 @@ Each Task receives its own execution authority when authorized.
 5. Physical source delete only when no retained Handoff reference — **inside erasure transaction**.
 6. Share/receiver generic unavailable on erased targets (C-009).
 7. Identity DELETE only when Creator **`erasing`** (trigger + app auth).
-8. Account Erasure: committed **`erasing`** before destructive work; Phase 2 atomic; no auto-**active**.
+8. Account Erasure: committed **`erasing`** before destructive work; Phase 2 atomic; success **deletes Creator row**; failure leaves row **`erasing`**; no auto-**active**; no in-row **`erased`** state.
 9. No Canon edits in implementation Tasks unless human-ratified.
 
 ---
