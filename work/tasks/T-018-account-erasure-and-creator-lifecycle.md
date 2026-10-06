@@ -44,6 +44,7 @@ M12 Canon and T-015 engineering contracts bound semantics. Account Erasure is tw
 - **Concurrency:** Phase 1 vs draft save ordering; erasing rejects draft save and share revoke.
 - **Extraction:** Phase 1 during model call discards suggestions.
 - **Auth/session:** `tests/auth/account-lifecycle.test.ts`, external session erasing credential, dev cookie lifecycle DB lookup.
+- **Reconciliation:** share revoke lock-order; revoke/Phase 2 concurrency; extraction final gate; full Phase 2 rollback; Phase 1 shared provenance; ERASURE_INCOMPLETE recovery; external sign-out on delete success.
 - **E2E:** `e2e/account-erasure.spec.ts` (typed DELETE gate; successful deletion redirect).
 
 Commands:
@@ -51,10 +52,10 @@ Commands:
 - `node tooling/governance/check.mjs` — PASS
 - `git diff --check` — PASS
 - `npm run typecheck` — PASS
-- `npm run test:integration` — 95 PASS
+- `npm run test:integration` — 97 PASS
 - `npm run test:share` — 17 PASS
-- `npm run test:application` — 34 PASS
-- `npm run test:auth` — 69 PASS
+- `npm run test:application` — 37 PASS
+- `npm run test:auth` — 70 PASS
 - `npm run test:receiver` — 11 PASS
 - `npm test` — 14 PASS
 - `npm run test:e2e` — 13/13 PASS
