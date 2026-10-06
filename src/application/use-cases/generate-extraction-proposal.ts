@@ -63,6 +63,7 @@ export async function generateHandoffExtractionProposal(
   const materialized = materializeExtractionProposal(handoffId, validated);
 
   await assertRetainedSource(repos, handoffId);
+  await assertActiveCreatorOwner(repos, handoffId);
 
   return { suggestions: materialized.items };
 }

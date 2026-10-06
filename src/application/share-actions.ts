@@ -16,13 +16,20 @@ import {
 import { toReceiverFacingError } from "./receiver-errors.js";
 import { requireActiveCreatorPrincipal } from "./creator-action-auth.js";
 import { requireOwnedHandoff } from "./authorize-handoff.js";
-import { CreatorUnauthenticatedError, HandoffAccessUnavailableError } from "./creator-auth-errors.js";
+import {
+  CreatorLifecycleBlockedError,
+  CreatorUnauthenticatedError,
+  HandoffAccessUnavailableError,
+} from "./creator-auth-errors.js";
 
 function mapCreatorAuthFailure(error: unknown) {
   if (error instanceof CreatorUnauthenticatedError) {
     return { ok: false as const, error: { code: "UNAUTHENTICATED" as const, message: "Sign in to continue." } };
   }
   if (error instanceof HandoffAccessUnavailableError) {
+    return { ok: false as const, error: { code: "NOT_FOUND" as const, message: "This Handoff is unavailable." } };
+  }
+  if (error instanceof CreatorLifecycleBlockedError) {
     return { ok: false as const, error: { code: "NOT_FOUND" as const, message: "This Handoff is unavailable." } };
   }
   return null;

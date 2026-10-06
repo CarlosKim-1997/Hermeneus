@@ -4,12 +4,11 @@ import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { requireAccountLifecyclePrincipal } from "./creator-action-auth.js";
 import { getRepositories } from "./runtime.js";
-import { initiateAccountErasure, retryAccountErasure } from "./use-cases/account-erasure.js";
 import {
   CreatorLifecycleBlockedError,
   CreatorUnauthenticatedError,
 } from "./creator-auth-errors.js";
-import { clearCreatorSessionCookie } from "./creator-session-cookie.js";
+import { terminateCreatorSessionAfterAccountDeletion } from "./terminate-creator-session-after-deletion.js";
 
 function mapAuthFailure(error: unknown) {
   if (error instanceof CreatorUnauthenticatedError) {
@@ -31,8 +30,23 @@ export async function deleteAccountAction(confirmation: string) {
       return { ok: false as const, error: { code: "INVALID_STATE" as const, message: "Account deletion is already in progress." } };
     }
     const repos = getRepositories();
-    await initiateAccountErasure(repos, principal.creatorId);
-    await clearCreatorSessionCookie();
+    await repos.accountErasure.enterErasingPhase(principal.creatorId);
+    try {
+      await repos.accountErasure.completeAccountErasure(principal.creatorId);
+    } catch (phase2Error) {
+      const lifecycle = await repos.creators.getLifecycleStatus(principal.creatorId);
+      if (lifecycle === "erasing") {
+        return {
+          ok: false as const,
+          error: {
+            code: "ERASURE_INCOMPLETE" as const,
+            message: "Account deletion did not finish. You can retry from this page.",
+          },
+        };
+      }
+      throw phase2Error;
+    }
+    await terminateCreatorSessionAfterAccountDeletion();
     redirect("/login?accountDeleted=1");
   } catch (error) {
     if (isRedirectError(error)) throw error;
@@ -49,8 +63,22 @@ export async function retryAccountErasureAction() {
       return { ok: false as const, error: { code: "INVALID_STATE" as const, message: "Account deletion is not in progress." } };
     }
     const repos = getRepositories();
-    await retryAccountErasure(repos, principal.creatorId);
-    await clearCreatorSessionCookie();
+    try {
+      await repos.accountErasure.completeAccountErasure(principal.creatorId);
+    } catch (phase2Error) {
+      const lifecycle = await repos.creators.getLifecycleStatus(principal.creatorId);
+      if (lifecycle === "erasing") {
+        return {
+          ok: false as const,
+          error: {
+            code: "ERASURE_INCOMPLETE" as const,
+            message: "Account deletion did not finish. Try again.",
+          },
+        };
+      }
+      throw phase2Error;
+    }
+    await terminateCreatorSessionAfterAccountDeletion();
     redirect("/login?accountDeleted=1");
   } catch (error) {
     if (isRedirectError(error)) throw error;

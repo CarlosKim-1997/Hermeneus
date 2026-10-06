@@ -8,6 +8,7 @@ import { createPool } from "../../src/persistence/postgres/pool.js";
 import { issueShareCapability, revokeShareCapability } from "../../src/application/use-cases/share-capability.js";
 import {
   askSharedReceiverQuestion,
+  fetchSharedReceiverProvenance,
   loadSharedReceiverView,
   SHARE_UNAVAILABLE_MESSAGE,
 } from "../../src/application/use-cases/shared-receiver-qa.js";
@@ -22,6 +23,8 @@ const CREATOR_A = "creator_acc_a";
 const CREATOR_B = "creator_acc_b";
 
 const LOCK_DRAFT_UPDATE = 93001;
+const LOCK_SHARE_DELETE = 93002;
+const LOCK_SHARE_REVOKE = 93003;
 
 function item(partial: Pick<HandoffItem, "id" | "type" | "statement"> & Partial<HandoffItem>): HandoffItem {
   return { priority: "CORE", createdBy: "CREATOR", sources: [], ...partial };
@@ -89,6 +92,57 @@ async function installDraftUpdateBarrier(client: PoolClient, handoffId: string) 
 async function dropDraftUpdateBarrier(client: PoolClient) {
   await client.query(`DROP TRIGGER IF EXISTS test_barrier_draft_update_acc_trg ON handoff_drafts`);
   await client.query(`DROP FUNCTION IF EXISTS test_barrier_draft_update_acc()`);
+}
+
+async function installShareDeleteBarrier(client: PoolClient) {
+  await client.query(`
+    CREATE OR REPLACE FUNCTION test_barrier_share_delete_acc()
+    RETURNS TRIGGER LANGUAGE plpgsql AS $$
+    BEGIN
+      PERFORM pg_advisory_lock(${LOCK_SHARE_DELETE});
+      PERFORM pg_advisory_unlock(${LOCK_SHARE_DELETE});
+      RETURN OLD;
+    END;
+    $$;
+  `);
+  await client.query(`DROP TRIGGER IF EXISTS test_barrier_share_delete_acc_trg ON share_capabilities`);
+  await client.query(`
+    CREATE TRIGGER test_barrier_share_delete_acc_trg
+      BEFORE DELETE ON share_capabilities
+      FOR EACH ROW
+      EXECUTE FUNCTION test_barrier_share_delete_acc();
+  `);
+}
+
+async function dropShareDeleteBarrier(client: PoolClient) {
+  await client.query(`DROP TRIGGER IF EXISTS test_barrier_share_delete_acc_trg ON share_capabilities`);
+  await client.query(`DROP FUNCTION IF EXISTS test_barrier_share_delete_acc()`);
+}
+
+async function installShareRevokeBarrier(client: PoolClient) {
+  await client.query(`
+    CREATE OR REPLACE FUNCTION test_barrier_share_revoke_acc()
+    RETURNS TRIGGER LANGUAGE plpgsql AS $$
+    BEGIN
+      PERFORM pg_advisory_lock(${LOCK_SHARE_REVOKE});
+      PERFORM pg_advisory_unlock(${LOCK_SHARE_REVOKE});
+      RETURN NEW;
+    END;
+    $$;
+  `);
+  await client.query(`DROP TRIGGER IF EXISTS test_barrier_share_revoke_acc_trg ON share_capabilities`);
+  await client.query(`
+    CREATE TRIGGER test_barrier_share_revoke_acc_trg
+      BEFORE UPDATE OF revoked_at ON share_capabilities
+      FOR EACH ROW
+      WHEN (NEW.revoked_at IS NOT NULL AND OLD.revoked_at IS NULL)
+      EXECUTE FUNCTION test_barrier_share_revoke_acc();
+  `);
+}
+
+async function dropShareRevokeBarrier(client: PoolClient) {
+  await client.query(`DROP TRIGGER IF EXISTS test_barrier_share_revoke_acc_trg ON share_capabilities`);
+  await client.query(`DROP FUNCTION IF EXISTS test_barrier_share_revoke_acc()`);
 }
 
 async function seedRichHandoff(
@@ -193,7 +247,17 @@ if (!url) {
         expect((await pool.query(`SELECT 1 FROM handoff_drafts WHERE handoff_id = $1`, [id])).rowCount).toBe(0);
         expect((await pool.query(`SELECT 1 FROM published_handoff_versions WHERE handoff_id = $1`, [id])).rowCount).toBe(0);
         expect((await pool.query(`SELECT 1 FROM share_capabilities WHERE handoff_id = $1`, [id])).rowCount).toBe(0);
+        expect(
+          (await pool.query(`SELECT COUNT(*)::int AS c FROM published_handoff_provenance WHERE handoff_id = $1`, [id])).rows[0]
+            .c,
+        ).toBe(0);
       }
+      expect(await repos.conversations.get("conv-acc")).toBeUndefined();
+      expect(await repos.conversations.get("conv-acc-2")).toBeUndefined();
+      expect(
+        (await pool.query(`SELECT COUNT(*)::int AS c FROM source_messages WHERE conversation_id IN ('conv-acc', 'conv-acc-2')`))
+          .rows[0].c,
+      ).toBe(0);
     });
 
     it("A18-3 — cross-owner shared source: delete A, B remains functional", async () => {
@@ -228,6 +292,10 @@ if (!url) {
       expect(await loadSharedReceiverView(repos, token)).toBeUndefined();
       const qa = await askSharedReceiverQuestion(repos, { token, question: "Web?" });
       expect(qa).toEqual({ kind: "unavailable" });
+      const provenance = await fetchSharedReceiverProvenance(repos, { token, itemIds: ["web"] });
+      expect(provenance).toEqual({ kind: "unavailable" });
+      const leakProbe = JSON.stringify({ qa, provenance });
+      expect(leakProbe).not.toMatch(/erasing|creator_acc|hd-a18-4|conv-acc/i);
       await repos.accountErasure.completeAccountErasure(CREATOR_A);
       expect(await loadSharedReceiverView(repos, token)).toBeUndefined();
       expect(SHARE_UNAVAILABLE_MESSAGE).toMatch(/unavailable/i);
@@ -255,8 +323,24 @@ if (!url) {
       expect(await repos.externalIdentities.resolve("google", "subject-a18-6")).toBeUndefined();
     });
 
-    it("Phase 2 rollback leaves erasing with data restored", async () => {
-      const token = await seedRichHandoff(repos, "hd-rollback", CREATOR_A);
+    it("Phase 2 rollback leaves erasing with full owned data restored", async () => {
+      const handoffId = "hd-rollback";
+      await pool.query(
+        `INSERT INTO creator_external_identities (provider, subject, creator_id, created_at)
+         VALUES ('google', 'subject-rollback', $1, NOW())`,
+        [CREATOR_A],
+      );
+      const token = await seedRichHandoff(repos, handoffId, CREATOR_A);
+      const draftBefore = await repos.drafts.get(handoffId);
+      const revisionBefore = await repos.drafts.getRevision(handoffId);
+      const publishedBefore = await repos.published.get(handoffId, 1);
+      const provBefore = await pool.query(
+        `SELECT message_id, excerpt FROM published_handoff_provenance WHERE handoff_id = $1 ORDER BY item_id, source_index`,
+        [handoffId],
+      );
+      const shareBefore = await pool.query(`SELECT id, revoked_at FROM share_capabilities WHERE handoff_id = $1`, [handoffId]);
+      const messagesBefore = await pool.query(`SELECT id, content FROM source_messages WHERE conversation_id = 'conv-acc' ORDER BY ordinal`);
+
       await repos.accountErasure.enterErasingPhase(CREATOR_A);
       const setup = await pool.connect();
       try {
@@ -265,17 +349,33 @@ if (!url) {
         setup.release();
       }
       await expect(repos.accountErasure.completeAccountErasure(CREATOR_A)).rejects.toThrow(/phase2 failure/i);
+
+      expect(await repos.creators.exists(CREATOR_A)).toBe(true);
       expect(await repos.creators.getLifecycleStatus(CREATOR_A)).toBe("erasing");
-      expect(await repos.handoffs.getOwnerCreatorId("hd-rollback")).toBe(CREATOR_A);
-      expect((await pool.query(`SELECT COUNT(*)::int AS c FROM handoff_drafts WHERE handoff_id = 'hd-rollback'`)).rows[0].c).toBe(1);
-      expect((await pool.query(`SELECT COUNT(*)::int AS c FROM share_capabilities WHERE handoff_id = 'hd-rollback'`)).rows[0].c).toBe(1);
-      await expect(
-        repos.drafts.save(
-          createDraft("hd-rollback", [item({ id: "web", type: "OPEN", statement: "Blocked." })]),
-          1,
+      expect(await repos.externalIdentities.resolve("google", "subject-rollback")).toBe(CREATOR_A);
+      expect(await repos.handoffs.getOwnerCreatorId(handoffId)).toBe(CREATOR_A);
+      expect(await repos.drafts.getRevision(handoffId)).toBe(revisionBefore);
+      expect(await repos.drafts.get(handoffId)).toEqual(draftBefore);
+      expect(await repos.published.get(handoffId, 1)).toEqual(publishedBefore);
+      expect(
+        await pool.query(
+          `SELECT message_id, excerpt FROM published_handoff_provenance WHERE handoff_id = $1 ORDER BY item_id, source_index`,
+          [handoffId],
         ),
+      ).toEqual(provBefore);
+      expect(await pool.query(`SELECT id, revoked_at FROM share_capabilities WHERE handoff_id = $1`, [handoffId])).toEqual(
+        shareBefore,
+      );
+      expect(await repos.conversations.get("conv-acc")).toBeDefined();
+      expect(await pool.query(`SELECT id, content FROM source_messages WHERE conversation_id = 'conv-acc' ORDER BY ordinal`)).toEqual(
+        messagesBefore,
+      );
+
+      await expect(
+        repos.drafts.save(createDraft(handoffId, [item({ id: "web", type: "OPEN", statement: "Blocked." })]), revisionBefore!),
       ).rejects.toBeInstanceOf(CreatorLifecycleUnavailableError);
       expect(await loadSharedReceiverView(repos, token)).toBeUndefined();
+
       const cleanup = await pool.connect();
       try {
         await dropPhase2FailureTrigger(cleanup);
@@ -344,6 +444,81 @@ if (!url) {
           await gate.query(`SELECT pg_advisory_unlock($1)`, [LOCK_DRAFT_UPDATE]).catch(() => undefined);
           gate.release();
           await dropDraftUpdateBarrier(setup);
+          setup.release();
+        }
+      },
+      30_000,
+    );
+
+    it(
+      "Share revoke vs Phase 2 — no deadlock; revoke waits on Creator lock without Share row lock",
+      async () => {
+        const handoffId = "hd-revoke-deadlock";
+        await seedRichHandoff(repos, handoffId, CREATOR_A);
+        const issued = await issueShareCapability(repos, { handoffId, version: 1 });
+        await repos.accountErasure.enterErasingPhase(CREATOR_A);
+
+        const setup = await pool.connect();
+        const gate = await pool.connect();
+        try {
+          await installShareDeleteBarrier(setup);
+          await gate.query(`SELECT pg_advisory_lock($1)`, [LOCK_SHARE_DELETE]);
+
+          const phase2Promise = repos.accountErasure.completeAccountErasure(CREATOR_A);
+          await waitUntil(async () => (await countAdvisoryLockWaiters(pool, LOCK_SHARE_DELETE)) > 0);
+
+          const revokePromise = revokeShareCapability(repos, { capabilityId: issued.metadata.id }).catch((error) => error);
+          await waitUntil(async () => (await countAdvisoryLockWaiters(pool, LOCK_SHARE_DELETE)) > 0);
+
+          await gate.query(`SELECT pg_advisory_unlock($1)`, [LOCK_SHARE_DELETE]);
+          await phase2Promise;
+          const revokeOutcome = await revokePromise;
+          expect(revokeOutcome).toBeInstanceOf(CreatorLifecycleUnavailableError);
+          expect(await repos.creators.exists(CREATOR_A)).toBe(false);
+          expect(
+            (await pool.query(`SELECT COUNT(*)::int AS c FROM share_capabilities WHERE handoff_id = $1`, [handoffId])).rows[0].c,
+          ).toBe(0);
+        } finally {
+          await gate.query(`SELECT pg_advisory_unlock($1)`, [LOCK_SHARE_DELETE]).catch(() => undefined);
+          gate.release();
+          await dropShareDeleteBarrier(setup);
+          setup.release();
+        }
+      },
+      30_000,
+    );
+
+    it(
+      "Share revoke wins before Phase 1 (exclusive waits for shared)",
+      async () => {
+        const handoffId = "hd-revoke-phase1";
+        await seedRichHandoff(repos, handoffId, CREATOR_A);
+        const issued = await issueShareCapability(repos, { handoffId, version: 1 });
+        const setup = await pool.connect();
+        const gate = await pool.connect();
+        try {
+          await installShareRevokeBarrier(setup);
+          await gate.query(`SELECT pg_advisory_lock($1)`, [LOCK_SHARE_REVOKE]);
+
+          const revokePromise = revokeShareCapability(repos, { capabilityId: issued.metadata.id });
+          await waitUntil(async () => (await countAdvisoryLockWaiters(pool, LOCK_SHARE_REVOKE)) > 0);
+
+          const phase1Promise = repos.accountErasure.enterErasingPhase(CREATOR_A);
+          await waitUntil(async () => {
+            const waits = await pool.query<{ c: number }>(`SELECT COUNT(*)::int AS c FROM pg_locks WHERE granted = false`);
+            return (waits.rows[0]?.c ?? 0) > 0;
+          });
+
+          await gate.query(`SELECT pg_advisory_unlock($1)`, [LOCK_SHARE_REVOKE]);
+          const revoked = await revokePromise;
+          expect(revoked?.revokedAt).toBeDefined();
+          const phase1 = await phase1Promise;
+          expect(phase1.alreadyErasing).toBe(false);
+          expect(await repos.creators.getLifecycleStatus(CREATOR_A)).toBe("erasing");
+        } finally {
+          await gate.query(`SELECT pg_advisory_unlock($1)`, [LOCK_SHARE_REVOKE]).catch(() => undefined);
+          gate.release();
+          await dropShareRevokeBarrier(setup);
           setup.release();
         }
       },

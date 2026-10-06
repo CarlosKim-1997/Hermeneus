@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { CreatorLifecycleStatus } from "../../creator/types.js";
 import { deleteAccountAction, retryAccountErasureAction } from "../../application/account-actions.js";
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export function AccountLifecyclePanel({ lifecycleStatus }: Props) {
+  const router = useRouter();
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -20,6 +22,11 @@ export function AccountLifecyclePanel({ lifecycleStatus }: Props) {
     startTransition(async () => {
       const result = await deleteAccountAction(confirmation);
       if (result && "error" in result) {
+        if (result.error.code === "ERASURE_INCOMPLETE") {
+          setError(result.error.message);
+          router.refresh();
+          return;
+        }
         setError(result.error.message);
       }
     });
@@ -30,6 +37,11 @@ export function AccountLifecyclePanel({ lifecycleStatus }: Props) {
     startTransition(async () => {
       const result = await retryAccountErasureAction();
       if (result && "error" in result) {
+        if (result.error.code === "ERASURE_INCOMPLETE") {
+          setError(result.error.message);
+          router.refresh();
+          return;
+        }
         setError(result.error.message);
       }
     });

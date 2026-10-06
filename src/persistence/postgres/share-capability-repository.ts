@@ -106,9 +106,22 @@ export class PostgresShareCapabilityRepository implements ShareCapabilityReposit
   }
 
   async revoke(capabilityId: string, revokedAt: string): Promise<ShareCapabilityMetadata | undefined> {
+    const preview = await this.getMetadataById(capabilityId);
+    if (!preview) return undefined;
+
+    const expectedHandoffId = preview.handoffId;
+    const ownerRow = await this.pool.query<{ owner_creator_id: string }>(
+      `SELECT owner_creator_id FROM handoffs WHERE id = $1`,
+      [expectedHandoffId],
+    );
+    if (ownerRow.rowCount === 0) return undefined;
+    const ownerCreatorId = ownerRow.rows[0]!.owner_creator_id;
+
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
+      await lockActiveCreatorMutation(client, ownerCreatorId);
+
       const meta = await client.query<Row>(
         `SELECT id, handoff_id, version, token_hash, created_at, revoked_at FROM share_capabilities WHERE id = $1 FOR UPDATE`,
         [capabilityId],
@@ -117,15 +130,11 @@ export class PostgresShareCapabilityRepository implements ShareCapabilityReposit
         await client.query("ROLLBACK");
         return undefined;
       }
-      const ownerRow = await client.query<{ owner_creator_id: string }>(
-        `SELECT owner_creator_id FROM handoffs WHERE id = $1`,
-        [meta.rows[0]!.handoff_id],
-      );
-      if (ownerRow.rowCount === 0) {
+      if (meta.rows[0]!.handoff_id !== expectedHandoffId) {
         await client.query("ROLLBACK");
         return undefined;
       }
-      await lockActiveCreatorMutation(client, ownerRow.rows[0]!.owner_creator_id);
+
       const result = await client.query<Row>(
         `UPDATE share_capabilities
          SET revoked_at = COALESCE(revoked_at, $2::timestamptz)
