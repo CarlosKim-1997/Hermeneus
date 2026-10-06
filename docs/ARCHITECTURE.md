@@ -69,7 +69,7 @@ External Creator path (M10)
   → CreatorSessionProvider → C-006 Handoff ownership check
 
 Dev Creator path (M9, non-production)
-  signed dev cookie → internal CreatorId → ownership check
+  signed dev cookie → credential CreatorId → DB lifecycle (active required for ordinary work)
 
 Shared Receiver path (M8, unchanged)
   bearer token → active Share Capability → pinned version → M5–M7 pipeline
@@ -145,7 +145,33 @@ Delete Handoff (one transaction)
   → orphan source_conversation removed when unreferenced
 ```
 
-Creator Account Erasure remains unimplemented (T-018).
+**M12 T-018 — Creator lifecycle and Account Erasure (implemented):**
+
+```text
+Ordinary Creator mutation
+  → Creator shared advisory xact lock
+  → lifecycle_status = active
+  → Handoff / domain row locks
+  → mutation
+  → COMMIT
+
+Account Erasure Phase 1 (one transaction)
+  → Creator exclusive advisory xact lock
+  → creators FOR UPDATE
+  → active → erasing
+  → COMMIT (mutation freeze + share fail-closed)
+
+Account Erasure Phase 2 (one transaction)
+  → exclusive lock + erasing check
+  → DELETE owned Handoff lifecycle data (shares, provenance, published, drafts, roots)
+  → garbage-collect unreferenced source conversations
+  → DELETE creator_external_identities
+  → DELETE creators row
+  → COMMIT
+
+Phase 2 failure rolls back destructively but leaves committed Phase 1 erasing; retry runs Phase 2 again.
+No trash/archive/retention window; later external sign-in may start a new CreatorId lifecycle.
+```
 
 ## Answerability
 

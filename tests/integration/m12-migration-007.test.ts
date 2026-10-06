@@ -564,7 +564,7 @@ if (!url) {
     beforeAll(async () => {
       const client = await pool.connect();
       try {
-        await applyMigrationsThrough(client, "007_published_provenance_split.sql");
+        await applyMigrationsThrough(client, "008_creator_lifecycle.sql");
       } finally {
         client.release();
       }
