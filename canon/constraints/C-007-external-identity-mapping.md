@@ -2,7 +2,7 @@
 schema: constraint/v1
 id: C-007
 kind: HARD_CONSTRAINT
-status: ACTIVE
+status: SUPERSEDED
 areas:
   - handoff
 overridable: false
