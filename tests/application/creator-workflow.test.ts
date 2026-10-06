@@ -10,6 +10,7 @@ import {
   saveCreatorDraft,
 } from "../../src/application/use-cases/creator-review.js";
 import { loadPublishedHandoff, publishHandoff } from "../../src/application/use-cases/publish-handoff.js";
+import { eraseHandoffSource } from "../../src/application/use-cases/handoff-erasure.js";
 import { ProvenanceValidationError } from "../../src/persistence/errors.js";
 import { PersistenceConflictError } from "../../src/persistence/errors.js";
 import { createPool } from "../../src/persistence/postgres/pool.js";
@@ -117,6 +118,28 @@ if (!url) {
       );
       const published = await publishCurrentDraft(repos, imported.handoffId);
       expect(published.version).toBe(1);
+    });
+
+    it("E17-CR1 — loadCreatorReview after Source Erasure is erased without source identifiers", async () => {
+      const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
+      await saveCreatorDraft(
+        repos,
+        imported.handoffId,
+        [item({ id: "web", type: "CONFIRMED", statement: "Canonical retained." })],
+        1,
+      );
+      const erasedAt = "2026-10-06T12:00:00.000Z";
+      await eraseHandoffSource(repos, APP_CREATOR, imported.handoffId);
+      const review = await loadCreatorReview(repos, imported.handoffId);
+      expect(review?.kind).toBe("erased");
+      if (review?.kind !== "erased") throw new Error("expected erased review");
+      expect(review.handoffId).toBe(imported.handoffId);
+      expect(review.revision).toBeGreaterThanOrEqual(2);
+      expect(review.draft.items[0]?.statement).toBe("Canonical retained.");
+      expect(review.draft.items[0]?.sources).toEqual([]);
+      expect(review.erasedAt).toBeTruthy();
+      expect(Object.keys(review)).toEqual(["kind", "handoffId", "revision", "draft", "erasedAt"]);
+      expect(JSON.stringify(review)).not.toMatch(/conversationId|sourceConversation|messages/i);
     });
 
     it("U5 — fabricated excerpt fails publication", async () => {
