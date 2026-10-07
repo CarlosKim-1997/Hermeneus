@@ -14,8 +14,30 @@ Non-normative engineering and operations assessment for Hermeneus at T-018 integ
 
 | Gate | Verdict | Summary |
 |------|---------|---------|
-| **Controlled Internal Alpha** | **CONDITIONAL GO** | Application-layer auth, ownership, share semantics, and M12 erasure are strong and heavily tested. Responsible Alpha with real data requires **operator compensating controls**: external (not dev) auth, HTTPS, controlled invite list, documented share-URL log policy, verified DB backups/PITR, manual pre-deploy verification (full test matrix + migrate), and acceptance that infrastructure may retain share tokens in access logs until Slice B is implemented. |
-| **Limited Beta** | **NO-GO** | Missing hosted CI, unverified branch protection, no health/readiness surface, no rate/cost guards on share and LLM paths, default DB pool/migration concurrency hazards for multi-instance deploys, and unresolved C-005 infrastructure log redaction block unattended internet-facing operation. |
+| **Controlled Internal Alpha** | **CONDITIONAL GO** | Application-layer auth, ownership, share semantics, and M12 erasure are strong and heavily tested. Alpha is allowed only when: (1) deployment uses **external auth over HTTPS** with `CREATOR_AUTH_MODE=external`; (2) **target deployment** Google OAuth / host / cookie / proxy behavior has passed smoke (historical T-010 evidence does not replace this); (3) **DB backup/PITR** capability is operator-verified; (4) every deploy uses the documented **full deterministic test + migration** gate; (5) Share links are either operated under a verified **no-token-log** infrastructure policy or explicitly restricted under a **human-approved Alpha risk policy** (C-005). Disabled auth is fail-closed (not a security defect). |
+| **Limited Beta** | **NO-GO** | Missing hosted CI, `main` unprotected, no health/readiness surface, no rate/cost guards on share and LLM paths, default DB pool/migration concurrency hazards for multi-instance deploys, and unresolved C-005 infrastructure log redaction block unattended internet-facing operation. |
+
+## Top blockers (Alpha-critical)
+
+Grouped by nature after catalog reconciliation (see findings for full fields):
+
+**Product / repository gaps**
+
+- **PR-SH-001** — C-005 share bearer may appear in infrastructure access logs (`/share/[token]`); blocks confident external share operation until proxy/log policy or accepted Alpha risk decision.
+
+**Target deployment verification prerequisites**
+
+- **PR-AUTH-001** — Target Alpha/staging OAuth smoke not yet evidenced (redirect URI, HTTPS, cookies, proxy trust, post–T-018 account deletion/re-login); implementation was live-verified in T-010.
+- **PR-DEP-002** — Proxy/`AUTH_TRUST_HOST` alignment must be verified on the chosen host before external auth is relied upon.
+
+**Operator evidence requirements**
+
+- **PR-DR-001** — Backup/PITR/restore capability is not defined in-repo; Alpha with real data requires provider evidence (confidence Low until supplied).
+
+**Not Alpha security blockers (Beta or compensating controls)**
+
+- **PR-RC-001** — No hosted CI; Alpha may compensate with manual pre-deploy test matrix.
+- **PR-RC-002** — `main` is currently unprotected; Alpha may rely on single-operator merge discipline until Slice A + GitHub admin action.
 
 ## Existing controls worth preserving
 
@@ -34,17 +56,20 @@ Independently verified strengths (do not weaken during hardening):
 
 ## Operator evidence required
 
-| Topic | Why |
-|-------|-----|
-| Hosting platform & process model | No `vercel.json`, Dockerfile, or deploy scripts in repo |
-| Production `DATABASE_URL` provider & TLS | Pool uses connection string only; SSL not configured in code |
-| Backup / PITR / restore test | Not represented in repository |
-| Access / CDN / reverse-proxy log policy | C-005 deferred; especially `/share/[token]` path logging |
-| Google OAuth redirect URIs & `AUTH_SECRET` rotation | External auth deployment not live-verified in this audit |
-| Branch protection & required reviews | GitHub API returned 403 for integration token |
-| Secret scanning / Dependabot enabled | Not visible via API used |
-| Error monitoring (Sentry etc.) | None in codebase |
-| Cost / quota limits on OpenAI | Env-only; no app-level ceiling |
+Legend: **KNOWN (repo)** = established from repository or standard GitHub branch API; **KNOWN (historical)** = recorded task evidence; **TARGET-ENV** = must be verified on the eventual Alpha deployment; **UNKNOWN (deployment/provider)** = not visible to this audit.
+
+| Topic | State | Why |
+|-------|-------|-----|
+| Google OAuth implementation & historical smoke | **KNOWN (historical)** | T-010 records live Google OAuth smoke PASS (first login, `/new`, mapping cardinality 1, Handoff ownership, sign-out, relogin/CreatorId reuse, M8 share smoke). |
+| Target Alpha deployment OAuth / TLS / cookies / proxy | **TARGET-ENV** | Redirect URIs, HTTPS, cookie behavior, host/proxy trust, and post–T-018 deletion/re-login lifecycle must be re-verified after deploy configuration is chosen (PR-AUTH-001, PR-DEP-002). |
+| Hosting platform & process model | **UNKNOWN (deployment/provider)** | No `vercel.json`, Dockerfile, or deploy scripts in repo (PR-DEP-001). |
+| Production `DATABASE_URL` provider & TLS | **UNKNOWN (deployment/provider)** | Pool uses connection string only; SSL not configured in code. |
+| Backup / PITR / restore test | **UNKNOWN (deployment/provider)** | Not represented in repository (PR-DR-001). |
+| Access / CDN / reverse-proxy log policy | **TARGET-ENV** | C-005 deferred; especially `/share/[token]` path logging (PR-SH-001). |
+| `main` branch protection (basic) | **KNOWN (repo/API)** | `GET .../branches/main` → `protected: false`, `protection.enabled: false`, required status checks off (PR-RC-002). |
+| Full GitHub admin protection / security settings | **UNKNOWN (deployment/provider)** | Dedicated protection admin endpoint returned HTTP 403 to audit credential; Dependabot/secret scanning not confirmed via API used. |
+| Error monitoring (Sentry etc.) | **KNOWN (repo)** | None in codebase. |
+| Cost / quota limits on OpenAI | **KNOWN (repo)** | Env-only; no app-level ceiling. |
 
 ## Findings catalog
 
@@ -71,21 +96,21 @@ Each finding uses the required fields. **Confidence**: High = direct repo eviden
 
 ---
 
-### PR-RC-002 — Branch protection not verified (API 403)
+### PR-RC-002 — `main` branch is currently unprotected
 
 | Field | Value |
 |-------|-------|
-| **Area** | Change control |
-| **Evidence** | `GET /repos/.../branches/main/protection` → HTTP 403 for integration principal; Current State states main unprotected (still consistent). |
+| **Area** | Repository / CI |
+| **Evidence** | `GET /repos/CarlosKim-1997/Hermeneus/branches/main` (2026-10-07): `protected: false`, `protection.enabled: false`, `required_status_checks.enforcement_level: off`. Dedicated `GET .../branches/main/protection` → HTTP 403 for audit integration (admin-only view of full rule payload). |
 | **Failure / threat scenario** | Direct push to `main` bypassing review/tests. |
 | **Current control** | Public repo visibility; human merge discipline. |
 | **Severity** | MEDIUM |
 | **Likelihood** | MEDIUM |
-| **Gate affected** | Alpha (acceptable with single operator), Beta |
+| **Gate affected** | Alpha (acceptable with single operator), Beta (always) |
 | **Classification** | REQUIRED_BEFORE_BETA |
-| **Recommended remediation** | Enable branch protection + required status checks after Slice A. |
-| **Verification required** | GitHub UI/API shows protection enabled. |
-| **Confidence** | Medium (protection state UNKNOWN_EXTERNAL for token) |
+| **Recommended remediation** | Slice A hosted CI first; then protect `main`; require new status checks (GitHub admin). |
+| **Verification required** | Branch API or UI shows protection enabled and required checks attached. |
+| **Confidence** | High (basic protected/unprotected state); Medium for full admin-only protection configuration |
 | **Human Decision Required?** | No |
 
 ---
@@ -136,9 +161,9 @@ Each finding uses the required fields. **Confidence**: High = direct repo eviden
 | **Evidence** | `npm audit` (2026-10-07): 2 critical in `tinypool` via vitest; not in production bundle. |
 | **Failure / threat scenario** | Compromised dev/CI runner if untrusted code executed in tests. |
 | **Current control** | Tests run in controlled CI (when added) / agent environments. |
-| **Severity** | LOW (prod), MEDIUM (CI) |
+| **Severity** | MEDIUM |
 | **Likelihood** | LOW |
-| **Gate affected** | Beta (CI hygiene) |
+| **Gate affected** | Beta (CI hygiene only; not in production bundle) |
 | **Classification** | DEFERRED |
 | **Recommended remediation** | Upgrade vitest when convenient; isolate CI runners. |
 | **Verification required** | Post-upgrade audit. |
@@ -214,9 +239,9 @@ Each finding uses the required fields. **Confidence**: High = direct repo eviden
 | **Current control** | Documentation; Auth.js defaults when unset. |
 | **Severity** | HIGH |
 | **Likelihood** | LOW if platform-managed; HIGH if self-hosted without proxy hardening |
-| **Gate affected** | Alpha (external auth), Beta |
-| **Classification** | BLOCKER_ALPHA (if external auth without verified proxy) |
-| **Recommended remediation** | Platform-specific trust config; staging OAuth test; document reverse proxy rules. |
+| **Gate affected** | Alpha when external auth is used; Beta always |
+| **Classification** | BLOCKER_ALPHA |
+| **Recommended remediation** | Platform-specific trust config; target-environment OAuth test; document reverse proxy rules. |
 | **Verification required** | Successful Google login on staging/production URL. |
 | **Confidence** | Medium |
 | **Human Decision Required?** | No (configuration task) |
@@ -252,8 +277,8 @@ Each finding uses the required fields. **Confidence**: High = direct repo eviden
 | **Current control** | App does not persist raw token after issuance; hash-only DB; tests for model payload exclusion. |
 | **Severity** | HIGH |
 | **Likelihood** | HIGH if default access logging enabled |
-| **Gate affected** | Alpha (share links leave invite group), Beta |
-| **Classification** | BLOCKER_ALPHA (for share-heavy Alpha) / REQUIRED_BEFORE_BETA |
+| **Gate affected** | Alpha when external Share links are used; Beta always |
+| **Classification** | BLOCKER_ALPHA |
 | **Recommended remediation** | Slice B: log redaction/filter at proxy; avoid logging full request URI; structured log scrubbing; optional post-Alpha token-in-header redesign (Human Decision). |
 | **Verification required** | Sample access log proves token not stored; penetration check Referer on subresources. |
 | **Confidence** | High |
@@ -272,7 +297,7 @@ Each finding uses the required fields. **Confidence**: High = direct repo eviden
 | **Severity** | MEDIUM |
 | **Likelihood** | MEDIUM |
 | **Gate affected** | Alpha, Beta |
-| **Classification** | ACCEPTABLE_CURRENTLY (semantics ratified) |
+| **Classification** | ACCEPTABLE_CURRENTLY |
 | **Recommended remediation** | Operational guidance for invitees; optional future fragment/post pattern (product change — not T-019). |
 | **Verification required** | Support/runbook mentions handling. |
 | **Confidence** | High |
@@ -280,39 +305,39 @@ Each finding uses the required fields. **Confidence**: High = direct repo eviden
 
 ---
 
-### PR-AUTH-001 — External Google OAuth not live-verified in audit environment
+### PR-AUTH-001 — Target Alpha deployment OAuth smoke not yet evidenced
 
 | Field | Value |
 |-------|-------|
 | **Area** | Authentication |
-| **Evidence** | Tests mock/stub Auth.js paths; README notes live Google round-trip unverified historically; T-018 added lifecycle/session tests. |
-| **Failure / threat scenario** | Misconfigured redirect URI or cookie `Secure` flags block real users silently. |
-| **Current control** | Application invariants tested; `CREATOR_AUTH_MODE=external` config validation. |
+| **Evidence** | **Historical (T-010):** live Google OAuth smoke PASS — first login, `/new`, mapping cardinality 1, real UI Handoff ownership, sign-out, same-account relogin with CreatorId reuse, no duplicate mapping/Creator, M8 bearer share/revoke smoke (`work/tasks/T-010-external-identity-bridge.md`). **Gap:** the eventual/current Alpha deployment environment has not been target-environment-verified after production/staging redirect URI, HTTPS, cookie behavior, host/proxy trust, and post–T-018 account deletion/re-login lifecycle configuration is chosen. Automated tests mock/stub Auth.js; T-018 adds lifecycle/session tests. |
+| **Failure / threat scenario** | Deployment-specific misconfiguration (redirect URI, `Secure` cookies, proxy trust) blocks real Creators or breaks session/erasure flows on the Alpha URL. |
+| **Current control** | Application invariants and external-identity mapping tested in CI; T-010 proves implementation can pass live smoke in a configured environment. |
 | **Severity** | MEDIUM |
-| **Likelihood** | MEDIUM on first deploy |
-| **Gate affected** | Alpha (external auth) |
-| **Classification** | BLOCKER_ALPHA (until staging OAuth pass) |
-| **Recommended remediation** | Staging checklist: login, logout, erasure, re-login new lifecycle. |
-| **Verification required** | Manual OAuth E2E on target URL. |
-| **Confidence** | High |
+| **Likelihood** | MEDIUM on first target deploy |
+| **Gate affected** | Alpha (external auth on target URL) |
+| **Classification** | BLOCKER_ALPHA |
+| **Recommended remediation** | Target-environment checklist: Google login/logout, Handoff create, share smoke, account erasure, re-login new lifecycle — on the Alpha/staging URL with final env vars. |
+| **Verification required** | Recorded target-environment OAuth E2E (operator sign-off). |
+| **Confidence** | High (repo + T-010 historical); Medium until target URL evidence exists |
 | **Human Decision Required?** | No |
 
 ---
 
-### PR-AUTH-002 — Creator auth disabled by default
+### PR-AUTH-002 — Creator auth disabled by default (fail-closed)
 
 | Field | Value |
 |-------|-------|
 | **Area** | Authentication |
-| **Evidence** | `CREATOR_AUTH_MODE` defaults `disabled` (`auth-config.ts`). |
-| **Failure / threat scenario** | Misconfiguration leaves Creator surfaces open if deployed without env review. |
-| **Current control** | Page guards redirect; README documents modes. |
-| **Severity** | HIGH |
-| **Likelihood** | LOW if checklist used |
-| **Gate affected** | Alpha |
-| **Classification** | BLOCKER_ALPHA (must set external or controlled dev-not-prod) |
-| **Recommended remediation** | Deploy checklist; fail-fast if disabled in production env. |
-| **Verification required** | `/handoffs` requires login on Alpha env. |
+| **Evidence** | `CREATOR_AUTH_MODE` unset → `disabled` (`auth-config.ts`). `disabled` → disabled `CreatorSessionProvider`; `getCurrentPrincipal()` → `undefined` (`src/application/creator-session-factory.ts`). Creator page/action guards therefore do not grant Creator authority when auth is disabled. |
+| **Failure / threat scenario** | If operators forget to set `CREATOR_AUTH_MODE=external` on Alpha, **invited Creators cannot use the product** (workflow unavailable) — not public exposure of privileged surfaces. |
+| **Current control** | Fail-closed security posture; dev auth refused in production; README documents modes. |
+| **Severity** | LOW |
+| **Likelihood** | MEDIUM (operational misconfiguration) |
+| **Gate affected** | Alpha (operational prerequisite to set external auth) |
+| **Classification** | ACCEPTABLE_CURRENTLY |
+| **Recommended remediation** | Alpha deploy checklist: set and verify `CREATOR_AUTH_MODE=external`; optional future fail-fast if disabled on production-labeled env (remediation, not T-019). |
+| **Verification required** | Target Alpha env shows login-gated Creator flows after external auth configured. |
 | **Confidence** | High |
 | **Human Decision Required?** | No |
 
@@ -402,12 +427,12 @@ Each finding uses the required fields. **Confidence**: High = direct repo eviden
 | **Evidence** | No backup scripts or restore docs; operator/provider settings UNKNOWN_EXTERNAL. |
 | **Failure / threat scenario** | Data loss; Account Erasure stuck in `erasing` unrecoverable. |
 | **Current control** | Provider defaults (unknown). |
-| **Severity** | CRITICAL (if no provider backups) |
-| **Likelihood** | UNKNOWN |
+| **Severity** | CRITICAL |
+| **Likelihood** | UNKNOWN until operator confirms provider backups |
 | **Gate affected** | Alpha, Beta |
-| **Classification** | BLOCKER_ALPHA (until provider backup verified) / UNKNOWN_EXTERNAL |
+| **Classification** | BLOCKER_ALPHA |
 | **Recommended remediation** | Slice C: enable PITR; quarterly restore drill; runbook for `erasing` recovery. |
-| **Verification required** | Documented restore test date. |
+| **Verification required** | Documented restore test date and retention settings. |
 | **Confidence** | Low without operator input |
 | **Human Decision Required?** | **Yes** — backup retention and RPO/RTO for Alpha. |
 
@@ -523,7 +548,7 @@ Each finding uses the required fields. **Confidence**: High = direct repo eviden
 | **Recommended remediation** | Document operator boundaries; log redaction (PR-SH-001); backup retention policy; OpenAI DPA/retention settings. |
 | **Verification required** | Privacy appendix for Alpha invitees. |
 | **Confidence** | High |
-| **Human Decision Required?** | **Yes** — Alpha data sensitivity disclosure text. |
+| **Human Decision Required?** | No (disclosure tied to live extraction decision PR-LLM-001) |
 
 ---
 
@@ -624,45 +649,59 @@ Each finding uses the required fields. **Confidence**: High = direct repo eviden
 
 ## Finding counts
 
+**Total findings:** 30 (`### PR-...` headings in this catalog).
+
+Reconciliation note: counts are derived from **one primary Classification** and **one primary Severity** per finding; gate inheritance (e.g. Beta inheriting Alpha blockers) belongs in **Gate affected**, not in Classification.
+
 | Classification | Count |
 |----------------|------:|
 | BLOCKER_ALPHA | 4 |
-| REQUIRED_BEFORE_BETA | 14 |
+| REQUIRED_BEFORE_BETA | 15 |
 | HARDEN_BEFORE_PUBLIC | 2 |
-| DEFERRED | 3 |
-| ACCEPTABLE_CURRENTLY | 5 |
+| DEFERRED | 2 |
+| ACCEPTABLE_CURRENTLY | 6 |
 | UNKNOWN_EXTERNAL | 1 |
 
 | Severity | Count |
 |----------|------:|
 | CRITICAL | 1 |
-| HIGH | 9 |
+| HIGH | 7 |
 | MEDIUM | 14 |
-| LOW | 2 |
+| LOW | 3 |
 | INFO | 5 |
 
-| Area (primary) | Count |
-|----------------|------:|
+| Area (primary, normalized) | Count |
+|----------------------------|------:|
 | Repository / CI | 3 |
-| Share / C-005 | 2 |
-| Deployment / auth | 3 |
-| Database / migrations | 3 |
-| Observability / health / ops | 3 |
-| Abuse / LLM | 3 |
 | Supply chain | 4 |
+| Deployment | 2 |
+| HTTP / browser security | 1 |
+| Share bearer | 2 |
+| Authentication | 2 |
+| Authorization | 1 |
+| Database / migrations / DR | 4 |
+| Observability | 1 |
+| LLM operations | 1 |
+| Abuse | 2 |
+| Input safety | 1 |
 | Privacy | 1 |
-| Strengths (ACCEPTABLE) | 4 |
+| Operations | 1 |
+| Health / readiness | 1 |
+| Capacity | 1 |
+| Product (quality / utility) | 2 |
 
 ## Exit-gate matrix
 
 | Area | Current status | Alpha gate | Beta gate | Evidence | Next action |
 |------|----------------|------------|-----------|----------|-------------|
 | Hosted CI | Missing | Manual test matrix acceptable with checklist | Required | workflows=0 | Slice A |
-| Branch protection | Unknown (API 403) | Single-operator discipline | Required | API + State | Slice A |
+| Branch protection | **Known unprotected** | Single-operator discipline | Required | branch API `protected: false` | Slice A |
 | Application authZ | Strong | GO | GO | 72 auth + 97 integration tests | Maintain CI |
-| External OAuth deploy | Not audit-verified | Staging OAuth required | Required | Tests mock OAuth | Staging checklist |
-| Share URL log redaction (C-005) | Not implemented | **Conditional** — proxy policy required | Required | Canon C-005; `/share/[token]` | Slice B |
-| DB backups / PITR | Unknown | Operator must verify | Required | No repo evidence | Slice C + human RPO |
+| Auth default (`disabled`) | Fail-closed | GO (set `external` for usability) | GO | `creator-session-factory.ts` | Deploy checklist |
+| External OAuth (implementation) | T-010 historical PASS | — | — | T-010 task record | Preserve |
+| Target deployment OAuth | Not target-evidenced | Required on Alpha URL | Required | PR-AUTH-001 | Slice B checklist |
+| Share URL log redaction (C-005) | Not implemented | **Conditional** — proxy policy or accepted risk | Required | Canon C-005; `/share/[token]` | Slice B |
+| DB backups / PITR | Operator unknown | Operator must verify | Required | PR-DR-001 | Slice C + human RPO |
 | Migration concurrency | Unlocked script | Single migrator OK | Required | `migrate.mjs` | Slice C |
 | DB pool defaults | pg defaults | Single instance OK | Tune required | `pool.ts` | Slice D |
 | Rate / cost limits | Absent | Limit LLM modes / invites | Required | code review | Slice D |
@@ -675,55 +714,59 @@ Each finding uses the required fields. **Confidence**: High = direct repo eviden
 
 ### Slice A — Hosted verification & repository protection
 
-- **Closes:** PR-RC-001, PR-RC-002, PR-RC-003, PR-SC-001 (CI audit gate), PR-SC-004  
-- **Dependencies:** None  
-- **Verification:** PR checks mandatory; `npm run build` + test matrix green  
-- **Human/deploy input:** GitHub admin to enable protection  
+- **Closes:** PR-RC-001, PR-RC-002, PR-RC-003, PR-SC-001 (CI audit gate), PR-SC-004
+- **Dependencies:** None
+- **Verification:** PR checks mandatory; `npm run build` + test matrix green
+- **Human/deploy input:** GitHub admin to enable protection
 
-### Slice B — Deployment boundary: TLS, headers, share log redaction
+### Slice B — Deployment boundary: TLS, headers, share log redaction, target OAuth
 
-- **Closes:** PR-SH-001, PR-SEC-001, PR-DEP-002 (in staging)  
-- **Dependencies:** Slice A (staging env)  
-- **Verification:** Header scan; access log sampling; OAuth on staging URL  
-- **Human/deploy input:** Platform choice, log pipeline access  
+- **Closes:** PR-SH-001, PR-SEC-001, PR-DEP-002, PR-AUTH-001 (target-environment smoke)
+- **Dependencies:** Deployment platform selection (PR-DEP-001); Slice A optional for CI on staging PRs
+- **Verification:** Header scan; access log sampling; Google OAuth + erasure/re-login on target Alpha/staging URL
+- **Human/deploy input:** Platform choice, log pipeline access, OAuth redirect URIs
 
 ### Slice C — Database operations: migrate lock, readiness, backups
 
-- **Closes:** PR-MIG-001, PR-MIG-002, PR-DR-001  
-- **Dependencies:** Deployment target known  
-- **Verification:** Concurrent migrate test; restore drill; readiness fails if schema behind  
-- **Human/deploy input:** Provider backup settings  
+- **Closes:** PR-MIG-001, PR-MIG-002, PR-DR-001
+- **Dependencies:** Deployment target known
+- **Verification:** Concurrent migrate test; restore drill; readiness fails if schema behind
+- **Human/deploy input:** Provider backup settings
 
 ### Slice D — Abuse, cost, and runtime resilience
 
-- **Closes:** PR-DB-001, PR-ABU-001, PR-ABU-002, PR-LLM-001  
-- **Dependencies:** Slices A–C baseline  
-- **Verification:** Rate limit tests; pool metrics under load  
-- **Human/deploy input:** OpenAI billing alerts  
+- **Closes:** PR-DB-001, PR-ABU-001, PR-ABU-002, PR-LLM-001
+- **Dependencies:** Slices A–C baseline
+- **Verification:** Rate limit tests; pool metrics under load
+- **Human/deploy input:** OpenAI billing alerts
 
 ### Slice E — Observability & runbooks
 
-- **Closes:** PR-OBS-001, PR-OPS-001, PR-HLT-001, PR-PRV-001 (documentation half)  
-- **Dependencies:** Slice B redaction rules  
-- **Verification:** Alert fires on synthetic failure; runbook tabletop  
-- **Human/deploy input:** On-call owner for Beta  
+- **Closes:** PR-OBS-001, PR-OPS-001, PR-HLT-001, PR-PRV-001 (documentation half)
+- **Dependencies:** Slice B redaction rules
+- **Verification:** Alert fires on synthetic failure; runbook tabletop
+- **Human/deploy input:** On-call owner for Beta
 
 ## Human decisions (genuine unresolved choices)
 
-1. **Deployment platform and migration job model** (PR-DEP-001) — required before Slice C/D tuning.  
-2. **Alpha share-link policy under C-005** — accept infrastructure logging risk with compensating log policy vs delay external shares until Slice B (PR-SH-001).  
-3. **Enable live OpenAI extraction during Alpha?** (PR-LLM-001) — data leaves boundary to model provider; disclosure to invitees (PR-PRV-001).  
-4. **Backup retention / RPO for Alpha** (PR-DR-001) — provider settings and acceptable recovery point.  
-5. **Auth.js beta → stable timing for Beta** (PR-SC-003).  
+Only choices that cannot be settled by implementation or deployment evidence alone:
 
-If Alpha uses **external auth only**, **verified backups**, **manual CI gate**, and **documented share log handling**, no further product-policy decisions block the first remediation slice.
+1. **Deployment platform and migration job model** (PR-DEP-001) — required before Slice C/D tuning and target OAuth/DB evidence.
+2. **Alpha share-link policy under C-005** (PR-SH-001) — accept infrastructure logging risk with compensating log policy vs restrict external shares until Slice B log redaction is proven.
+3. **Enable live OpenAI extraction during Alpha?** (PR-LLM-001) — includes invitee disclosure for data sent to the model provider (related privacy scope PR-PRV-001).
+4. **Backup retention / RPO–RTO for Alpha** (PR-DR-001) — provider settings and acceptable recovery point.
+5. **Auth.js beta → stable timing for Beta** (PR-SC-003).
+
+**Slice A blocked by Human Decision?** **No** — Slice A (hosted CI + eventual branch protection after checks exist) can begin independently; it does not require hosting-provider selection for its core workflow work. Branch protection enablement may still need a GitHub admin after checks are green.
+
+Facts **not** requiring Human Decisions (evidence or configuration): T-010 historical Google OAuth smoke; fail-closed disabled auth (PR-AUTH-002); `main` currently unprotected (PR-RC-002); target-environment OAuth re-verification checklist (PR-AUTH-001).
 
 ## Verification log (T-019 execution)
 
 | Command | Result (2026-10-07 UTC) |
 |---------|-------------------------|
 | `node tooling/governance/check.mjs` | PASS |
-| `git diff --check` | PASS (pre-commit) |
+| `git diff --check` | PASS (pre-commit; reconciliation pass) |
 | `npm run typecheck` | PASS |
 | `npm run build` | PASS |
 | `npm test` | 14 PASS |
