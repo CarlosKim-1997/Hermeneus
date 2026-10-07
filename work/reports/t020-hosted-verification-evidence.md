@@ -120,9 +120,10 @@ Post–PR #21 merge `origin/main`: **`ee23d40190847c63e654d1041f989e76f65d1029`*
 
 | Field | Value |
 |-------|-------|
-| Closure commit | `0bf50cd0e2d5106806be1d291084e30f51cd0a3e` |
-| Workflow run | [37562068022](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/37562068022) |
+| Closure commit | `5efa176bfb853bf57b891586aaf61ed48406ae4a` |
+| Workflow run | [37562299217](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/37562299217) |
 | Jobs | `verify`, `postgres`, `e2e`, `dependency-audit` — all **success** |
+| Prior closure CI | `0bf50cd` — run [37562068022](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/37562068022) (state/task updates) |
 
 ## T-020 task status
 
