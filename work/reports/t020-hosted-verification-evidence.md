@@ -116,6 +116,14 @@ Post–PR #21 merge `origin/main`: **`ee23d40190847c63e654d1041f989e76f65d1029`*
 | PR-SC-001 | Hosted production-**CRITICAL** audit gate established; known HIGH/MODERATE advisories remain for later remediation |
 | PR-RC-003 | **PARTIAL** — tested Git SHA / hosted CI provenance established; deployment artifact/runtime SHA propagation awaits deployment slice |
 
+## Closure verification (final HEAD)
+
+| Field | Value |
+|-------|-------|
+| Closure commit | `0bf50cd0e2d5106806be1d291084e30f51cd0a3e` |
+| Workflow run | [37562068022](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/37562068022) |
+| Jobs | `verify`, `postgres`, `e2e`, `dependency-audit` — all **success** |
+
 ## T-020 task status
 
 **COMPLETE** (2026-10-07) — hosted CI green, required contexts match, `main` protection verified via branch API. PR #22 remains open for human merge.
