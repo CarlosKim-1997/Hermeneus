@@ -1,7 +1,7 @@
 ---
 schema: task/v1
 id: T-020
-status: IN_PROGRESS
+status: COMPLETE
 areas:
   - handoff
 depends_on:
@@ -31,11 +31,15 @@ No live OpenAI in CI. Least GitHub Actions permissions. Do not weaken tests for 
 
 ## Verification
 
-Baseline: post–PR #21 `origin/main` (recorded in evidence report).
+Baseline: post–PR #21 `origin/main` **`ee23d40190847c63e654d1041f989e76f65d1029`**.
 
-Hosted: CI workflow on T-020 PR — all jobs green; exact check names captured. `test:auth` runs in the `postgres` job (subset requires `TEST_DATABASE_URL`; see T-018 lifecycle-blocked auth tests).
+Hosted CI (PR #22): workflow run [37554061009](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/37554061009) at `d0e3a833d27135e00ee066056f50c45cbcf054bd` — jobs `verify`, `postgres`, `e2e`, `dependency-audit` all **success**.
 
-Local: governance, typecheck, build, deterministic suites, integration, E2E, `npm audit --omit=dev --audit-level=critical`.
+Branch protection: `GET .../branches/main` → `protected: true`; required contexts **`verify`**, **`postgres`**, **`e2e`**, **`dependency-audit`**.
+
+`test:auth` runs in the `postgres` job (T-018 DB-backed auth tests).
+
+Closure: `node tooling/governance/check.mjs` PASS; `canon/state/current.md` updated for hosted CI + protected `main`.
 
 ## Stop Conditions
 
@@ -43,4 +47,4 @@ Stop if T-019 not on `main`, Canon conflict, or request to implement out-of-scop
 
 ## Completion Criteria
 
-Node pinned consistently; hosted workflow green on PR; mandatory jobs pass; `main` protection enabled with required checks; evidence report complete; Current State updated; Governance PASS; T-020 status COMPLETE (PR may remain unmerged).
+Met: Node pinned; hosted workflow green; mandatory jobs pass; `main` protection verified with matching contexts; evidence report and Current State updated; Governance PASS; T-020 **COMPLETE** (PR #22 not merged per authority).

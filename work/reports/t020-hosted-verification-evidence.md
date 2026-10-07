@@ -44,8 +44,8 @@ Post–PR #21 merge `origin/main`: **`ee23d40190847c63e654d1041f989e76f65d1029`*
 | Field | Value |
 |-------|-------|
 | PR | [#22](https://github.com/CarlosKim-1997/Hermeneus/pull/22) |
-| HEAD SHA | `7e928ffad382e5c5feb41fa102d6b6b3e1273947` |
-| Workflow run | [37553741751](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/37553741751) |
+| Implementation HEAD (pre-closure) | `7e928ffad382e5c5feb41fa102d6b6b3e1273947` — run [37553741751](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/37553741751) |
+| Evidence + closure HEAD | `d0e3a833d27135e00ee066056f50c45cbcf054bd` — run [37554061009](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/37554061009) |
 | Event | `pull_request` |
 
 ### Check contexts (exact names from commit check-runs API)
@@ -78,40 +78,44 @@ Post–PR #21 merge `origin/main`: **`ee23d40190847c63e654d1041f989e76f65d1029`*
 
 ## Branch protection
 
-### Before (2026-10-07)
+### Before (T-020 start)
 
-`GET .../branches/main`: `protected: false`, `protection.enabled: false`, required checks off.
+**Machine verified:** `GET /repos/.../branches/main` → `protected: false`, `protection.enabled: false`, required status checks off.
 
-### Mutation attempt
+### Agent mutation attempt (2026-10-07)
 
-`PUT .../branches/main/protection` with required contexts `verify`, `postgres`, `e2e`, `dependency-audit`, PR required with **0** approvals, force-push and deletion disabled → **HTTP 403** `Resource not accessible by integration`.
+`PUT .../branches/main/protection` → **HTTP 403** `Resource not accessible by integration`.
 
-### After
+### After (owner-configured; re-verified 2026-10-07)
 
-**Unchanged** — human GitHub admin must apply protection using the exact contexts above.
+**Machine verified** (`GET /repos/CarlosKim-1997/Hermeneus/branches/main`):
 
-Recommended settings:
+| Field | Value |
+|-------|-------|
+| `protected` | **true** |
+| `protection.enabled` | **true** |
+| Required status check contexts | **`verify`**, **`postgres`**, **`e2e`**, **`dependency-audit`** (GitHub Actions app_id 15368) |
+| Status check enforcement | `enforcement_level`: **`non_admins`** |
 
-- Require pull request (0 required approving reviews for solo maintainer)
-- Require status checks: `verify`, `postgres`, `e2e`, `dependency-audit`
-- Require branches up to date (strict)
-- Block force push and branch deletion
-- `enforce_admins`: preserve owner break-glass unless org policy requires otherwise
+**Not readable** via this integration (admin protection endpoint and GraphQL `branchProtectionRules` return **403** / forbidden): strict/up-to-date flag, force-push allow/deny, branch deletion allow/deny, required approving review count, conversation resolution, admin enforcement (`isAdminEnforced`). Those settings were applied manually by the repository owner; treat as **human-admin configured** unless confirmed in GitHub UI.
 
-## Finding disposition
+**PR #22 under protection (machine verified):**
+
+- State **OPEN**, draft (acceptable for closure verification).
+- HEAD `d0e3a833d27135e00ee066056f50c45cbcf054bd` matches T-020 branch.
+- All four required checks **SUCCESS** on run [37554061009](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/37554061009).
+- `mergeable`: **MERGEABLE**; `mergeStateStatus`: **BLOCKED** (draft + `reviewDecision`: **REVIEW_REQUIRED** — normal gating, not missing CI contexts).
+
+## Finding disposition (final)
 
 | Finding | Status |
 |---------|--------|
-| PR-RC-001 | **CLOSED** (hosted CI on PR/main) — protection pending admin |
-| PR-RC-002 | **OPEN** until admin enables protection |
-| PR-SC-004 | **CLOSED** (Node pin aligned) |
-| PR-SC-001 | **Partially closed** — hosted critical audit gate; HIGH/MODERATE remain |
-| PR-RC-003 | **PARTIAL** — repository/CI SHA provenance in workflow summary + `docs/operations/change-control.md`; deployed-artifact provenance awaits Slice B |
-
-## Residual human action
-
-**GitHub admin:** enable `main` branch protection with the four check contexts listed above, then verify via branch API.
+| PR-RC-001 | **CLOSED** — hosted CI on PR and push to `main` |
+| PR-RC-002 | **CLOSED** — `main` protected with required CI contexts |
+| PR-SC-004 | **CLOSED** — Node runtime pinned (`.nvmrc`, `engines`, Actions) |
+| PR-SC-001 | Hosted production-**CRITICAL** audit gate established; known HIGH/MODERATE advisories remain for later remediation |
+| PR-RC-003 | **PARTIAL** — tested Git SHA / hosted CI provenance established; deployment artifact/runtime SHA propagation awaits deployment slice |
 
 ## T-020 task status
 
-**IN_PROGRESS** until branch protection is applied and verified externally.
+**COMPLETE** (2026-10-07) — hosted CI green, required contexts match, `main` protection verified via branch API. PR #22 remains open for human merge.
