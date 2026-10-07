@@ -33,7 +33,7 @@ No live OpenAI in CI. Least GitHub Actions permissions. Do not weaken tests for 
 
 Baseline: post–PR #21 `origin/main` (recorded in evidence report).
 
-Hosted: CI workflow on T-020 PR — all jobs green; exact check names captured.
+Hosted: CI workflow on T-020 PR — all jobs green; exact check names captured. `test:auth` runs in the `postgres` job (subset requires `TEST_DATABASE_URL`; see T-018 lifecycle-blocked auth tests).
 
 Local: governance, typecheck, build, deterministic suites, integration, E2E, `npm audit --omit=dev --audit-level=critical`.
 

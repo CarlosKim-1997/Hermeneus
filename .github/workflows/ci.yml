@@ -50,11 +50,10 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Unit and deterministic suites
+      - name: Unit and deterministic suites (no PostgreSQL)
         run: |
           npm test
           npm run test:application
-          npm run test:auth
           npm run test:share
           npm run test:receiver
           npm run test:receiver-semantic
@@ -95,8 +94,10 @@ jobs:
       - name: Apply migrations
         run: npm run migrate
 
-      - name: Integration tests
-        run: npm run test:integration
+      - name: Auth and integration tests
+        run: |
+          npm run test:auth
+          npm run test:integration
 
   e2e:
     name: e2e
