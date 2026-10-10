@@ -1,8 +1,8 @@
 # Hermeneus vNext implementation contract (draft)
 
-**Status:** Non-normative integration proposal. This document grants no permission to implement, push, merge, run an external model, migrate a live database, or deploy. Installed Repository Governance and active Project Canon on the eventual implementation base take precedence. PR #23 is proposed Canon until human review, ratification, and authorized integration.
+**Status:** Non-normative integration review map. This document grants no permission to implement, push, merge, run an external model, migrate a live database, or deploy. Installed Repository Governance and active Project Canon on the eventual implementation base take precedence. PR #23 is proposed Canon until human review, ratification, and authorized integration.
 
-**Inputs:** The Phase 1–4 design files in `hermeneus_codex_full_handoff.zip`, the integration plan, and the owner's 2026-10-11 conflict resolutions. The ZIP is design evidence, not repository authority. This draft replaces no historical design file.
+**Inputs:** `hermeneus_codex_reconciled_v0_1.zip` (SHA-256 `c41e2428ed9ecc46c85e3ab1010266411fa8eb5a2ec4423e6ba63306d1c6432f`), especially `integration/UNIFIED_IMPLEMENTATION_CONTRACT_v0_1.md` and `integration/RECONCILIATION_CHANGELOG.md`. Within the attached design materials, that unified contract takes precedence over conflicting Phase 1–4 proposals. The earlier `hermeneus_codex_full_handoff.zip` is history. Neither ZIP is repository authority.
 
 ## Gates before implementation
 
@@ -14,9 +14,9 @@
 
 | Boundary | Frozen first-slice choice | Authority guard |
 | --- | --- | --- |
-| Sender input | `hermeneus.portable-proposal/v0`; strict JSON shape, unique proposal IDs, existing eight item types and three priorities. `title` is optional and nonblank when present. | The Phase 1 draft schema currently requires `title`; update the schema, prompt, examples, and validator together before implementing. Shape validation is not source fidelity or Creator approval. |
+| Sender input | `hermeneus.portable-proposal/v0`; strict JSON shape, unique proposal IDs, existing eight item types and three priorities. `title` is optional and nonblank when present. | The reconciled Phase 1 schema accepts title absence. Shape validation is not source fidelity or Creator approval. |
 | Review notes | `reviewNotes` may be present in the input. Display them before Draft creation, require explicit acknowledgment, then discard the raw Proposal and notes. | Do not persist notes in the first slice or imply they are recoverable on the Review page. Any future retention is a separate lifecycle decision. |
-| Navigation title | An optional owner-only `display_title` may be stored as Handoff navigation metadata, erased with the Handoff or Creator account. | It is not a Canon item, Published meaning, provenance, or Receiver Packet field. |
+| Navigation title | An optional owner-only `display_title` may be stored as Handoff navigation metadata only after explicit Creator opt-in, erased with the Handoff or Creator account. | Product/privacy approval for this storage policy remains outstanding. It is not a Canon item, Published meaning, provenance, or Receiver Packet field. |
 | Original source | `IMPORTED_CONVERSATION` retained/erased and `BOOTSTRAP_PROPOSAL` not-collected are distinct, enforced states. | Never create synthetic conversation messages, source references, excerpts, or erasure timestamps for a bootstrap Proposal. |
 | Publication | Existing Draft revision check and explicit Creator approval create an immutable Published version. | Server assigns Handoff and item IDs. Draft save and Publish both reject impossible source references; existing imported-source and erasure paths remain intact. |
 | Receiver Packet | `hermeneus.receiver-packet/v0`, projected from the exact authorized Published version; packet-local `HI-###` aliases; RFC 8785 JCS SHA-256 digest over the packet without its digest field. | No bearer token, internal Handoff ID, Creator credentials, title, notes, raw source, or unavailable provenance. Digest and `publicationRef` grant no access. |
