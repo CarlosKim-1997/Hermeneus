@@ -1,7 +1,7 @@
 ---
 schema: decision/v1
 id: D-001
-status: ACTIVE
+status: SUPERSEDED
 areas:
   - handoff
 ---
