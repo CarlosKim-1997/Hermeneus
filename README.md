@@ -35,6 +35,7 @@ Local parity (PostgreSQL required for integration/E2E):
 ```bash
 node tooling/governance/check.mjs
 npm ci
+npm run migrate
 npm run typecheck
 npm run build
 npm test
@@ -45,7 +46,6 @@ npm run test:receiver
 npm run test:receiver-semantic
 npm run test:receiver-answer
 npm run test:extraction
-npm run migrate
 npm run test:integration
 npm run test:e2e
 ```
