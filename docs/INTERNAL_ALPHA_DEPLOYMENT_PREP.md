@@ -9,6 +9,12 @@ This is an operational checklist, not Canon or release authority. Complete the c
 - Vercel Authentication protecting **all deployments**, including any production URL. Do not use Vercel shareable bypass links for real-data tests. Confirm the single external participant's access and unauthorized denial in the deployed environment.
 - Auth.js Google OAuth for Creator identity over HTTPS (`CREATOR_AUTH_MODE=external`). Validate the exact callback URL, host/proxy trust, secure cookies, sign-in/out, and cross-Creator denial on the target URL.
 
+## Synthetic-only interim environment
+
+The owner approved a Free interim project for synthetic testing only. Supabase project `hermeneus-alpha-synthetic` (`dzaibwrrylxlrxbgnyaw`) is isolated in Seoul; its Data API is disabled. Migrations 001–011 were applied there. Migration 011 revokes `anon`/`authenticated` access to Hermeneus tables and functions and blocks future client-role defaults. Read-only verification found 11 app tables, zero client-accessible app tables, zero client-executable app functions, and zero handoffs. The Free project has no PITR/automatic-backup evidence and must not hold real user data.
+
+Vercel project `hermeneus-alpha-synthetic` (`prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8`) exists under CarlosLab with Node 22.x and Vercel Authentication configured for all deployments. It has no Git link, environment secrets, domain, or deployment. The selected Pro/Small/PITR target for real-data use remains unprovisioned.
+
 ## Database exposure and connectivity
 
 The owner selected **Data API disabled** for this Alpha. Hermeneus uses server-side `pg` connections and does not use Supabase REST, GraphQL, or `supabase-js`. Its migrations create tables in `public` without RLS; Supabase projects may grant API roles access to newly created public objects by default. Before applying any Hermeneus migration:
@@ -16,7 +22,7 @@ The owner selected **Data API disabled** for this Alpha. Hermeneus uses server-s
 1. In the new Supabase project's **Data API** integration settings, turn **Enable Data API** off. Record the target project reference and a non-secret screenshot or setting observation in the release evidence.
 2. Confirm `public` is not reachable through generated REST endpoints. Use a synthetic table or an empty-schema request; do not expose a real Share token or user record in a test URL. Recheck after migrations and before admitting real data.
 3. Use the dashboard's transaction-pooler connection string for the Vercel server-only `DATABASE_URL`; use a direct connection for the one-time migration command. Copy hostnames from the target dashboard rather than constructing them from the region. Keep both strings and passwords in protected environment secrets, never in Git or build output.
-4. Apply migrations 001–010 to the new project only after reviewing the target and taking a baseline backup. Check migration history, schema objects, anonymous/authenticated grants, and the Data API disabled setting afterward. Do not enable Data API later without a separate table/function access and RLS review.
+4. Apply reviewed migrations 001–011 to the future real-data project only after reviewing that target and taking a baseline backup. Check migration history, schema objects, anonymous/authenticated grants, and the Data API disabled setting afterward. Do not enable Data API later without a separate table/function access and RLS review.
 5. With synthetic records, exercise import, Bootstrap, publication, Share issue/revoke, provenance, and erasure. Verify backup/PITR status and rehearse recovery on an isolated disposable target; do not restore over live Alpha data as a test.
 
 ## External processing and Share boundary
