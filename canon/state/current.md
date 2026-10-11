@@ -27,7 +27,7 @@ None.
 - Production hardening (including deployment-level protections beyond the current development vertical slices) remains incomplete.
 - Share Capability infrastructure and access-log redaction for share URLs remain deferred (see C-005).
 - Legal retention/hold and team ownership transfer are outside current product scope.
-- Hosted CI is not configured in this repository; verification remains local/agent-driven.
+- Hosted deterministic CI and protected-main change control are configured. Mandatory merge verification covers governance, typecheck/build, deterministic application suites, PostgreSQL migrations/integration tests, E2E, and production-critical dependency audit. Live LLM evaluation remains opt-in and is not a mandatory merge gate.
 
 ## Verification Basis
 

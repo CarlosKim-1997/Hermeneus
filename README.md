@@ -26,14 +26,27 @@ Version-pinned internal Receiver (`/receiver/[handoffId]/[version]`) and **Share
 
 ## Checks
 
+**Hosted CI:** Pull requests and pushes to `main` run the [CI workflow](.github/workflows/ci.yml) (governance, typecheck, build, deterministic Vitest suites, PostgreSQL integration, Playwright E2E, and a production-dependency audit with a **critical** threshold). Live OpenAI suites (`test:live-*`) are intentionally excluded from mandatory CI.
+
+Use the Node version in `.nvmrc` (Node 22 LTS line; required by `openai` and `package.json` `engines`).
+
+Local parity (PostgreSQL required for integration/E2E):
+
 ```bash
 node tooling/governance/check.mjs
+npm ci
+npm run migrate
+npm run typecheck
+npm run build
 npm test
 npm run test:application
 npm run test:auth
-npm run typecheck
-npm run migrate
-npm run build
+npm run test:share
+npm run test:receiver
+npm run test:receiver-semantic
+npm run test:receiver-answer
+npm run test:extraction
+npm run test:integration
 npm run test:e2e
 ```
 
