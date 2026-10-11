@@ -35,7 +35,7 @@ export function toCreatorFacingError(error: unknown): CreatorFacingError {
     return {
       code: "SOURCE_REJECTED",
       message:
-        "This Handoff's source was erased. Remove source references from the draft or reload the current saved draft.",
+        "This Handoff has no available original source. Remove source references from the draft or reload the current saved draft.",
     };
   }
   return {

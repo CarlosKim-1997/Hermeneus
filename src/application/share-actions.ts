@@ -11,9 +11,12 @@ import {
   askSharedReceiverQuestion,
   fetchSharedReceiverProvenance,
   loadSharedReceiverView,
+  loadPublishedViewForShareResolution,
   SHARE_UNAVAILABLE_MESSAGE,
 } from "./use-cases/shared-receiver-qa.js";
 import { toReceiverFacingError } from "./receiver-errors.js";
+import { buildReceiverPacket } from "../portable/receiver-packet.js";
+import { verifyExternalAnswer } from "./use-cases/verify-external-answer.js";
 import { requireActiveCreatorPrincipal } from "./creator-action-auth.js";
 import { requireOwnedHandoff } from "./authorize-handoff.js";
 import {
@@ -95,6 +98,22 @@ export async function revokeShareCapabilityAction(input: { capabilityId: string 
 export async function loadSharedReceiverViewAction(token: string) {
   const repos = getRepositories();
   return loadSharedReceiverView(repos, token);
+}
+
+export async function loadSharedReceiverPacketAction(token: string) {
+  const repos = getRepositories();
+  const view = await loadPublishedViewForShareResolution(repos, token);
+  if (!view) {
+    return { ok: false as const, error: { code: "SHARE_UNAVAILABLE" as const, message: SHARE_UNAVAILABLE_MESSAGE } };
+  }
+  return { ok: true as const, packet: buildReceiverPacket(view) };
+}
+
+export async function verifyExternalAnswerAction(input: { token: string; submission: unknown }) {
+  const outcome = await verifyExternalAnswer(getRepositories(), input.token, input.submission);
+  if (outcome.kind === "unavailable") return { ok: false as const, error: SHARE_UNAVAILABLE_MESSAGE };
+  if (outcome.kind === "invalid") return { ok: false as const, error: "Submitted packet identity or answer format is invalid." };
+  return { ok: true as const, result: outcome.result };
 }
 
 export async function askSharedReceiverQuestionAction(input: { token: string; question: string }) {

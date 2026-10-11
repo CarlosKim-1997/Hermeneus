@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { toCreatorFacingError } from "./user-errors.js";
 import { getRepositories } from "./runtime.js";
 import { importAndCreateHandoff } from "./use-cases/import-conversation.js";
+import { bootstrapHandoff } from "./use-cases/bootstrap-handoff.js";
 import { loadCreatorReview, saveCreatorDraft } from "./use-cases/creator-review.js";
 import { deleteWholeHandoff, eraseHandoffSource } from "./use-cases/handoff-erasure.js";
 import { loadPublishedHandoff, publishHandoff } from "./use-cases/publish-handoff.js";
@@ -34,6 +35,18 @@ function mapAuthFailure(error: unknown) {
 }
 
 export type ImportConversationFormState = { error: string } | null;
+
+export async function bootstrapHandoffAction(input: unknown) {
+  try {
+    const principal = await requireActiveCreatorPrincipal();
+    const created = await bootstrapHandoff(getRepositories(), principal.creatorId, input);
+    return { ok: true as const, handoffId: created.handoffId };
+  } catch (error) {
+    const auth = mapAuthFailure(error);
+    if (auth) return auth;
+    return { ok: false as const, error: toCreatorFacingError(error) };
+  }
+}
 
 export async function importConversationAction(
   _prev: ImportConversationFormState,

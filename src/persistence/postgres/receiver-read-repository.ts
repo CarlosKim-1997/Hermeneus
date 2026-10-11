@@ -15,29 +15,34 @@ async function readProvenanceLocked(
   version: number,
   itemIds: string[],
 ): Promise<ProvenanceBundle> {
-  const handoff = await client.query<{ source_conversation_id: string | null; source_erased_at: Date | null }>(
-    `SELECT source_conversation_id, source_erased_at FROM handoffs WHERE id = $1 FOR SHARE`,
+  const handoff = await client.query<{ ingress_kind: string; source_conversation_id: string | null; source_erased_at: Date | null }>(
+    `SELECT ingress_kind, source_conversation_id, source_erased_at FROM handoffs WHERE id = $1 FOR SHARE`,
     [handoffId],
   );
   if (handoff.rowCount === 0) {
     throw new ProvenanceIntegrityError(`Handoff ${handoffId} does not exist for provenance read`);
   }
   const row = handoff.rows[0]!;
-  if (row.source_erased_at !== null || row.source_conversation_id === null) {
-    return { availability: "unavailable_erased", handoffId, version, items: [] };
-  }
-
-  const uniqueItemIds = [...new Set(itemIds.filter(Boolean))];
-  if (uniqueItemIds.length === 0) {
-    return { availability: "retained", handoffId, version, items: [] };
-  }
-
   const publishedExists = await client.query(
     `SELECT 1 FROM published_handoff_versions WHERE handoff_id = $1 AND version = $2`,
     [handoffId, version],
   );
   if (publishedExists.rowCount === 0) {
     throw new ProvenanceIntegrityError(`Published handoff ${handoffId} v${version} does not exist`);
+  }
+  if (row.ingress_kind === "BOOTSTRAP_PROPOSAL" && row.source_conversation_id === null && row.source_erased_at === null) {
+    return { availability: "unavailable_not_collected", handoffId, version, items: [] };
+  }
+  if (row.ingress_kind === "IMPORTED_CONVERSATION" && row.source_erased_at !== null && row.source_conversation_id === null) {
+    return { availability: "unavailable_erased", handoffId, version, items: [] };
+  }
+  if (row.ingress_kind !== "IMPORTED_CONVERSATION" || !row.source_conversation_id || row.source_erased_at) {
+    throw new ProvenanceIntegrityError(`Handoff ${handoffId} has invalid ingress lifecycle state`);
+  }
+
+  const uniqueItemIds = [...new Set(itemIds.filter(Boolean))];
+  if (uniqueItemIds.length === 0) {
+    return { availability: "retained", handoffId, version, items: [] };
   }
 
   const snapshotResult = await client.query<{ snapshot_json: unknown }>(

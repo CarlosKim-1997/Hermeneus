@@ -42,7 +42,7 @@ export default async function PublishedPage({
             <strong>{item.type}</strong> · {item.priority}
           </div>
           <p>{item.statement}</p>
-          <p className="muted">Published canonical snapshot (provenance is stored separately; use Receiver provenance for source excerpts).</p>
+          <p className="muted">Published canonical snapshot. Original-source evidence is separate when the source was collected and retained.</p>
         </article>
       ))}
     </section>

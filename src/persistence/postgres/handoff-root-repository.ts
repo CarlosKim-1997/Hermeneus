@@ -43,19 +43,22 @@ export class PostgresHandoffRootRepository implements HandoffRootRepository {
   }
 
   async getHandoffSourceState(handoffId: string): Promise<HandoffSourceState | undefined> {
-    const existing = await this.db.query<{ source_conversation_id: string | null; source_erased_at: Date | null }>(
-      "SELECT source_conversation_id, source_erased_at FROM handoffs WHERE id = $1",
+    const existing = await this.db.query<{ ingress_kind: string; source_conversation_id: string | null; source_erased_at: Date | null }>(
+      "SELECT ingress_kind, source_conversation_id, source_erased_at FROM handoffs WHERE id = $1",
       [handoffId],
     );
     if (existing.rowCount === 0) return undefined;
     const row = existing.rows[0]!;
-    if (row.source_erased_at) {
+    if (row.ingress_kind === "BOOTSTRAP_PROPOSAL" && !row.source_conversation_id && !row.source_erased_at) {
+      return { kind: "not_collected" };
+    }
+    if (row.ingress_kind === "IMPORTED_CONVERSATION" && row.source_erased_at && !row.source_conversation_id) {
       return { kind: "erased", erasedAt: row.source_erased_at.toISOString() };
     }
-    if (row.source_conversation_id) {
+    if (row.ingress_kind === "IMPORTED_CONVERSATION" && row.source_conversation_id && !row.source_erased_at) {
       return { kind: "retained", conversationId: row.source_conversation_id };
     }
-    return undefined;
+    throw new Error(`Handoff ${handoffId} has invalid ingress lifecycle state`);
   }
 
   async getOwnerCreatorId(handoffId: string): Promise<CreatorId | undefined> {
@@ -70,6 +73,7 @@ export class PostgresHandoffRootRepository implements HandoffRootRepository {
   async listSummariesForOwner(ownerCreatorId: CreatorId): Promise<CreatorHandoffSummary[]> {
     const result = await this.db.query<{
       handoff_id: string;
+      display_title: string | null;
       created_at: Date;
       draft_revision: number;
       draft_updated_at: Date;
@@ -78,6 +82,7 @@ export class PostgresHandoffRootRepository implements HandoffRootRepository {
     }>(
       `SELECT
          h.id AS handoff_id,
+         h.display_title,
          h.created_at,
          d.revision AS draft_revision,
          d.updated_at AS draft_updated_at,
@@ -99,6 +104,7 @@ export class PostgresHandoffRootRepository implements HandoffRootRepository {
 
     return result.rows.map((row) => ({
       handoffId: row.handoff_id,
+      ...(row.display_title ? { displayTitle: row.display_title } : {}),
       createdAt: row.created_at.toISOString(),
       draftRevision: row.draft_revision,
       draftUpdatedAt: row.draft_updated_at.toISOString(),

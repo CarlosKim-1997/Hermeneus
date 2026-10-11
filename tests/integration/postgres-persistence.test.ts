@@ -551,10 +551,10 @@ if (!url) {
       expect(await repos.drafts.get("handoff-p19")).toBeDefined();
     });
 
-    it("P20 — nonexistent source message rejected at publication", async () => {
+    it("P20 — nonexistent source message rejected at Draft save", async () => {
       await repos.conversations.create(conversation);
       await repos.handoffs.create("handoff-p20", "conv-p", TEST_CREATOR);
-      await saveInitialDraft(
+      await expect(saveInitialDraft(
         repos,
         createDraft("handoff-p20", [
           item({
@@ -564,14 +564,12 @@ if (!url) {
             sources: [{ messageId: "missing-message" }],
           }),
         ]),
-      );
-      await expect(publishCurrentDraft(repos, "handoff-p20", "2026-09-25T00:00:00.000Z")).rejects.toBeInstanceOf(
-        ProvenanceValidationError,
-      );
+      )).rejects.toBeInstanceOf(ProvenanceValidationError);
+      expect(await repos.drafts.get("handoff-p20")).toBeUndefined();
       expect(await repos.published.get("handoff-p20", 1)).toBeUndefined();
     });
 
-    it("P21 — cross-conversation source reference rejected at publication", async () => {
+    it("P21 — cross-conversation source reference rejected at Draft save", async () => {
       await repos.conversations.create(conversation);
       const other = {
         ...conversation,
@@ -583,7 +581,7 @@ if (!url) {
       };
       await repos.conversations.create(other);
       await repos.handoffs.create("handoff-p21", "conv-p", TEST_CREATOR);
-      await saveInitialDraft(
+      await expect(saveInitialDraft(
         repos,
         createDraft("handoff-p21", [
           item({
@@ -593,14 +591,12 @@ if (!url) {
             sources: [{ messageId: "conv-p21-other:m3" }],
           }),
         ]),
-      );
-      await expect(publishCurrentDraft(repos, "handoff-p21", "2026-09-25T00:00:00.000Z")).rejects.toBeInstanceOf(
-        ProvenanceValidationError,
-      );
+      )).rejects.toBeInstanceOf(ProvenanceValidationError);
+      expect(await repos.drafts.get("handoff-p21")).toBeUndefined();
       expect(await repos.published.get("handoff-p21", 1)).toBeUndefined();
     });
 
-    it("P22 — fabricated excerpt rejected at publication", async () => {
+    it("P22 — fabricated excerpt rejected at Draft save and Publish", async () => {
       const excerptConversation = {
         ...conversation,
         id: "conv-p22",
@@ -615,16 +611,19 @@ if (!url) {
       };
       await repos.conversations.create(excerptConversation);
       await repos.handoffs.create("handoff-p22", "conv-p22", TEST_CREATOR);
-      await saveInitialDraft(
-        repos,
-        createDraft("handoff-p22", [
+      const invalidDraft = createDraft("handoff-p22", [
           item({
             id: "web",
             type: "CONFIRMED",
             statement: "Web-first is confirmed.",
             sources: [{ messageId: "conv-p22:m1", excerpt: "Mobile-first was approved." }],
           }),
-        ]),
+        ]);
+      await expect(saveInitialDraft(repos, invalidDraft)).rejects.toBeInstanceOf(ProvenanceValidationError);
+      await pool.query(
+        `INSERT INTO handoff_drafts (handoff_id, revision, snapshot_json, updated_at)
+         VALUES ($1, 1, $2::jsonb, NOW())`,
+        ["handoff-p22", JSON.stringify(invalidDraft)],
       );
       await expect(publishCurrentDraft(repos, "handoff-p22", "2026-09-25T00:00:00.000Z")).rejects.toBeInstanceOf(
         ProvenanceValidationError,

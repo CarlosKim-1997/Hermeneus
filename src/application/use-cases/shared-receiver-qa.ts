@@ -51,7 +51,7 @@ export async function fetchSharedReceiverProvenance(
     itemIds: input.itemIds,
   });
   if (!bundle) return { kind: "unavailable" };
-  if (bundle.availability === "unavailable_erased") {
+  if (bundle.availability !== "retained") {
     return { kind: "unavailable" };
   }
   return { kind: "provenance", provenance: stripProvenanceForShare(bundle) };
