@@ -9,6 +9,7 @@ import { PostgresReceiverReadRepository } from "./receiver-read-repository.js";
 import { PostgresShareCapabilityRepository } from "./share-capability-repository.js";
 import { PostgresHandoffErasureRepository } from "./handoff-erasure-repository.js";
 import { PostgresImportHandoffRepository } from "./import-handoff-repository.js";
+import { PostgresBootstrapHandoffRepository } from "./bootstrap-handoff-repository.js";
 import { PostgresAccountErasureRepository } from "./account-erasure-repository.js";
 
 export function createPostgresRepositories(pool: Pool) {
@@ -16,6 +17,7 @@ export function createPostgresRepositories(pool: Pool) {
   return {
     creators,
     importHandoff: new PostgresImportHandoffRepository(pool),
+    bootstrapHandoff: new PostgresBootstrapHandoffRepository(pool),
     accountErasure: new PostgresAccountErasureRepository(pool),
     externalIdentities: new PostgresExternalIdentityRepository(pool),
     conversations: new PostgresConversationRepository(pool),

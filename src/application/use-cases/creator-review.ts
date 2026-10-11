@@ -22,7 +22,14 @@ export type CreatorReviewStateErased = {
   erasedAt: string;
 };
 
-export type CreatorReviewState = CreatorReviewStateRetained | CreatorReviewStateErased;
+export type CreatorReviewStateNotCollected = {
+  kind: "not_collected";
+  handoffId: string;
+  revision: number;
+  draft: ReturnType<typeof draftHandoffSchema.parse>;
+};
+
+export type CreatorReviewState = CreatorReviewStateRetained | CreatorReviewStateErased | CreatorReviewStateNotCollected;
 
 export function requireRetainedCreatorReview(
   state: CreatorReviewState | undefined,
@@ -43,6 +50,9 @@ export async function loadCreatorReview(repos: Repos, handoffId: string): Promis
 
   if (sourceState.kind === "erased") {
     return { kind: "erased", handoffId, revision, draft, erasedAt: sourceState.erasedAt };
+  }
+  if (sourceState.kind === "not_collected") {
+    return { kind: "not_collected", handoffId, revision, draft };
   }
 
   const sourceRead = new CreatorSourceRead(repos.conversations);

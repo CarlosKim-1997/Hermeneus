@@ -26,7 +26,7 @@ type Props = {
   handoffId: string;
   initialRevision: number;
   initialItems: HandoffItem[];
-  reviewKind: "retained" | "erased";
+  reviewKind: "retained" | "erased" | "not_collected";
   sourceConversation?: NormalizedConversation;
   erasedAt?: string;
 };
@@ -44,6 +44,7 @@ export function ReviewEditor({
   erasedAt,
 }: Props) {
   const sourceErased = reviewKind === "erased";
+  const sourceRetained = reviewKind === "retained";
   const [revision, setRevision] = useState(initialRevision);
   const [items, setItems] = useState<HandoffItem[]>(initialItems);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -171,6 +172,8 @@ export function ReviewEditor({
               without source references.
             </p>
           </>
+        ) : reviewKind === "not_collected" ? (
+          <p className="notice"><strong>Original source not collected.</strong> This Draft came from a portable AI proposal. Its statements require your review; no original transcript or source citations are available.</p>
         ) : (
           <>
             <p>Provenance only. This is not the published Handoff.</p>
@@ -186,7 +189,7 @@ export function ReviewEditor({
 
       <section className="panel panel-draft" aria-labelledby="draft-heading">
         <h2 id="draft-heading">Handoff Draft</h2>
-        {!sourceErased ? (
+        {sourceRetained ? (
           <div className="extraction-panel">
             <h3>AI suggestions (optional)</h3>
             <p className="notice">
@@ -232,7 +235,9 @@ export function ReviewEditor({
             ))}
           </div>
         ) : (
-          <p className="notice">AI extraction is unavailable because source provenance was erased.</p>
+          <p className="notice">{sourceErased
+            ? "AI extraction is unavailable because source provenance was erased."
+            : "AI extraction is unavailable because the original source was not collected."}</p>
         )}
         <p>
           Draft revision: <strong>{revision}</strong>
@@ -278,7 +283,7 @@ export function ReviewEditor({
               ))}
             </select>
 
-            {!sourceErased ? (
+            {sourceRetained ? (
             <fieldset style={{ marginTop: "0.75rem", border: "1px solid #e5e7eb", borderRadius: 6, padding: "0.75rem" }}>
               <legend>Provenance</legend>
               {(item.sources.length ? item.sources : [{ messageId: "", excerpt: "" }]).map((source, sourceIndex) => (

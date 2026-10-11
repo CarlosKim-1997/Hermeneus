@@ -142,11 +142,11 @@ if (!url) {
       expect(JSON.stringify(review)).not.toMatch(/conversationId|sourceConversation|messages/i);
     });
 
-    it("U5 — fabricated excerpt fails publication", async () => {
+    it("U5 — fabricated excerpt fails Draft save before publication", async () => {
       const imported = await importAndCreateHandoff(repos, APP_CREATOR, transcript);
       const review = await loadCreatorReview(repos, imported.handoffId);
       const messageId = requireRetainedCreatorReview(review).sourceConversation.messages.at(-1)!.id;
-      await saveCreatorDraft(
+      await expect(saveCreatorDraft(
         repos,
         imported.handoffId,
         [
@@ -158,8 +158,7 @@ if (!url) {
           }),
         ],
         1,
-      );
-      await expect(publishCurrentDraft(repos, imported.handoffId)).rejects.toBeInstanceOf(ProvenanceValidationError);
+      )).rejects.toBeInstanceOf(ProvenanceValidationError);
       expect(await loadPublishedHandoff(repos, imported.handoffId, 1)).toBeUndefined();
     });
 

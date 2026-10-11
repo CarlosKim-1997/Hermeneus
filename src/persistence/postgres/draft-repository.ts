@@ -3,6 +3,7 @@ import { draftHandoffSchema, type DraftHandoff } from "../../handoff/schema.js";
 import { PersistenceConflictError, SourceBackedDraftRejectedError } from "../errors.js";
 import type { DraftRepository, DraftSaveResult } from "../ports.js";
 import { lockActiveCreatorMutation } from "./active-creator-mutation.js";
+import { validatePublicationProvenance } from "./validate-publication-provenance.js";
 
 function draftHasSourceReferences(draft: DraftHandoff): boolean {
   return draft.items.some((item) => item.sources.length > 0);
@@ -24,18 +25,20 @@ export class PostgresDraftRepository implements DraftRepository {
         throw new PersistenceConflictError(`Draft ${parsed.id} does not exist for expected revision ${expectedRevision ?? 0}`);
       }
       await lockActiveCreatorMutation(client, ownerRow.rows[0]!.owner_creator_id);
-      const handoff = await client.query<{ source_erased_at: Date | null }>(
-        `SELECT source_erased_at FROM handoffs WHERE id = $1 FOR UPDATE`,
+      const handoff = await client.query<{ ingress_kind: string; source_erased_at: Date | null }>(
+        `SELECT ingress_kind, source_erased_at FROM handoffs WHERE id = $1 FOR UPDATE`,
         [parsed.id],
       );
       if (handoff.rowCount === 0) {
         throw new PersistenceConflictError(`Draft ${parsed.id} does not exist for expected revision ${expectedRevision ?? 0}`);
       }
-      if (handoff.rows[0]!.source_erased_at !== null && draftHasSourceReferences(parsed)) {
+      if ((handoff.rows[0]!.source_erased_at !== null ||
+           handoff.rows[0]!.ingress_kind === "BOOTSTRAP_PROPOSAL") && draftHasSourceReferences(parsed)) {
         throw new SourceBackedDraftRejectedError(
-          `Handoff ${parsed.id} source is erased; draft cannot contain source references`,
+          `Handoff ${parsed.id} has no available source; draft cannot contain source references`,
         );
       }
+      await validatePublicationProvenance(client, parsed.id, parsed);
 
       let result: DraftSaveResult;
       if (expectedRevision === undefined) {

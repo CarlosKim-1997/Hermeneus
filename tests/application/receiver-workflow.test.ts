@@ -343,7 +343,7 @@ if (!url) {
         path.join(repoRoot, "src/app/(creator)/receiver/[handoffId]/[version]/page.tsx"),
         "utf8",
       );
-      const sharePage = readFileSync(path.join(repoRoot, "src/app/share/[token]/page.tsx"), "utf8");
+      const sharePage = readFileSync(path.join(repoRoot, "src/app/share/page.tsx"), "utf8");
       const rootLayout = readFileSync(path.join(repoRoot, "src/app/layout.tsx"), "utf8");
       const receiverConsole = readFileSync(path.join(repoRoot, "src/app/components/receiver-console.tsx"), "utf8");
       for (const source of [receiverPage, receiverConsole]) {

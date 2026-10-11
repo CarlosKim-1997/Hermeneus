@@ -42,6 +42,16 @@ export interface ImportHandoffRepository {
   }): Promise<{ revision: number }>;
 }
 
+export interface BootstrapHandoffRepository {
+  createAtomic(input: {
+    ownerCreatorId: CreatorId;
+    handoffId: string;
+    requestKey: string;
+    draft: DraftHandoff;
+    displayTitle?: string;
+  }): Promise<{ handoffId: string; revision: number; idempotent: boolean }>;
+}
+
 export interface AccountErasureRepository {
   enterErasingPhase(creatorId: CreatorId): Promise<{ alreadyErasing: boolean }>;
   completeAccountErasure(creatorId: CreatorId): Promise<void>;

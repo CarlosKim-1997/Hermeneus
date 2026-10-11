@@ -67,7 +67,7 @@ export function ShareCapabilityPanel({ handoffId, version, initialCapabilities }
     <section className="panel panel-share">
       <h3>Share capability (development)</h3>
       <p className="receiver-notice">
-        This is not production-safe public sharing. Share controls are not protected by Creator login in this milestone.
+        Share links grant access to one Published Handoff version. Give each link only to its intended recipient and revoke it when no longer needed.
       </p>
       <button type="button" onClick={onCreate} disabled={pending}>
         {pending ? "Working…" : "Create share link"}

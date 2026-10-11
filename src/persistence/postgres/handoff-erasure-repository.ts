@@ -16,12 +16,13 @@ async function assertOwnerLocked(
   client: PoolClient,
   handoffId: string,
   ownerCreatorId: CreatorId,
-): Promise<{ source_conversation_id: string | null; source_erased_at: Date | null }> {
+): Promise<{ ingress_kind: string; source_conversation_id: string | null; source_erased_at: Date | null }> {
   const handoff = await client.query<{
     owner_creator_id: string;
+    ingress_kind: string;
     source_conversation_id: string | null;
     source_erased_at: Date | null;
-  }>(`SELECT owner_creator_id, source_conversation_id, source_erased_at FROM handoffs WHERE id = $1 FOR UPDATE`, [
+  }>(`SELECT owner_creator_id, ingress_kind, source_conversation_id, source_erased_at FROM handoffs WHERE id = $1 FOR UPDATE`, [
     handoffId,
   ]);
   if (handoff.rowCount === 0 || handoff.rows[0]!.owner_creator_id !== ownerCreatorId) {
@@ -63,6 +64,10 @@ export class PostgresHandoffErasureRepository {
       await client.query("BEGIN");
       await lockActiveCreatorMutation(client, ownerCreatorId);
       const row = await assertOwnerLocked(client, handoffId, ownerCreatorId);
+
+      if (row.ingress_kind === "BOOTSTRAP_PROPOSAL") {
+        throw new HandoffLifecycleUnavailableError(`Handoff ${handoffId} has no collected original source`);
+      }
 
       if (row.source_erased_at !== null && row.source_conversation_id === null) {
         const draftRevision = await client.query<{ revision: number }>(

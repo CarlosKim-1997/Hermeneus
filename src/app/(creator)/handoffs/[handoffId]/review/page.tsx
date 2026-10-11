@@ -14,7 +14,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ handoff
     <section>
       <h2>Creator Review</h2>
       <p>Handoff ID: {handoffId}</p>
-      <HandoffLifecyclePanel handoffId={handoffId} sourceRetained={review.kind === "retained"} />
+      <HandoffLifecyclePanel handoffId={handoffId} sourceKind={review.kind} />
       <ReviewEditor
         key={`${handoffId}-${review.revision}-${review.kind}`}
         handoffId={handoffId}

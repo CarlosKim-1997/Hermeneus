@@ -38,7 +38,14 @@ export type UnavailableErasedProvenanceBundle = {
   items: [];
 };
 
-export type ProvenanceBundle = RetainedProvenanceBundle | UnavailableErasedProvenanceBundle;
+export type UnavailableNotCollectedProvenanceBundle = {
+  availability: "unavailable_not_collected";
+  handoffId: string;
+  version: number;
+  items: [];
+};
+
+export type ProvenanceBundle = RetainedProvenanceBundle | UnavailableErasedProvenanceBundle | UnavailableNotCollectedProvenanceBundle;
 
 export function toReceiverItems<T extends ReceiverItem>(items: T[]): ReceiverItem[] {
   return items.map(({ id, type, statement, priority }) => ({ id, type, statement, priority }));

@@ -33,12 +33,19 @@ test.describe("Share capability flow", () => {
 
     await creator.getByRole("button", { name: "Create share link" }).click();
     await expect(creator.getByText(/Share link created for version 1/)).toBeVisible();
-    const linkText = await creator.locator("code").filter({ hasText: "/share/hsh_" }).first().textContent();
-    expect(linkText).toMatch(/\/share\/hsh_/);
+    const linkText = await creator.locator("code").filter({ hasText: "/share#hsh_" }).first().textContent();
+    expect(linkText).toMatch(/\/share#hsh_/);
 
-    const sharePath = linkText!.includes("http") ? new URL(linkText!).pathname : linkText!;
+    const sharePath = linkText!.includes("http") ? new URL(linkText!).pathname + new URL(linkText!).hash : linkText!;
+    const token = new URL(linkText!).hash.slice(1);
+    const requestPaths: string[] = [];
+    receiver.on("request", (request) => requestPaths.push(new URL(request.url()).pathname));
     await receiver.goto(sharePath);
     await expect(receiver.getByRole("heading", { name: "Shared Receiver" })).toBeVisible();
+    await expect(receiver).toHaveURL(/\/share$/);
+    expect(requestPaths).not.toContain(`/share/${token}`);
+    expect(requestPaths.every((path) => !path.includes(token))).toBe(true);
+    expect((await receiver.request.get(`/share/${token}`)).status()).toBe(404);
     await expect(receiver.getByText("Pinned to version 1").or(receiver.getByText(/always resolves to version 1/))).toBeVisible();
     await expect(receiver.getByText("Web-first is confirmed.")).toBeVisible();
     await expect(receiver.locator('a[href*="/handoffs/"]')).toHaveCount(0);
@@ -50,6 +57,7 @@ test.describe("Share capability flow", () => {
 
     const revokeButton = creator.getByRole("button", { name: "Revoke" }).first();
     await revokeButton.click();
+    await expect(creator.getByRole("listitem").filter({ hasText: /revoked/i })).toBeVisible();
 
     await receiver.getByLabel("Your question").fill("Another question?");
     await receiver.getByRole("button", { name: "Ask" }).click();

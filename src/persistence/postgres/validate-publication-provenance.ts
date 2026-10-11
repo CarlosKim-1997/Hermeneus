@@ -7,14 +7,24 @@ export async function validatePublicationProvenance(
   handoffId: string,
   draft: DraftHandoff,
 ): Promise<void> {
-  const handoff = await db.query<{ source_conversation_id: string | null; source_erased_at: Date | null }>(
-    "SELECT source_conversation_id, source_erased_at FROM handoffs WHERE id = $1",
+  const handoff = await db.query<{ ingress_kind: string; source_conversation_id: string | null; source_erased_at: Date | null }>(
+    "SELECT ingress_kind, source_conversation_id, source_erased_at FROM handoffs WHERE id = $1",
     [handoffId],
   );
   if (handoff.rowCount === 0) {
     throw new ProvenanceValidationError(`Handoff ${handoffId} does not exist`);
   }
   const row = handoff.rows[0]!;
+  if (row.ingress_kind === "BOOTSTRAP_PROPOSAL") {
+    if (row.source_conversation_id !== null || row.source_erased_at !== null ||
+        draft.items.some((item) => item.sources.length > 0)) {
+      throw new ProvenanceValidationError(`Bootstrap Handoff ${handoffId} cannot carry source provenance`);
+    }
+    return;
+  }
+  if (row.ingress_kind !== "IMPORTED_CONVERSATION") {
+    throw new ProvenanceValidationError(`Handoff ${handoffId} has invalid ingress kind`);
+  }
   if (row.source_erased_at !== null || row.source_conversation_id === null) {
     const hasSourceReferences = draft.items.some((item) => item.sources.length > 0);
     if (hasSourceReferences) {

@@ -1,0 +1,24 @@
+import type { Metadata } from "next";
+import { isReceiverSemanticModeConfigured } from "../../application/receiver-interpreter-config";
+import { isOpenAiExternalVerifierConfigured } from "../../receiver/external/openai-verifier";
+import { ShareFragmentEntry } from "../components/share-fragment-entry";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+export const metadata: Metadata = {
+  title: "Shared Handoff · Hermeneus",
+  robots: { index: false, follow: false },
+  referrer: "no-referrer",
+};
+
+export default function SharedReceiverPage() {
+  return (
+    <section>
+      <ShareFragmentEntry
+        semanticModeEnabled={isReceiverSemanticModeConfigured()}
+        externalVerifierEnabled={isOpenAiExternalVerifierConfigured()}
+      />
+    </section>
+  );
+}

@@ -1,6 +1,6 @@
 "use server";
 
-import { getRepositories } from "./runtime.js";
+import { getPool, getRepositories } from "./runtime.js";
 import {
   issueShareCapability,
   listShareCapabilitiesForVersion,
@@ -11,9 +11,14 @@ import {
   askSharedReceiverQuestion,
   fetchSharedReceiverProvenance,
   loadSharedReceiverView,
+  loadPublishedViewForShareResolution,
   SHARE_UNAVAILABLE_MESSAGE,
 } from "./use-cases/shared-receiver-qa.js";
 import { toReceiverFacingError } from "./receiver-errors.js";
+import { buildReceiverPacket } from "../portable/receiver-packet.js";
+import { verifyExternalAnswer } from "./use-cases/verify-external-answer.js";
+import { createOpenAiExternalVerifier, isOpenAiExternalVerifierConfigured } from "../receiver/external/openai-verifier.js";
+import { reserveVerifierPilotBudget } from "../receiver/external/pilot-budget.js";
 import { requireActiveCreatorPrincipal } from "./creator-action-auth.js";
 import { requireOwnedHandoff } from "./authorize-handoff.js";
 import {
@@ -45,7 +50,7 @@ export async function issueShareCapabilityAction(input: { handoffId: string; ver
       ok: true as const,
       capability: issued.metadata,
       token: issued.rawToken,
-      sharePath: `/share/${issued.rawToken}`,
+      sharePath: `/share#${issued.rawToken}`,
     };
   } catch (error) {
     const auth = mapCreatorAuthFailure(error);
@@ -95,6 +100,29 @@ export async function revokeShareCapabilityAction(input: { capabilityId: string 
 export async function loadSharedReceiverViewAction(token: string) {
   const repos = getRepositories();
   return loadSharedReceiverView(repos, token);
+}
+
+export async function loadSharedReceiverPacketAction(token: string) {
+  const repos = getRepositories();
+  const view = await loadPublishedViewForShareResolution(repos, token);
+  if (!view) {
+    return { ok: false as const, error: { code: "SHARE_UNAVAILABLE" as const, message: SHARE_UNAVAILABLE_MESSAGE } };
+  }
+  return { ok: true as const, packet: buildReceiverPacket(view) };
+}
+
+export async function verifyExternalAnswerAction(input: { token: string; submission: unknown; externalProcessingConsent?: boolean }) {
+  const configured = isOpenAiExternalVerifierConfigured();
+  if (configured && input.externalProcessingConsent !== true) {
+    return { ok: false as const, error: "Confirm external processing for this verification request." };
+  }
+  const verifier = configured
+    ? createOpenAiExternalVerifier(process.env.OPENAI_VERIFIER_API_KEY!.trim(), { reserve: () => reserveVerifierPilotBudget(getPool()) })
+    : undefined;
+  const outcome = await verifyExternalAnswer(getRepositories(), input.token, input.submission, verifier);
+  if (outcome.kind === "unavailable") return { ok: false as const, error: SHARE_UNAVAILABLE_MESSAGE };
+  if (outcome.kind === "invalid") return { ok: false as const, error: "Submitted packet identity or answer format is invalid." };
+  return { ok: true as const, result: outcome.result };
 }
 
 export async function askSharedReceiverQuestionAction(input: { token: string; question: string }) {

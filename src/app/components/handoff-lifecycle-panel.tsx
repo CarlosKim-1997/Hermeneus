@@ -6,10 +6,10 @@ import { deleteHandoffAction, eraseSourceAction } from "../../application/action
 
 type Props = {
   handoffId: string;
-  sourceRetained: boolean;
+  sourceKind: "retained" | "erased" | "not_collected";
 };
 
-export function HandoffLifecyclePanel({ handoffId, sourceRetained }: Props) {
+export function HandoffLifecyclePanel({ handoffId, sourceKind }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [eraseMessage, setEraseMessage] = useState<string | null>(null);
@@ -43,7 +43,7 @@ export function HandoffLifecyclePanel({ handoffId, sourceRetained }: Props) {
   return (
     <section className="panel panel-lifecycle" aria-labelledby="lifecycle-heading">
       <h2 id="lifecycle-heading">Handoff lifecycle</h2>
-      {sourceRetained ? (
+      {sourceKind === "retained" ? (
         <div className="lifecycle-block">
           <h3>Erase Source</h3>
           <p>
@@ -74,8 +74,10 @@ export function HandoffLifecyclePanel({ handoffId, sourceRetained }: Props) {
             </p>
           ) : null}
         </div>
-      ) : (
+      ) : sourceKind === "erased" ? (
         <p className="notice">Source provenance has been erased for this Handoff.</p>
+      ) : (
+        <p className="notice">Original source was not collected for this Handoff; there is no source to erase.</p>
       )}
 
       <div className="lifecycle-block">

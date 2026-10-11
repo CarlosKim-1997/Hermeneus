@@ -22,11 +22,13 @@ Extraction proposes a draft. Only explicit creator approval publishes a version,
 
 ## Receiver (M5–M7)
 
-Version-pinned internal Receiver (`/receiver/[handoffId]/[version]`) and **Share Capability** bearer surface (`/share/[token]`) for external recipients. Deterministic interpretation by default; optional OpenAI semantic selection (M6) and grounded answer expression (M7) when configured. Receiver classifies questions as `SUPPORTED`, `DERIVED`, `OPEN`, or `UNKNOWN`.
+Version-pinned internal Receiver (`/receiver/[handoffId]/[version]`) and **Share Capability** bearer surface (`/share#token`) for external recipients. The browser removes the URL fragment before sending the bearer to a server action; the former `/share/[token]` route is unavailable. A cleared or refreshed `/share` page requires the original link again. Deterministic interpretation by default; optional OpenAI semantic selection (M6) and grounded answer expression (M7) when configured. Receiver classifies questions as `SUPPORTED`, `DERIVED`, `OPEN`, or `UNKNOWN`.
 
 ## Checks
 
 **Hosted CI:** Pull requests and pushes to `main` run the [CI workflow](.github/workflows/ci.yml) (governance, typecheck, build, deterministic Vitest suites, PostgreSQL integration, Playwright E2E, and a production-dependency audit with a **critical** threshold). Live OpenAI suites (`test:live-*`) are intentionally excluded from mandatory CI.
+
+**External answer verification pilot:** The Share answer checker stays nonpassing (`INDETERMINATE`) unless `HERMENEUS_EXTERNAL_VERIFIER=openai` and a separate `OPENAI_VERIFIER_API_KEY` are configured. When enabled, each request requires a fresh consent choice. Only Published Canon item IDs/types/priorities/statements, the submitted question, and answer are sent to the OpenAI Responses API with `store:false`; the Share bearer, private title, and provenance are excluded. The pilot pins `gpt-6.1-sol` at standard processing, caps input and output size, and reserves 5 US cents before each request in PostgreSQL. Reservations stop at $5/day or $25/month UTC; failed provider requests still consume their reservation. The answer and consent choice are not persisted by Hermeneus. Set a monthly project cap on a dedicated OpenAI project before enabling the mode, recheck model pricing, and run synthetic live evaluation before real answers. Default OpenAI abuse-monitoring logs may retain content for up to 30 days, with limited exceptions; `store:false` does not disable those logs. This feature does not claim guaranteed per-request billing or verification accuracy.
 
 Use the Node version in `.nvmrc` (Node 22 LTS line; required by `openai` and `package.json` `engines`).
 

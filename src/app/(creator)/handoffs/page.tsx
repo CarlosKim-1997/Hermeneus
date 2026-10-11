@@ -33,7 +33,8 @@ export default async function CreatorHandoffLibraryPage() {
           {handoffs.map((handoff) => (
             <li key={handoff.handoffId} className="handoff-library-item">
               <div>
-                <strong>{handoff.handoffId}</strong>
+                <strong>{handoff.displayTitle ?? handoff.handoffId}</strong>
+                {handoff.displayTitle ? <p>Handoff ID {handoff.handoffId}</p> : null}
                 <p>Created {formatWhen(handoff.createdAt)}</p>
                 <p>Draft revision {handoff.draftRevision}</p>
                 <p>Last draft update {formatWhen(handoff.draftUpdatedAt)}</p>

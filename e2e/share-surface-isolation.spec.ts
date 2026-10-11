@@ -24,9 +24,9 @@ async function publishWithShare(page: import("@playwright/test").Page) {
 
   await page.getByRole("button", { name: "Create share link" }).click();
   await expect(page.getByText(/Share link created for version 1/)).toBeVisible();
-  const linkText = await page.locator("code").filter({ hasText: "/share/hsh_" }).first().textContent();
-  expect(linkText).toMatch(/\/share\/hsh_/);
-  const sharePath = linkText!.includes("http") ? new URL(linkText!).pathname : linkText!;
+  const linkText = await page.locator("code").filter({ hasText: "/share#hsh_" }).first().textContent();
+  expect(linkText).toMatch(/\/share#hsh_/);
+  const sharePath = linkText!.includes("http") ? new URL(linkText!).pathname + new URL(linkText!).hash : linkText!;
 
   return { handoffId: handoffId!, sharePath };
 }
@@ -60,7 +60,7 @@ test.describe("Share surface isolation", () => {
 
     await page.goto(sharePath);
     await expect(page.getByRole("heading", { name: "Shared Receiver" })).toHaveCount(0);
-    await expect(page.getByText("This page could not be found.")).toBeVisible();
+    await expect(page.getByText("This share link is unavailable.")).toBeVisible();
     await expect(page.getByRole("link", { name: "Handoffs" })).toHaveCount(0);
   });
 });

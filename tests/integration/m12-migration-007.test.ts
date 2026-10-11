@@ -564,7 +564,7 @@ if (!url) {
     beforeAll(async () => {
       const client = await pool.connect();
       try {
-        await applyMigrationsThrough(client, "008_creator_lifecycle.sql");
+        await applyMigrationsThrough(client, "009_bootstrap_ingress.sql");
       } finally {
         client.release();
       }
