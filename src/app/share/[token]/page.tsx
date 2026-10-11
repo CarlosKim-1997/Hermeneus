@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { isReceiverSemanticModeConfigured } from "../../../application/receiver-interpreter-config";
 import { loadSharedReceiverViewAction } from "../../../application/share-actions";
 import { SharedReceiverConsole } from "../../components/shared-receiver-console";
+import { isOpenAiExternalVerifierConfigured } from "../../../receiver/external/openai-verifier";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -29,6 +31,7 @@ export default async function SharedReceiverPage({ params }: { params: Promise<{
         publishedAt={view.publishedAt}
         items={view.items}
         semanticModeEnabled={isReceiverSemanticModeConfigured()}
+        externalVerifierEnabled={isOpenAiExternalVerifierConfigured()}
       />
     </section>
   );

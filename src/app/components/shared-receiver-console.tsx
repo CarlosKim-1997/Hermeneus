@@ -26,6 +26,7 @@ type Props = {
   publishedAt: string;
   items: ReceiverItemView[];
   semanticModeEnabled: boolean;
+  externalVerifierEnabled: boolean;
 };
 
 type AnswerState = {
@@ -43,7 +44,7 @@ const CLASSIFICATION_HELP: Record<Answerability, string> = {
   UNKNOWN: "The approved Handoff does not contain enough information.",
 };
 
-export function SharedReceiverConsole({ token, version, publishedAt, items, semanticModeEnabled }: Props) {
+export function SharedReceiverConsole({ token, version, publishedAt, items, semanticModeEnabled, externalVerifierEnabled }: Props) {
   const [question, setQuestion] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,14 +58,15 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
   const [externalQuestion, setExternalQuestion] = useState("");
   const [verdict, setVerdict] = useState<ReceiverVerdict | null>(null);
   const [verificationPending, setVerificationPending] = useState(false);
+  const [externalVerificationConsent, setExternalVerificationConsent] = useState(false);
 
   async function verifyPastedAnswer() {
-    if (!packet || !externalAnswer.trim() || verificationPending) return;
+    if (!packet || !externalAnswer.trim() || verificationPending || (externalVerifierEnabled && !externalVerificationConsent)) return;
     setVerificationPending(true);
     setVerdict(null);
     setError(null);
     try {
-      const outcome = await verifyExternalAnswerAction({ token, submission: {
+      const outcome = await verifyExternalAnswerAction({ token, externalProcessingConsent: externalVerificationConsent, submission: {
         protocol: "hermeneus.receiver-submission/v0", publicationRef: packet.publicationRef,
         packetDigest: packet.canonicalDigest, answerText: externalAnswer,
         ...(externalQuestion ? { question: externalQuestion } : {}),
@@ -74,6 +76,7 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
     } catch {
       setError("Verification is unavailable.");
     } finally {
+      setExternalVerificationConsent(false);
       setVerificationPending(false);
     }
   }
@@ -81,6 +84,7 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
   async function preparePacket() {
     if (!externalDisclosure || packetPending) return;
     setPacketPending(true);
+    setExternalVerificationConsent(false);
     setError(null);
     try {
       const result = await loadSharedReceiverPacketAction(token);
@@ -170,7 +174,7 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
       <section className="panel">
         <h3>Use with my AI</h3>
         <p>Published items may contain sensitive information. Copying sends them to a third-party AI under that service&apos;s terms. Revoking this link cannot erase a copy already made elsewhere.</p>
-        <label><input type="checkbox" checked={externalDisclosure} onChange={(event) => { setExternalDisclosure(event.target.checked); setPacket(null); }} /> I understand the external disclosure.</label>
+        <label><input type="checkbox" checked={externalDisclosure} onChange={(event) => { setExternalDisclosure(event.target.checked); setPacket(null); setExternalVerificationConsent(false); }} /> I understand the external disclosure.</label>
         <div className="actions"><button type="button" disabled={!externalDisclosure || packetPending} onClick={preparePacket}>{packetPending ? "Preparing..." : "Prepare Receiver Packet"}</button></div>
         {packet ? <>
           <p>Pinned version {packet.version} · fingerprint {packet.canonicalDigest}</p>
@@ -186,10 +190,14 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
         <p>Hermeneus checks the submitted answer against this Published Canon version. It does not check the original conversation or prove that a person understood it.</p>
         <p>Paste an answer only if you agree to disclose its contents to Hermeneus. The answer may include personal information from your AI session.</p>
         <label htmlFor="external-question">Question (optional)</label>
-        <textarea id="external-question" value={externalQuestion} onChange={(event) => setExternalQuestion(event.target.value)} />
+        <textarea id="external-question" value={externalQuestion} onChange={(event) => { setExternalQuestion(event.target.value); setExternalVerificationConsent(false); setVerdict(null); }} />
         <label htmlFor="external-answer">AI answer</label>
-        <textarea id="external-answer" value={externalAnswer} onChange={(event) => { setExternalAnswer(event.target.value); setVerdict(null); }} />
-        <button type="button" disabled={!packet || !externalAnswer.trim() || verificationPending} onClick={verifyPastedAnswer}>{verificationPending ? "Checking..." : "Check answer"}</button>
+        <textarea id="external-answer" value={externalAnswer} onChange={(event) => { setExternalAnswer(event.target.value); setExternalVerificationConsent(false); setVerdict(null); }} />
+        {externalVerifierEnabled ? <label>
+          <input type="checkbox" checked={externalVerificationConsent} onChange={(event) => setExternalVerificationConsent(event.target.checked)} />
+          For this check, I agree to send the pinned Published Canon items, my question, and this answer to OpenAI for verification. OpenAI's default API abuse-monitoring logs may contain this content for up to 30 days, with limited exceptions. Hermeneus does not persist this answer or my consent choice.
+        </label> : <p>External semantic verification is not configured; the result will be indeterminate.</p>}
+        <button type="button" disabled={!packet || !externalAnswer.trim() || verificationPending || (externalVerifierEnabled && !externalVerificationConsent)} onClick={verifyPastedAnswer}>{verificationPending ? "Checking..." : "Check answer"}</button>
         {verdict ? <div role="status"><strong>{verdict.verdict}</strong><p>{verdict.issues.join(" ")}</p><p>{verdict.limitations.join(" ")}</p></div> : null}
       </section>
 

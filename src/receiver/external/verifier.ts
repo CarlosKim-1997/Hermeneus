@@ -8,7 +8,7 @@ export type ClaimInventory = z.infer<typeof claimInventorySchema>;
 const claimVerdict = z.enum(["ENTAILED", "DERIVED", "OPEN", "UNKNOWN", "ANALOGY", "UNVERIFIED_EXTERNAL", "UNSUPPORTED", "CONTRADICTED", "AMBIGUOUS"]);
 const reasonCode = z.enum(["DIRECT_SUPPORT", "NARROW_DERIVATION", "EXPLICIT_OPEN", "NO_CANON_EVIDENCE", "ILLUSTRATIVE_ONLY", "EXTERNAL_CONTENT", "CITATION_UNKNOWN_ID", "CITATION_STATUS_MISMATCH", "CITATION_MISSING", "ANNOTATION_PARSE_ERROR", "STATUS_FLIP", "UNSUPPORTED_REASON", "INSUFFICIENT_EVIDENCE"]);
 const assessmentSchema = z.object({ claimId: claimSchema.shape.claimId, verdict: claimVerdict, reasonCode, supportedByIds: z.array(z.string().regex(/^HI-\d{3,}$/)).max(200), explanation: z.string().min(1).max(1000) }).strict();
-const analysisSchema = z.object({ inventory: claimInventorySchema, assessments: z.array(assessmentSchema).max(200), questionCoverage: z.enum(["ADEQUATE", "OMISSIONS", "NOT_ASSESSED", "INDETERMINATE"]), omittedCanonIds: z.array(z.string().regex(/^HI-\d{3,}$/)).max(200) }).strict();
+export const analysisSchema = z.object({ inventory: claimInventorySchema, assessments: z.array(assessmentSchema).max(200), questionCoverage: z.enum(["ADEQUATE", "OMISSIONS", "NOT_ASSESSED", "INDETERMINATE"]), omittedCanonIds: z.array(z.string().regex(/^HI-\d{3,}$/)).max(200) }).strict();
 export type VerifierAnalysis = z.infer<typeof analysisSchema>;
 export interface ExternalVerifierPort { analyze(input: { packet: ReceiverPacket; submission: ReceiverSubmission }): Promise<VerifierAnalysis> }
 export type ReceiverVerdict = {
