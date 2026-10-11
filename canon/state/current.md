@@ -12,11 +12,11 @@ The approved vNext S1–S6 vertical slice is integrated into `main`: source-free
 
 ## Active Work
 
-Prepare the controlled internal Alpha target and synthetic end-to-end verification. The selected target is Vercel Hobby with deployment authentication and an isolated Supabase Pro/Small project in Seoul with seven-day PITR; it has not been provisioned.
+Prepare synthetic end-to-end verification in the isolated Seoul Supabase Free project `dzaibwrrylxlrxbgnyaw` and the bare Vercel Hobby project `prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8`. The database has migrations 001–011 and no handoffs; Data API is disabled and app-table/function client grants are revoked. Vercel Authentication is configured for all deployments, but Git, secrets, OAuth, and deployment are not yet configured. The separate Supabase Pro/Small target with seven-day PITR selected for real-data use remains unprovisioned.
 
 ## Blockers
 
-Target-region PITR availability, account and billing configuration, Supabase Data API shutdown before migration, deployment authentication, backup/restore rehearsal, and protected Share access must be observed on the actual target before real data use.
+Before real data use, provision and verify the separate Pro/Small/PITR target, its billing and regional availability, Data API shutdown and grants, backup/restore rehearsal, target OAuth, deployment authentication, and protected Share access. The Free project is synthetic-only.
 
 ## Material Risks
 
@@ -26,4 +26,4 @@ Target-region PITR availability, account and billing configuration, Supabase Dat
 
 ## Verification Basis
 
-`main` commit `e2bc37ab5f93095cdc38c35a0b9e294aa4f147e1` contains the vNext slice. GitHub Actions run [38149293147](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/38149293147) at that SHA passed `verify`, `postgres`, `e2e`, and `dependency-audit`. The PostgreSQL and browser checks used CI test infrastructure; no Alpha deployment, target database migration, or paid model call is claimed.
+`main` commit `e2bc37ab5f93095cdc38c35a0b9e294aa4f147e1` contains the vNext slice; [run 38149293147](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/38149293147) passed four required jobs. Draft PR #26 at `9314d22af5a6fce58fa2351350d3e78e4f784fe9` passed the same four jobs in [run 38152511892](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/38152511892). Read-only checks on the isolated Free database found 11 migrations, 11 app tables, zero client-accessible app tables, zero client-executable app functions, and zero handoffs. Vercel project settings show Node 22.x, all-deployment authentication, and no deployment. No deployed Alpha, real-data migration, restore rehearsal, or paid model call is claimed.
