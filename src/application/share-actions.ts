@@ -50,7 +50,7 @@ export async function issueShareCapabilityAction(input: { handoffId: string; ver
       ok: true as const,
       capability: issued.metadata,
       token: issued.rawToken,
-      sharePath: `/share/${issued.rawToken}`,
+      sharePath: `/share#${issued.rawToken}`,
     };
   } catch (error) {
     const auth = mapCreatorAuthFailure(error);

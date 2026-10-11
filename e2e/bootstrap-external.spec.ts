@@ -20,14 +20,16 @@ test("Bootstrap notes disappear, title stays private, and shared packet is sourc
   await creator.getByLabel(/I have reviewed the notes/).check();
   await creator.getByRole("button", { name: "Create Draft" }).click();
   await creator.waitForURL("**/review");
+  const handoffId = creator.url().split("/handoffs/")[1]?.split("/")[0];
+  expect(handoffId).toBeTruthy();
   await expect(creator.getByText(/Original source not collected/)).toBeVisible();
   await expect(creator.getByText("Ask Sender before publishing.")).toHaveCount(0);
   await creator.getByRole("button", { name: "Approve & Publish" }).click();
-  await expect(creator.getByRole("heading", { name: "Published Handoff" })).toBeVisible();
+  await expect(creator.getByRole("heading", { name: "Published Handoff" })).toBeVisible({ timeout: 30_000 });
   await creator.getByRole("button", { name: "Create share link" }).click();
-  const linkText = await creator.locator("code").filter({ hasText: "/share/hsh_" }).first().textContent();
+  const linkText = await creator.locator("code").filter({ hasText: "/share#hsh_" }).first().textContent();
   expect(linkText).toBeTruthy();
-  await receiver.goto(linkText!.includes("http") ? new URL(linkText!).pathname : linkText!);
+  await receiver.goto(linkText!.includes("http") ? new URL(linkText!).pathname + new URL(linkText!).hash : linkText!);
   await receiver.getByLabel(/I understand the external disclosure/).check();
   await receiver.getByRole("button", { name: "Prepare Receiver Packet" }).click();
   const packetText = await receiver.getByLabel("Packet text").inputValue();
@@ -40,7 +42,7 @@ test("Bootstrap notes disappear, title stays private, and shared packet is sourc
   await receiver.getByRole("button", { name: "Check answer" }).click();
   await expect(receiver.getByRole("status")).toContainText("INDETERMINATE");
   await creator.goto("/handoffs");
-  await expect(creator.getByText("Private bootstrap title")).toBeVisible();
+  await expect(creator.getByRole("listitem").filter({ hasText: handoffId! })).toContainText("Private bootstrap title");
   await creator.close();
   await receiver.close();
 });

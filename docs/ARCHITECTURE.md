@@ -52,7 +52,7 @@ Generated prose is not canonical authority. Grounding failure degrades to canoni
 Creator → Published Handoff vN
   → issue Share Capability (raw bearer token returned once)
   → SHA-256(token) persisted
-  → /share/[token]
+  → /share#token (fragment removed by browser before server action)
   → server resolves ACTIVE capability on every protected operation
   → internal exact (handoffId, version)
   → ReceiverReadRepository → M6 + M7 Receiver pipeline
@@ -209,7 +209,7 @@ PostgreSQL adapter
 
 The Receiver page never receives `NormalizedConversation` or full raw source messages. Server actions return only `PublishedReceiverView`, answer payloads, and explicit provenance bundles. Receiver application paths do not provide Creator/raw-source navigation or data in the UI (no links into Creator review or publication surfaces). The Creator publication page may link into the pinned internal Receiver view; that asymmetry is intentional.
 
-Internal Receiver route `/receiver/[handoffId]/[version]` requires an authenticated Creator and Handoff ownership authorization (M9). External recipients use `/share/[token]` with independent bearer capability authorization (M8). External production identity integration (Auth.js + Google) is implemented but remains unverified against a live Google OAuth round-trip until T-010 completes.
+Internal Receiver route `/receiver/[handoffId]/[version]` requires an authenticated Creator and Handoff ownership authorization (M9). External recipients use `/share#token` with independent bearer capability authorization (M8). The fragment does not enter the HTTP request path; the browser removes it before submitting the bearer through a server action. The former `/share/[token]` route is unavailable, and previously issued path links must be reissued before Alpha use. External production identity integration (Auth.js + Google) is implemented but remains unverified against a live Google OAuth round-trip until T-010 completes.
 
 ## Creator UI (Milestones 3–4)
 

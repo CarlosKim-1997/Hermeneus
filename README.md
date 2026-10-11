@@ -22,7 +22,7 @@ Extraction proposes a draft. Only explicit creator approval publishes a version,
 
 ## Receiver (M5–M7)
 
-Version-pinned internal Receiver (`/receiver/[handoffId]/[version]`) and **Share Capability** bearer surface (`/share/[token]`) for external recipients. Deterministic interpretation by default; optional OpenAI semantic selection (M6) and grounded answer expression (M7) when configured. Receiver classifies questions as `SUPPORTED`, `DERIVED`, `OPEN`, or `UNKNOWN`.
+Version-pinned internal Receiver (`/receiver/[handoffId]/[version]`) and **Share Capability** bearer surface (`/share#token`) for external recipients. The browser removes the URL fragment before sending the bearer to a server action; the former `/share/[token]` route is unavailable. A cleared or refreshed `/share` page requires the original link again. Deterministic interpretation by default; optional OpenAI semantic selection (M6) and grounded answer expression (M7) when configured. Receiver classifies questions as `SUPPORTED`, `DERIVED`, `OPEN`, or `UNKNOWN`.
 
 ## Checks
 

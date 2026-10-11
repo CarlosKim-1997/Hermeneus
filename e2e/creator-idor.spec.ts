@@ -29,8 +29,8 @@ test.describe("Creator ownership IDOR", () => {
     await expect(creatorA.getByRole("heading", { name: "Published Handoff" })).toBeVisible();
     await creatorA.getByRole("button", { name: "Create share link" }).click();
     await expect(creatorA.getByText(/Share link created for version 1/)).toBeVisible();
-    const linkText = await creatorA.locator("code").filter({ hasText: "/share/hsh_" }).first().textContent();
-    const sharePath = linkText!.includes("http") ? new URL(linkText!).pathname : linkText!;
+    const linkText = await creatorA.locator("code").filter({ hasText: "/share#hsh_" }).first().textContent();
+    const sharePath = linkText!.includes("http") ? new URL(linkText!).pathname + new URL(linkText!).hash : linkText!;
 
     await devSignIn(creatorB, "secondary");
     await creatorB.goto(`/handoffs/${handoffId}/review`);
@@ -47,6 +47,7 @@ test.describe("Creator ownership IDOR", () => {
     await expect(receiver.locator(".answerability-label", { hasText: "SUPPORTED" })).toBeVisible();
 
     await creatorA.getByRole("button", { name: "Revoke" }).first().click();
+    await expect(creatorA.getByRole("listitem").filter({ hasText: /revoked/i })).toBeVisible();
     await receiver.getByLabel("Your question").fill("Again?");
     await receiver.getByRole("button", { name: "Ask" }).click();
     await expect(receiver.getByText("This share link is unavailable.")).toBeVisible();
