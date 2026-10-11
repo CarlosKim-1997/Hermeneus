@@ -1,7 +1,7 @@
 ---
 schema: task/v1
 id: T-021
-status: IN_PROGRESS
+status: COMPLETE
 areas:
   - handoff
 depends_on:
@@ -44,11 +44,11 @@ Stop affected work for a new normative or privacy decision, altered access/erasu
 
 All S1–S6 slice acceptance checks pass on a clean local commit, with remaining external provider, hosted CI, and release permissions identified separately. No deployment is part of this task.
 
-## Local execution status (2026-10-11)
+## Completion evidence (2026-10-11)
 
 - S1 portable Proposal parser and Draft mapping implemented with strict input and duplicate-key checks.
 - S2 source-free Bootstrap ingress and explicit NOT_COLLECTED lifecycle implemented through additive migration 009; applied only to a disposable local PostgreSQL 16 container. Imported-source and M12 erasure paths remain covered by regression tests.
 - S3 Creator preview, transient note acknowledgment, optional private title, owner-only Library display, and source-free review implemented. The server action receives canonical item fields and an acknowledgment flag, not review-note text.
 - S4 exact-version, token-free Receiver Packet v0 and Submission v0 projection implemented; digest uses RFC 8785 JCS and SHA-256, with published conformance sample and Unicode tests.
-- S5 v0.1 claim-inventory/span/coverage and deterministic aggregate gates implemented with a model port and test doubles. No external semantic provider is configured or called; the live answer-check action returns `INDETERMINATE` and never claims semantic alignment without that provider. A provider, data-disclosure policy, and spend boundary require separate approval before enabling paid verification.
-- S6 local Node 22 typecheck, build, Governance, deterministic suites, disposable PostgreSQL integration/auth/application/share suites, and Playwright E2E have passed during implementation. Final clean-commit rerun and exact-HEAD evidence remain to be recorded. Hosted CI requires later push permission; production DB migration and deployment remain unapproved.
+- S5 v0.1 claim-inventory/span/coverage and deterministic aggregate gates implemented. The guarded OpenAI pilot provider uses explicit per-request consent and app-side spend reservations; absent configuration or consent, verification does not claim alignment. No paid external semantic evaluation is claimed.
+- S6 exact implementation commit `62902314429c2a875548ce323a27bbdd24805c38` passed PR #24 hosted `verify`, `postgres`, `e2e`, and `dependency-audit` checks. Merge commit `e2bc37ab5f93095cdc38c35a0b9e294aa4f147e1` passed the same four jobs in [main run 38149293147](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/38149293147). The PostgreSQL and E2E runs used disposable CI infrastructure. These observations satisfy the local vertical-slice completion criteria; target deployment, production migration, and paid-model quality evaluation belong to later authorization and verification.
