@@ -7,7 +7,7 @@ This is a **non-normative** work report. Canon Decisions and Constraints, not th
 - The human owner chose bootstrap-first Sender proposals, explicit Creator review, external Receiver AI, independent Hermeneus verification, and no comparative product experiment.
 - Base branch examined: main at ee23d40190847c63e654d1041f989e76f65d1029.
 - Existing M1–M12 runtime and Published Handoffs are untouched by this product policy update.
-- D-001→D-011, D-002→D-012, D-004→D-013. New C-011 and C-012. D-009 and the M12 data lifecycle remain in force.
+- D-001→D-011, D-002→D-012, D-004→D-013. New D-014 records the owner's 2026-10-11 approval of optional private title storage and transient review notes. New C-011 and C-012. D-009 and the M12 data lifecycle remain in force.
 
 ## Boundaries
 
@@ -18,7 +18,7 @@ This is a **non-normative** work report. Canon Decisions and Constraints, not th
 
 ## Integration and checks
 
-This branch proposes a Canon-only authority transition (plus narrow State and this report). Review diffs, governance checker, branch protection, and hosted verification independently before any integration. PR #22 (hosted CI configuration) was still unmerged at this plan baseline, even though main branch protection itself was enabled. No successful hosted CI is inferred from this report.
+This branch proposes a Canon authority transition (plus narrow State, non-normative contract map, and this report). Review diffs, governance checker, branch protection, and hosted verification independently before any integration. PR #22 was integrated into `main` at `f512f771a9aa3e3243dff752643e82a9de5c1328`; this report does not infer PR #23 hosted CI success from that integration.
 
 ## Next design
 

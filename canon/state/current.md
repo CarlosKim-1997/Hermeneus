@@ -8,7 +8,7 @@ areas:
 
 ## Current Position
 
-This branch proposes vNext authority for Sender-AI bootstrap proposals with Creator review, optional legacy source ingestion, external Receiver AI, and independent Canon-grounding verification (D-011–D-013, C-011–C-012). Human review and integration remain pending; vNext protocol and runtime paths are not yet implemented.
+The owner approved vNext authority for Sender-AI bootstrap proposals with Creator review, optional legacy source ingestion, external Receiver AI, and independent Canon-grounding verification (D-011–D-014, C-011–C-012). The protocol and runtime paths are not yet implemented.
 
 Milestones 1–11 are integrated into `main`. M12 Creator Data Lifecycle / Layered Erasure semantics are human-ratified in Canon. Published canonical meaning and Published provenance are physically separated in storage (T-016). Handoff-level Source Erasure and Whole-Handoff Erasure are implemented and verified (T-017). Creator Account Erasure, active/erasing Creator lifecycle with Creator-wide mutation serialization, external identity lifecycle erasure, lifecycle-aware session behavior, and Account deletion/recovery UX are implemented (T-018).
 
@@ -31,6 +31,6 @@ None.
 
 ## Verification Basis
 
-This State describes the vNext proposal pending human review. No production, deployment, runtime, or database verification of the new path is claimed.
+PR #22 integrated hosted CI into `main` at `f512f771a9aa3e3243dff752643e82a9de5c1328`. The owner approved D-011–D-014 and C-011–C-012 for protected PR integration. No production, deployment, runtime, or database verification of the new path is claimed.
 
 M1–M11 integration is present on `main`. M12 lifecycle policy was human-ratified under T-014; T-015 recorded the implementation architecture; T-016 adds provenance/storage foundation; T-017 adds verified Handoff-level erasure; T-018 adds verified Account Erasure and Creator lifecycle controls.
