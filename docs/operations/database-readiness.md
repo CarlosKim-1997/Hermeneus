@@ -65,9 +65,10 @@ protection still applies; no monitoring bypass is provisioned by this change.
    mark a filename applied manually to turn readiness green.
 
 The endpoint does not automatically intercept other app routes, change Vercel
-routing or promote/roll back a deployment. Wiring it into automated release
-checks is a separate integration. Backup/PITR provisioning and restore rehearsal
-remain outside this implementation episode.
+routing or promote/roll back a deployment. The follow-up disabled-by-default
+release workflow and isolated synthetic logical restore rehearsal are described
+in `docs/operations/alpha-release-and-restore.md`. Their activation and target
+backup/PITR provisioning remain separate permission and verification boundaries.
 
 Connection-mode reference: [Supabase connection guide](https://supabase.com/docs/guides/database/connecting-to-postgres).
 The read-only transaction deliberately avoids persistent session settings as
