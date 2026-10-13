@@ -82,9 +82,14 @@ are returned, investigate the deployment's access configuration before retrying;
 do not revoke another operator's secret.
 
 Immediately before promotion, recheck current main/CI and inspect the same
-deployment/project and the captured primary mapping again. Promote that existing production artifact with no
-forced-check bypass and no preview rebuild, then confirm the primary maps to
-that exact deployment. Release jobs are serialized without
+deployment/project and the captured primary mapping again. Promote that existing production artifact with the
+[official same-artifact API](https://vercel.com/docs/rest-api/projects/point-production-traffic-to-a-given-deployment),
+one POST to the fixed project/team/deployment endpoint with an empty body and no
+forced-check bypass or preview rebuild, then poll the primary mapping for up to
+two minutes (bounded individual requests). Only the captured prior or target
+mapping is accepted while waiting. Failure/unknown outcome requires inspection;
+never retry the POST automatically. The CLI is used only for staging; its
+separate promotion account-context path failed in the hosted pilot. Release jobs are serialized without
 cancellation. There remains a small race between the last main read and the
 provider's promotion request; a later CI will release the next SHA. GitHub's
 serial group does not serialize a separate human release process.
