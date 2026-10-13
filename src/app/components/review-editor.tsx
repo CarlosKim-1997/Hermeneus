@@ -47,6 +47,8 @@ export function ReviewEditor({
   const sourceRetained = reviewKind === "retained";
   const [revision, setRevision] = useState(initialRevision);
   const [items, setItems] = useState<HandoffItem[]>(initialItems);
+  const [savedItems, setSavedItems] = useState(() => JSON.stringify(initialItems));
+  const hasUnsavedChanges = JSON.stringify(items) !== savedItems;
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [conflict, setConflict] = useState(false);
@@ -137,6 +139,7 @@ export function ReviewEditor({
         return;
       }
       setRevision(result.revision);
+      setSavedItems(JSON.stringify(items));
       setSaveMessage(`Saved draft revision ${result.revision}.`);
     });
   }
@@ -152,6 +155,7 @@ export function ReviewEditor({
       }
       const approvedRevision = save.revision;
       setRevision(approvedRevision);
+      setSavedItems(JSON.stringify(items));
       const published = await publishHandoffAction(handoffId, approvedRevision);
       if (published && "error" in published) {
         if (published.error.code === "CONFLICT") setConflict(true);
@@ -161,7 +165,7 @@ export function ReviewEditor({
   }
 
   return (
-    <div className="grid-two">
+    <div className="grid-two review-layout">
       <section className="panel panel-source" aria-labelledby="source-heading">
         <h2 id="source-heading">Source Conversation</h2>
         {sourceErased ? (
@@ -242,6 +246,10 @@ export function ReviewEditor({
         <p>
           Draft revision: <strong>{revision}</strong>
         </p>
+        <p className={`draft-save-state ${hasUnsavedChanges ? "draft-save-state-dirty" : ""}`} role="status">
+          {hasUnsavedChanges ? "Unsaved changes — save the draft or approve publication to save these edits." : "Showing the saved draft."}
+        </p>
+        {items.length === 0 ? <div className="editor-empty"><h3>No claims yet</h3><p>Add an item to begin shaping this Draft.</p><button type="button" onClick={addItem}>Add first item</button></div> : null}
         {conflict ? (
           <p className="error" role="alert">
             Draft conflict detected. Reload this page before continuing so you do not overwrite a newer draft.
@@ -251,7 +259,8 @@ export function ReviewEditor({
         {publishError ? <p className="error" role="alert">{publishError}</p> : null}
 
         {items.map((item, index) => (
-          <div key={item.id} className="item-card">
+          <div key={item.id} className="item-card draft-item">
+            <p className="eyebrow">Item {index + 1}</p>
             <label htmlFor={`statement-${item.id}`}>Statement</label>
             <textarea
               id={`statement-${item.id}`}
@@ -335,7 +344,7 @@ export function ReviewEditor({
           </div>
         ))}
 
-        <div className="actions">
+        <div className="actions draft-actions">
           <button type="button" onClick={addItem}>
             Add item
           </button>

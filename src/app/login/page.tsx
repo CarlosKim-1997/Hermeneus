@@ -8,8 +8,10 @@ export default function LoginPage() {
   const externalAllowed = config.mode === "external";
 
   return (
-    <section className="panel">
+    <section className="panel login-panel">
+      <p className="eyebrow">Welcome to Hermeneus</p>
       <h2>Creator sign-in</h2>
+      <p className="login-intro">Keep the meaning. Carry the conversation forward.</p>
       {externalAllowed ? (
         <>
           <p>Sign in with your external identity provider to access Creator routes.</p>

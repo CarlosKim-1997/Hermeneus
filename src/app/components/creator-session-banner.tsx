@@ -8,23 +8,23 @@ export async function CreatorSessionBanner() {
 
   if (config.mode === "external" && principal) {
     return (
-      <p className="receiver-notice">
-        Signed in as Creator ({principal.creatorId}).{" "}
-        <form action={signOutAction} style={{ display: "inline" }}>
+      <div className="creator-session">
+        <p>Signed in as Creator <span className="session-id">({principal.creatorId}).</span></p>
+        <form action={signOutAction}>
           <button type="submit">Sign out</button>
         </form>
-      </p>
+      </div>
     );
   }
 
   if (isDevCreatorAuthAllowedInRuntime() && config.mode === "dev" && principal) {
     return (
-      <p className="receiver-notice">
-        Development Creator session ({principal.creatorId}).{" "}
-        <form action={signOutAction} style={{ display: "inline" }}>
+      <div className="creator-session">
+        <p>Development Creator session <span className="session-id">({principal.creatorId}).</span></p>
+        <form action={signOutAction}>
           <button type="submit">Sign out</button>
         </form>
-      </p>
+      </div>
     );
   }
 

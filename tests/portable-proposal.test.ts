@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { parsePortableProposal, proposalToDraft, PortableProposalError } from "../src/portable/proposal.js";
 
 const valid = {
@@ -16,6 +16,15 @@ function reject(raw: string, code: string): void {
 }
 
 describe("portable proposal v0", () => {
+  it("parses browser previews without a Node Buffer global and retains UTF-8 limits", () => {
+    vi.stubGlobal("Buffer", undefined);
+    try {
+      expect(parsePortableProposal(JSON.stringify(valid)).items).toEqual(valid.items);
+      reject(JSON.stringify({ ...valid, reviewNotes: ["🙂".repeat(65000)] }), "LIMIT_EXCEEDED");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it("accepts an absent title and maps only items to server-owned Draft fields", () => {
     const proposal = parsePortableProposal(JSON.stringify(valid));
     let next = 0;

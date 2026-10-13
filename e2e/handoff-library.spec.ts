@@ -24,7 +24,7 @@ test.describe("Creator Handoff Library", () => {
     await creatorA.goto("/handoffs");
     await expect(creatorA.getByRole("heading", { name: "Your Handoffs" })).toBeVisible();
     await expect(creatorA.getByText(handoffA!)).toBeVisible();
-    await creatorA.getByRole("link", { name: "Review" }).first().click();
+    await creatorA.getByRole("link", { name: "Review draft" }).first().click();
     await expect(creatorA.getByRole("heading", { name: "Creator Review" })).toBeVisible();
 
     await creatorA.goto(`/handoffs/${handoffA}/review`);
@@ -40,8 +40,8 @@ test.describe("Creator Handoff Library", () => {
 
     await creatorA.goto("/handoffs");
     const rowA = creatorA.locator(".handoff-library-item").filter({ hasText: handoffA! });
-    await expect(rowA.getByText(/Published v1/)).toBeVisible();
-    await rowA.getByRole("link", { name: "Open latest published" }).click();
+    await expect(rowA.getByText("Version 1", { exact: true })).toBeVisible();
+    await rowA.getByRole("link", { name: "View published" }).click();
     await expect(creatorA.getByRole("heading", { name: "Published Handoff" })).toBeVisible();
 
     await devSignIn(creatorB, "secondary");

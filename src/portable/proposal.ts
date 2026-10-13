@@ -63,7 +63,7 @@ function assertNoDuplicateObjectKeys(raw: string): void {
 }
 
 export function parsePortableProposal(raw: string): PortableProposal {
-  if (Buffer.byteLength(raw, "utf8") > MAX_RAW_BYTES) throw new PortableProposalError("LIMIT_EXCEEDED");
+  if (new TextEncoder().encode(raw).byteLength > MAX_RAW_BYTES) throw new PortableProposalError("LIMIT_EXCEEDED");
   let value: unknown;
   try { value = JSON.parse(raw) as unknown; }
   catch { throw new PortableProposalError("JSON_INVALID"); }

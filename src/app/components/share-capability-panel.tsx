@@ -20,6 +20,7 @@ export function ShareCapabilityPanel({ handoffId, version, initialCapabilities }
   const [error, setError] = useState<string | null>(null);
   const [issuedLink, setIssuedLink] = useState<string | null>(null);
   const [issuedNotice, setIssuedNotice] = useState<string | null>(null);
+  const [copyMessage, setCopyMessage] = useState("");
 
   async function refreshList() {
     const result = await listShareCapabilitiesAction({ handoffId, version });
@@ -31,6 +32,7 @@ export function ShareCapabilityPanel({ handoffId, version, initialCapabilities }
     setError(null);
     setIssuedLink(null);
     setIssuedNotice(null);
+    setCopyMessage("");
     const result = await issueShareCapabilityAction({ handoffId, version });
     setPending(false);
     if (!result.ok) {
@@ -59,8 +61,14 @@ export function ShareCapabilityPanel({ handoffId, version, initialCapabilities }
   }
 
   async function onCopy() {
-    if (!issuedLink || typeof navigator === "undefined" || !navigator.clipboard) return;
-    await navigator.clipboard.writeText(issuedLink);
+    if (!issuedLink) return;
+    setCopyMessage("");
+    try {
+      await navigator.clipboard.writeText(issuedLink);
+      setCopyMessage("Share link copied.");
+    } catch {
+      setCopyMessage("Could not copy automatically. Select the displayed link and copy it manually.");
+    }
   }
 
   return (
@@ -82,6 +90,8 @@ export function ShareCapabilityPanel({ handoffId, version, initialCapabilities }
           </button>
         </p>
       ) : null}
+      {copyMessage ? <p className="inline-feedback" role="status">{copyMessage}</p> : null}
+      {capabilities.length === 0 ? <p className="field-help">No share links yet. Create one when you are ready to give someone access to this version.</p> : null}
       <ul>
         {capabilities.map((capability) => (
           <li key={capability.id}>

@@ -22,13 +22,13 @@ export default async function PublishedPage({
 
   return (
     <section className="panel panel-published">
+      <p className="eyebrow">03 / Published</p>
       <h2>Published Handoff</h2>
-      <p>
+      <p className="version-line">
         Version <strong>{published.version}</strong> · Published {new Date(published.publishedAt).toLocaleString()}
       </p>
-      <p>
+      <p className="page-links">
         <Link href={`/receiver/${handoffId}/${version}`}>Open Receiver view (pinned v{version})</Link>
-        {" · "}
         <Link href={`/handoffs/${handoffId}/review`}>Return to draft review</Link>
       </p>
       <ShareCapabilityPanel

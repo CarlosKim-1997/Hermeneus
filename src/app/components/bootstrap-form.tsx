@@ -80,10 +80,12 @@ export function BootstrapForm() {
   }
 
   return (
-    <div>
+    <div className="bootstrap-form">
       <label htmlFor="portable-proposal">Portable Proposal JSON</label>
+      <p className="field-help" id="proposal-help">Paste the JSON contents of the proposal, without the surrounding code-block markers.</p>
       <textarea
         id="portable-proposal"
+        aria-describedby="proposal-help"
         value={raw}
         onChange={(event) => { setRaw(event.target.value); setProposal(null); setAcknowledged(false); setSaveTitle(false); setError(""); }}
         placeholder={'{"protocol":"hermeneus.portable-proposal/v0","items":[...]}' }
@@ -91,7 +93,7 @@ export function BootstrapForm() {
       <div className="actions"><button type="button" onClick={preview}>Preview proposal</button></div>
       <div ref={feedbackRef} tabIndex={-1} aria-live="polite">
         {proposal ? (
-          <section aria-label="Proposal preview">
+          <section className="proposal-preview" aria-label="Proposal preview">
             <h3>Review before creating a Draft</h3>
             <p>These are untrusted suggestions. Edit the Draft before publication.</p>
             <ol>{proposal.items.map((item) => <li key={item.proposalId}><strong>{item.type}</strong> ({item.priority}): {item.statement}</li>)}</ol>
@@ -109,6 +111,7 @@ export function BootstrapForm() {
               I have reviewed the notes and understand they will not be saved.
             </label>
             <div className="actions"><button className="primary" type="button" disabled={!acknowledged || pending} onClick={create}>{pending ? "Creating..." : "Create Draft"}</button></div>
+            {!acknowledged ? <p className="field-help">Review and acknowledge the notes above to enable Draft creation.</p> : null}
           </section>
         ) : null}
         {error ? <p className="error" role="alert">{error}</p> : null}

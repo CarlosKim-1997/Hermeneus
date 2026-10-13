@@ -34,11 +34,14 @@ test.describe("Creator ownership IDOR", () => {
 
     await devSignIn(creatorB, "secondary");
     await creatorB.goto(`/handoffs/${handoffId}/review`);
-    await expect(creatorB.getByRole("heading", { name: "404" })).toBeVisible();
+    await expect(creatorB.getByRole("heading", { name: "This page could not be found." })).toBeVisible();
+    await expect(creatorB.getByRole("button", { name: "Save draft" })).toHaveCount(0);
     await creatorB.goto(`/handoffs/${handoffId}/published/1`);
-    await expect(creatorB.getByRole("heading", { name: "404" })).toBeVisible();
+    await expect(creatorB.getByRole("heading", { name: "This page could not be found." })).toBeVisible();
+    await expect(creatorB.getByRole("button", { name: "Create share link" })).toHaveCount(0);
     await creatorB.goto(`/receiver/${handoffId}/1`);
-    await expect(creatorB.getByRole("heading", { name: "404" })).toBeVisible();
+    await expect(creatorB.getByRole("heading", { name: "This page could not be found." })).toBeVisible();
+    await expect(creatorB.getByLabel("Your question")).toHaveCount(0);
 
     await receiver.goto(sharePath!);
     await expect(receiver.getByRole("heading", { name: "Shared Receiver" })).toBeVisible();

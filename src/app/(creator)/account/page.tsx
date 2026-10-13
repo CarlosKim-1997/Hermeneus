@@ -4,9 +4,13 @@ import { AccountLifecyclePanel } from "../../components/account-lifecycle-panel.
 export default async function AccountPage() {
   const principal = await requireAccountLifecycleSessionPage();
   return (
-    <main className="page">
-      <h1>Account</h1>
+    <section className="account-page">
+      <header className="page-heading">
+        <p className="eyebrow">Your workspace / Account</p>
+        <h2>Account</h2>
+        <p className="page-lead">Manage the lifecycle of your Creator account and its Handoffs.</p>
+      </header>
       <AccountLifecyclePanel lifecycleStatus={principal.lifecycleStatus} />
-    </main>
+    </section>
   );
 }
