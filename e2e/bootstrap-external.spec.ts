@@ -11,8 +11,9 @@ test("Bootstrap notes disappear, title stays private, and shared packet is sourc
   await creator.goto("/new");
   await creator.getByLabel("Portable Proposal JSON").fill("```json\n{}\n```");
   await creator.getByRole("button", { name: "Preview proposal" }).click();
-  await expect(creator.getByRole("alert")).toContainText("not valid JSON");
-  await expect(creator.getByRole("alert")).toBeInViewport();
+  const previewError = creator.locator("p.error[role='alert']");
+  await expect(previewError).toContainText("not valid JSON");
+  await expect(previewError).toBeInViewport();
   await creator.getByLabel("Portable Proposal JSON").fill(JSON.stringify({
     protocol: "hermeneus.portable-proposal/v0", title: "Private bootstrap title",
     items: [{ proposalId: "P-001", type: "OPEN", priority: "IMPORTANT", statement: "Hosting remains undecided." }],
