@@ -54,6 +54,15 @@ branch restriction, token-name presence only, opt-in variable, exact hosted
 release SHA, deployment team/project/region/provenance, readiness, access cleanup
 and promotion/alias state. Observe an interrupted side effect before retrying.
 
+PR #36 HEAD `e347800db6a2ee56d7943e17a0d3a0e47776e899` passed all four
+required jobs in CI `38394388834` and was merged without protection changes.
+Integrated main `e25655178a905f95c8f8da85e5998e08af9dc0c5` passed all four
+jobs in CI `38394774004` on Node 22.23.3, including actual synthetic logical
+restore, auth 72, integration 113 and E2E 15 PASS. The main-restricted deployment
+environment and opt-in variable are prepared. Owner credential registration
+and the first hosted release remain pending; T-025 remains IN_PROGRESS.
+Details: `work/reports/t025-release-gate-integration.md`.
+
 ## Stop Conditions
 
 Stop affected activation for missing credential, target/SHA mismatch, failing

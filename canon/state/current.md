@@ -14,16 +14,20 @@ The approved vNext S1–S6 vertical slice is integrated into `main`: source-free
 
 Migration serialization and `/api/ready` schema-history checks are integrated,
 passed Node 22 hosted CI and deployed in synthetic Alpha. Protected readiness
-returns 200; automatic promotion checks are not yet wired to this endpoint.
-A disabled-by-default release Gate and isolated synthetic logical restore test
-are locally verified and approved for integration/activation. GitHub's
-`synthetic-alpha` environment is restricted to main; its deployment credential
-registration and the first hosted Gate run remain pending. Target backup/PITR provisioning and an
-actual target restore rehearsal remain outstanding.
+returns 200. The automatic promotion Gate and isolated synthetic logical restore
+test are integrated and passed Node 22 main CI. Activation is approved;
+GitHub's `synthetic-alpha` environment is restricted to main, but its
+`VERCEL_TOKEN` registration and first hosted release run remain pending. The
+opt-in remains disabled until the credential is registered. Target backup/PITR
+provisioning and an actual target restore rehearsal remain outstanding.
 
 Complete authorized participant access, Share fragment survival through fresh Vercel authentication, and request-path log inspection in Seoul Supabase Free project `dzaibwrrylxlrxbgnyaw` and Vercel Hobby project `prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8`. The database has migrations 001–011, Data API disabled, and app-table/function client grants revoked. Vercel Authentication covers all deployments; unauthenticated requests to the default and deployment-specific Share URLs redirect to Vercel SSO. The external verifier remains off. The separate Supabase Pro/Small target with seven-day PITR selected for real-data use remains unprovisioned.
 
 ## Blockers
+
+Automatic synthetic release awaits the owner's direct registration of
+`VERCEL_TOKEN` in GitHub's `synthetic-alpha` environment; no further release
+approval is needed within the approved scope.
 
 Before real data use, provision and verify the separate Pro/Small/PITR target, its billing and regional availability, Data API shutdown and grants, backup/restore rehearsal, target OAuth, deployment authentication, and protected Share access. The Free project is synthetic-only.
 
@@ -50,6 +54,10 @@ evidence and remaining hosted checks are in
 concurrency and regression verification is recorded separately in
 `work/reports/t022-local-verification.md`. These observations do not establish
 real-data readiness, target restore capability or paid-model behavior. Local
-release Gate/isolated logical restore evidence and activation prerequisites are
-in `work/reports/t024-release-gate-and-restore.md`; no hosted execution of that
-new workflow has yet occurred.
+release Gate/isolated logical restore evidence is in
+`work/reports/t024-release-gate-and-restore.md`; Node 22 integration and activation
+preparation are in `work/reports/t025-release-gate-integration.md`. Main CI
+[38394774004](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/38394774004)
+passed all four required jobs for `e25655178a905f95c8f8da85e5998e08af9dc0c5`,
+including the actual isolated logical restore. No hosted automatic release run
+has yet occurred.
