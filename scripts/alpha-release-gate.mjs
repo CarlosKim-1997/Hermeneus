@@ -6,8 +6,13 @@ import { spawn } from "node:child_process";
 export const REPOSITORY = "CarlosKim-1997/Hermeneus";
 export const TEAM = "team_ll3FPTKyAnl8VYk0CqJ90tHV";
 export const PROJECT = "prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8";
+export const PRIMARY = "hermeneus-alpha-synthetic.vercel.app";
+export const GENERATED = "hermeneus-alpha-synthetic-carloslab.vercel.app";
 const JOBS = ["verify", "postgres", "e2e", "dependency-audit"];
-const requireGate = (condition) => { if (!condition) throw new Error("Alpha release gate failed"); };
+class GateFailure extends Error {
+  constructor(code) { super("Alpha release gate failed"); this.code = code; }
+}
+const requireGate = (condition, code = "condition") => { if (!condition) throw new GateFailure(code); };
 
 export function validateRun(event, run, jobs, main) {
   requireGate(event?.repository?.full_name === REPOSITORY);
@@ -30,7 +35,7 @@ async function jsonRequest(origin, pathname, token, options = {}, request = fetc
     ...options, redirect: "manual", signal: AbortSignal.timeout(10_000),
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...options.headers },
   });
-  requireGate(response.ok);
+  requireGate(response.ok, `api-status-${response.status}`);
   return response.json();
 }
 
@@ -46,10 +51,10 @@ export async function selectCommit(event, token, request = fetch) {
 }
 
 function validateProject(project) {
-  requireGate(project.id === PROJECT && project.accountId === TEAM);
+  requireGate(project.id === PROJECT && project.accountId === TEAM, "project-identity");
   // REST project protection is nullable and uses deploymentType; the MCP summary
   // also adds an enabled flag. Do not mistake that summary for the wire schema.
-  requireGate(project.ssoProtection?.deploymentType === "all" && project.ssoProtection?.enabled !== false);
+  requireGate(project.ssoProtection?.deploymentType === "all" && project.ssoProtection?.enabled !== false, "project-protection");
 }
 
 export async function checkCredential(token, request = fetch) {
@@ -57,17 +62,31 @@ export async function checkCredential(token, request = fetch) {
   validateProject(project);
 }
 
+export async function readPrimary(token, request = fetch) {
+  const alias = await jsonRequest("https://api.vercel.com", `/v4/aliases/${PRIMARY}?teamId=${TEAM}`, token, {}, request);
+  requireGate(alias.alias === PRIMARY && alias.projectId === PROJECT && !alias.redirect, "primary-identity");
+  requireGate(/^dpl_[a-zA-Z0-9]+$/.test(alias.deploymentId));
+  return alias.deploymentId;
+}
+
+export async function checkPrimary(token, expected, request = fetch) {
+  requireGate(/^dpl_[a-zA-Z0-9]+$/.test(expected));
+  requireGate(await readPrimary(token, request) === expected, "primary-mapping");
+}
+
 export function validateDeployment(deployment, project, sha) {
   validateProject(project);
-  requireGate(deployment.projectId === PROJECT && deployment.ownerId === TEAM);
-  requireGate(deployment.target === "production" && deployment.readyState === "READY");
-  requireGate(deployment.meta?.hermeneusCommitSha === sha);
-  requireGate(Array.isArray(deployment.regions) && deployment.regions.length === 1 && deployment.regions[0] === "icn1");
+  requireGate(deployment.projectId === PROJECT && deployment.ownerId === TEAM, "deployment-identity");
+  requireGate(deployment.target === "production" && deployment.readyState === "READY", "deployment-ready");
+  requireGate(deployment.meta?.hermeneusCommitSha === sha, "deployment-sha");
+  requireGate(Array.isArray(deployment.regions) && deployment.regions.length === 1 && deployment.regions[0] === "icn1", "deployment-region");
   requireGate(/^dpl_[a-zA-Z0-9]+$/.test(deployment.id));
   requireGate(/^[a-zA-Z0-9-]+\.vercel\.app$/.test(deployment.url));
-  // --skip-domain must have left the current production aliases untouched.
-  requireGate(Array.isArray(deployment.alias) && deployment.alias.length === 0);
-  requireGate(Object.keys(deployment.protectionBypass ?? {}).length === 0);
+  // Owner-approved synthetic staging exception: only this provider-generated
+  // base alias may move before readiness. The participant's primary must not.
+  requireGate(Array.isArray(deployment.alias) && (deployment.alias.length === 0 ||
+    (deployment.alias.length === 1 && deployment.alias[0] === GENERATED)), "deployment-alias");
+  requireGate(Object.keys(deployment.protectionBypass ?? {}).length === 0, "preexisting-access");
   return `https://${deployment.url}`;
 }
 
@@ -81,7 +100,7 @@ export async function checkReadiness(deployment, project, sha, token, request = 
       method: "PATCH", body: JSON.stringify({ ttl: 300 }),
     }, request);
     const keys = Object.keys(created.protectionBypass ?? {});
-    requireGate(keys.length === 1);
+    requireGate(keys.length === 1, "access-create-shape");
     ownedSecret = keys[0];
     const endpointUrl = `${origin}/api/ready`;
     const shareUrl = new URL(endpointUrl);
@@ -93,29 +112,29 @@ export async function checkReadiness(deployment, project, sha, token, request = 
     });
     if (response.status === 307) {
       const location = response.headers.get("location");
-      requireGate(location && new URL(location, endpointUrl).href === endpointUrl);
+      requireGate(location && new URL(location, endpointUrl).href === endpointUrl, "cookie-location");
       const cookies = response.headers.getSetCookie().map((cookie) => cookie.split(";")[0])
         .filter((cookie) => cookie.startsWith("_vercel_jwt="));
-      requireGate(cookies.length === 1 && /^_vercel_jwt=[A-Za-z0-9._-]+$/.test(cookies[0]));
+      requireGate(cookies.length === 1 && /^_vercel_jwt=[A-Za-z0-9._-]+$/.test(cookies[0]), "cookie-shape");
       response = await request(endpointUrl, {
         redirect: "manual", signal: AbortSignal.timeout(10_000), headers: { Cookie: cookies[0] },
       });
     }
     const cacheControl = response.headers.get("cache-control") ?? "";
-    requireGate(response.status === 200 && /\bno-store\b/i.test(cacheControl) && /\bprivate\b/i.test(cacheControl));
+    requireGate(response.status === 200 && /\bno-store\b/i.test(cacheControl) && /\bprivate\b/i.test(cacheControl), "readiness-http-cache");
     const body = await response.json();
-    requireGate(body.status === "ready" && Object.keys(body).length === 1);
+    requireGate(body.status === "ready" && Object.keys(body).length === 1, "readiness-body");
   } finally {
     if (ownedSecret) {
       const revoked = await jsonRequest("https://api.vercel.com", endpoint, token, {
         method: "PATCH", body: JSON.stringify({ revoke: { secret: ownedSecret, regenerate: false } }),
       }, request);
-      requireGate(revoked.protectionBypass && !(ownedSecret in revoked.protectionBypass));
+      requireGate(revoked.protectionBypass && !(ownedSecret in revoked.protectionBypass), "access-cleanup");
     }
   }
 }
 
-export async function probe(event, githubToken, vercelToken, stagedUrl, request = fetch) {
+export async function probe(event, githubToken, vercelToken, stagedUrl, prior, request = fetch) {
   const sha = await selectCommit(event, githubToken, request);
   const url = new URL(stagedUrl.trim());
   requireGate(url.protocol === "https:" && /^[a-zA-Z0-9-]+\.vercel\.app$/.test(url.hostname));
@@ -123,6 +142,8 @@ export async function probe(event, githubToken, vercelToken, stagedUrl, request 
   const deployment = await jsonRequest("https://api.vercel.com", `/v13/deployments/${url.hostname}?teamId=${TEAM}`, vercelToken, {}, request);
   const project = await jsonRequest("https://api.vercel.com", `/v9/projects/${PROJECT}?teamId=${TEAM}`, vercelToken, {}, request);
   requireGate(deployment.url === url.hostname);
+  validateDeployment(deployment, project, sha);
+  await checkPrimary(vercelToken, prior, request);
   await checkReadiness(deployment, project, sha, vercelToken, request);
   return { sha, id: deployment.id };
 }
@@ -135,10 +156,12 @@ async function main() {
     await appendFile(process.env.GITHUB_OUTPUT, `sha=${sha}\n`);
   } else if (action === "credential") {
     await checkCredential(process.env.VERCEL_TOKEN);
+    const prior = await readPrimary(process.env.VERCEL_TOKEN);
+    await appendFile(process.env.GITHUB_OUTPUT, `prior=${prior}\n`);
     console.log("Synthetic Alpha deployment credential and protected project verified");
   } else if (action === "probe") {
     const result = await probe(event, process.env.GITHUB_TOKEN, process.env.VERCEL_TOKEN,
-      await readFile(process.env.STAGED_URL_FILE, "utf8"));
+      await readFile(process.env.STAGED_URL_FILE, "utf8"), process.env.PRIOR_DEPLOYMENT_ID);
     await appendFile(process.env.GITHUB_OUTPUT, `deployment=${result.id}\nsha=${result.sha}\n`);
   } else if (action === "promote") {
     // Recheck CI/main immediately before the irreversible alias assignment.
@@ -147,6 +170,7 @@ async function main() {
     const deployment = await jsonRequest("https://api.vercel.com", `/v13/deployments/${process.env.DEPLOYMENT_ID}?teamId=${TEAM}`, process.env.VERCEL_TOKEN);
     const project = await jsonRequest("https://api.vercel.com", `/v9/projects/${PROJECT}?teamId=${TEAM}`, process.env.VERCEL_TOKEN);
     validateDeployment(deployment, project, sha);
+    await checkPrimary(process.env.VERCEL_TOKEN, process.env.PRIOR_DEPLOYMENT_ID);
     const child = spawn(process.env.VERCEL_CLI, ["promote", process.env.DEPLOYMENT_ID, "--timeout", "120s"], {
       stdio: "ignore", timeout: 150_000,
     });
@@ -154,10 +178,15 @@ async function main() {
       child.on("error", reject);
       child.on("exit", (code) => code === 0 ? resolvePromise() : reject(new Error("Promotion failed")));
     });
+    await checkPrimary(process.env.VERCEL_TOKEN, process.env.DEPLOYMENT_ID);
     console.log(`Promoted synthetic Alpha ${process.env.DEPLOYMENT_ID} at ${sha}`);
   } else throw new Error("Unknown release action");
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch(() => { console.error("Synthetic Alpha release stopped. Inspect authenticated deployment state before retrying."); process.exitCode = 1; });
+  main().catch((error) => {
+    const code = error instanceof GateFailure && /^[a-z0-9-]+$/.test(error.code) ? error.code : "unclassified";
+    console.error(`Synthetic Alpha release stopped (${code}). Inspect authenticated deployment state before retrying.`);
+    process.exitCode = 1;
+  });
 }

@@ -63,7 +63,8 @@ jobs:
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - name: Stage production artifact without assigning domains
+      - name: Stage production artifact while preserving the primary domain
+        id: stage
         run: |
           test -n "$VERCEL_TOKEN"
           node scripts/alpha-release-gate.mjs credential
@@ -77,6 +78,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           STAGED_URL_FILE: ${{ runner.temp }}/hermeneus-staged-url
+          PRIOR_DEPLOYMENT_ID: ${{ steps.stage.outputs.prior }}
       - name: Recheck current main and promote the verified artifact
         run: node scripts/alpha-release-gate.mjs promote
         env:
@@ -84,3 +86,4 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_CLI: ${{ runner.temp }}/hermeneus-vercel-cli/node_modules/.bin/vercel
           DEPLOYMENT_ID: ${{ steps.probe.outputs.deployment }}
+          PRIOR_DEPLOYMENT_ID: ${{ steps.stage.outputs.prior }}
