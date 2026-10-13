@@ -39,6 +39,14 @@ T-024's completed local-only Authority remains historical. No paid PITR target,
 real-data release, shared DB mutation/restore, policy change, paid model call,
 history rewrite or protection relaxation is authorized by these actions.
 
+On 2026-10-14 the owner separately approved restoring the exact generated
+secondary alias to the previous verified deployment, and then accepted the
+primary-domain release Gate: only the literal provider-generated base alias may
+move before readiness; the primary service domain must retain its captured
+mapping until verified same-artifact promotion. Other aliases remain denied,
+all-deployment protection and synthetic-only use remain required. This changes
+the execution boundary, not formal product Canon meaning.
+
 ## Constraints
 
 Installed Governance, active Canon and observed GitHub protection govern.

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { checkCredential, checkReadiness, probe, selectCommit, REPOSITORY, PROJECT, TEAM, validateDeployment, validateRun } from "../scripts/alpha-release-gate.mjs";
+import { checkCredential, checkPrimary, readPrimary, checkReadiness, probe, selectCommit, REPOSITORY, PROJECT, TEAM, PRIMARY, GENERATED, validateDeployment, validateRun } from "../scripts/alpha-release-gate.mjs";
 
 const sha = "a".repeat(40);
 const run = { id: 123, run_attempt: 1, repository: { full_name: REPOSITORY }, head_repository: { full_name: REPOSITORY },
@@ -11,6 +11,39 @@ const deployment = { id: "dpl_Test", url: "synthetic-stage.vercel.app", projectI
   target: "production", readyState: "READY", meta: { hermeneusCommitSha: sha }, regions: ["icn1"], alias: [], protectionBypass: {} };
 
 describe("synthetic Alpha release authority and readiness gate", () => {
+  it("allows only the exact owner-approved generated alias", () => {
+    expect(validateDeployment({ ...deployment, alias: [GENERATED] }, project, sha)).toBe(`https://${deployment.url}`);
+    for (const alias of [[PRIMARY], [GENERATED, PRIMARY], [GENERATED, GENERATED], ["other.vercel.app"]]) {
+      expect(() => validateDeployment({ ...deployment, alias }, project, sha)).toThrow();
+    }
+  });
+  it.each(["ready", "drift", "wrong-name", "wrong-project", "redirect", "missing-deployment"])(
+    "pins the primary domain mapping before and after promotion: %s", async (mode) => {
+      const alias = { alias: PRIMARY, projectId: PROJECT, deploymentId: "dpl_Prior", redirect: null };
+      const request = vi.fn(async (_url: string | URL | Request, _options?: RequestInit) => Response.json(
+        mode === "wrong-name" ? { ...alias, alias: GENERATED } :
+          mode === "wrong-project" ? { ...alias, projectId: "other" } :
+            mode === "redirect" ? { ...alias, redirect: "https://evil.example" } :
+              mode === "missing-deployment" ? { ...alias, deploymentId: null } :
+                mode === "drift" ? { ...alias, deploymentId: "dpl_Other" } : alias,
+      ));
+      const result = checkPrimary("private-fixture-api-token", "dpl_Prior", request);
+      if (mode === "ready") await expect(result).resolves.toBeUndefined();
+      else await expect(result).rejects.toThrow();
+      expect(String(request.mock.calls[0][0])).toBe(`https://api.vercel.com/v4/aliases/${PRIMARY}?teamId=${TEAM}`);
+      expect(request.mock.calls[0][1]!.redirect).toBe("manual");
+    },
+  );
+  it("rejects primary mapping drift before opening temporary readiness access", async () => {
+    const responses = [run, { total_count: jobs.length, jobs }, { sha }, deployment, project,
+      { alias: PRIMARY, projectId: PROJECT, deploymentId: deployment.id, redirect: null }];
+    const request = vi.fn(async () => Response.json(responses.shift()));
+    await expect(probe(event, "private-github-fixture", "private-vercel-fixture", `https://${deployment.url}`, "dpl_Prior", request)).rejects.toThrow();
+    expect(request).toHaveBeenCalledTimes(6);
+  });
+  it("captures the primary deployment before staging", async () => {
+    expect(await readPrimary("private-fixture-api-token", async () => Response.json({ alias: PRIMARY, projectId: PROJECT, deploymentId: "dpl_Prior" }))).toBe("dpl_Prior");
+  });
   it.each(["ready", "wrong-project", "wrong-team", "unprotected", "unauthorized", "redirect"])(
     "checks the credential only against the fixed protected project: %s", async (mode) => {
       const request = vi.fn(async (_url: string | URL | Request, _options?: RequestInit) => Response.json(
@@ -129,7 +162,7 @@ describe("synthetic Alpha release authority and readiness gate", () => {
   it.each(["https://evil.example", "https://private:password@synthetic-stage.vercel.app", "https://synthetic-stage.vercel.app?private=token"])(
     "never sends Vercel credentials to malformed stage output %s", async (url) => {
       const request = vi.fn(async () => Response.json(request.mock.calls.length === 1 ? run : request.mock.calls.length === 2 ? { total_count: jobs.length, jobs } : { sha }));
-      await expect(probe(event, "private-github-fixture", "private-vercel-fixture", url, request)).rejects.toThrow();
+      await expect(probe(event, "private-github-fixture", "private-vercel-fixture", url, "dpl_Prior", request)).rejects.toThrow();
       expect(request).toHaveBeenCalledTimes(3);
     },
   );

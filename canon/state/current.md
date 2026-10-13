@@ -15,19 +15,23 @@ The approved vNext S1–S6 vertical slice is integrated into `main`: source-free
 Migration serialization and `/api/ready` schema-history checks are integrated,
 passed Node 22 hosted CI and deployed in synthetic Alpha. Protected readiness
 returns 200. The automatic promotion Gate and isolated synthetic logical restore
-test are integrated and passed Node 22 main CI. Activation is approved;
-GitHub's `synthetic-alpha` environment is restricted to main, but its
-`VERCEL_TOKEN` registration and first hosted release run remain pending. The
-opt-in remains disabled until the credential is registered. Target backup/PITR
+test are integrated and passed Node 22 main CI. The owner registered
+`VERCEL_TOKEN` in main-only `synthetic-alpha`; actual credential verification
+and staging succeeded. The first staged release failed the zero-alias Gate:
+Vercel's generated secondary alias moved before readiness despite `--skip-domain`.
+It was restored under specific approval. The owner approved an amended Gate
+that permits only that literal generated alias and pins the primary service
+domain until verified promotion. Integration/full release verification of that
+amendment remains pending; the opt-in is disabled meanwhile. Target backup/PITR
 provisioning and an actual target restore rehearsal remain outstanding.
 
 Complete authorized participant access, Share fragment survival through fresh Vercel authentication, and request-path log inspection in Seoul Supabase Free project `dzaibwrrylxlrxbgnyaw` and Vercel Hobby project `prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8`. The database has migrations 001–011, Data API disabled, and app-table/function client grants revoked. Vercel Authentication covers all deployments; unauthenticated requests to the default and deployment-specific Share URLs redirect to Vercel SSO. The external verifier remains off. The separate Supabase Pro/Small target with seven-day PITR selected for real-data use remains unprovisioned.
 
 ## Blockers
 
-Automatic synthetic release awaits the owner's direct registration of
-`VERCEL_TOKEN` in GitHub's `synthetic-alpha` environment; no further release
-approval is needed within the approved scope.
+Automatic synthetic release awaits integration and a successful hosted run of
+the approved primary-domain Gate. Credential registration and required execution
+permissions are present; do not relax the other target/readiness/cleanup checks.
 
 Before real data use, provision and verify the separate Pro/Small/PITR target, its billing and regional availability, Data API shutdown and grants, backup/restore rehearsal, target OAuth, deployment authentication, and protected Share access. The Free project is synthetic-only.
 
@@ -36,13 +40,16 @@ Before real data use, provision and verify the separate Pro/Small/PITR target, i
 - The live semantic verifier and its cost/consent controls have not been evaluated against an external model in the target environment. Deterministic checks cannot establish semantic quality by themselves.
 - External participant access, Share fragment survival through a fresh Vercel authentication redirect, and absence of Share bearers in infrastructure request logs remain unverified. Current runtime log queries returned no records; they do not prove absence of a token leak.
 - Legal retention/hold and team ownership transfer are outside current product scope.
+- The approved generated secondary alias can serve a candidate before readiness;
+  use only `hermeneus-alpha-synthetic.vercel.app` for participant/service access.
+  All-deployment authentication and synthetic-only operation remain required.
 - Restoring a snapshot can resurrect Handoffs erased or capabilities revoked
   after its backup. The local drill demonstrated this despite schema readiness;
   a real recovery target must remain isolated pending lifecycle reconciliation.
 
 ## Verification Basis
 
-The latest observed synthetic deployment is `dpl_2MmV7DPFebTPVRqtSKnzk8FxLTiG`,
+The verified synthetic deployment serving the primary domain is `dpl_2MmV7DPFebTPVRqtSKnzk8FxLTiG`,
 READY in `icn1`, at `7b014fe3d07ffbde13db6b4c2f84b7d7e9b90749`;
 [main CI run 38387114454](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/38387114454)
 passed all four required jobs. Protected readiness, generic access surfaces,
@@ -59,8 +66,12 @@ release Gate/isolated logical restore evidence is in
 preparation are in `work/reports/t025-release-gate-integration.md`. Main CI
 [38394774004](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/38394774004)
 passed all four required jobs for `e25655178a905f95c8f8da85e5998e08af9dc0c5`,
-including the actual isolated logical restore. No hosted automatic release run
-has yet occurred.
+including the actual isolated logical restore. The first automatic attempts
+stopped before primary-domain promotion. Main CI `38416854496` passed all four
+jobs for `83d42ef2a474223849d35ba432aca4ea33945728`; release `38417177954`
+staged a READY candidate and failed the alias Gate. Observed generated-alias
+movement, approved restoration and amended safety boundary are recorded in
+`work/reports/t025-generated-alias-decision.md`.
 
 Hosted activation preflight verified readiness through a scoped Vercel share-link
 cookie exchange; the Gate's earlier automation-header assumption required a

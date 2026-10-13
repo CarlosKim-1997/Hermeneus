@@ -47,9 +47,18 @@ fixed `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` bind the project. Avoid a redundan
 with 404 during the first scoped-token release. Before staging, check the
 credential against the exact protected project API; never print the response or
 credential. Token compatibility is verified by the actual hosted release.
-no Alpha domains are reassigned during staging. The Gate checks deployment
+The owner approved a synthetic-only generated-alias exception on 2026-10-14:
+only `hermeneus-alpha-synthetic-carloslab.vercel.app` may follow candidate
+uploads before readiness. Do not use it as a participant/service address.
+Vercel automatically generates that CLI project/scope URL even with
+`--skip-domain`; its [URL contract](https://vercel.com/docs/deployments/generated-urls)
+describes it. `hermeneus-alpha-synthetic.vercel.app` is the sole service address.
+Capture its deployment ID before staging; reject project/name/redirect mismatch,
+and require the mapping unchanged before readiness and immediately before
+promotion. Reject all other candidate aliases, including the primary domain.
+The Gate checks deployment
 owner, project, production target, SHA metadata, READY state, Seoul region and
-absence of assigned aliases; it also checks all-deployment project protection.
+only the exact allowed generated alias; it also checks all-deployment project protection.
 The CLI metadata is tied to the workflow's exact clean checkout; it is not a
 third-party attestation of arbitrary uploaded files.
 
@@ -73,14 +82,17 @@ are returned, investigate the deployment's access configuration before retrying;
 do not revoke another operator's secret.
 
 Immediately before promotion, recheck current main/CI and inspect the same
-deployment/project again. Promote that existing production artifact with no
-forced-check bypass and no preview rebuild. Release jobs are serialized without
+deployment/project and the captured primary mapping again. Promote that existing production artifact with no
+forced-check bypass and no preview rebuild, then confirm the primary maps to
+that exact deployment. Release jobs are serialized without
 cancellation. There remains a small race between the last main read and the
 provider's promotion request; a later CI will release the next SHA. GitHub's
 serial group does not serialize a separate human release process.
 
 503, redirects, stale SHA, wrong target, failed CI or cleanup leave current
-production aliases untouched by this workflow. A staged artifact can remain for
+primary domain untouched by this workflow. The generated base alias may already
+serve an unverified candidate under the approved synthetic-only exception.
+A staged artifact can remain for
 operator inspection. No database migration, fallback bypass, automatic rollback
 or automatic promotion retry runs here. A promotion timeout has an unknown
 outcome: inspect deployment, aliases and promotion state before retrying.
