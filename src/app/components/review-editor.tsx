@@ -323,7 +323,7 @@ export function ReviewEditor({
             </fieldset>
             ) : (
               <p className="muted" style={{ marginTop: "0.75rem" }}>
-                No source provenance (source erased).
+                {sourceErased ? "No source provenance (source erased)." : "No source provenance (original source not collected)."}
               </p>
             )}
 

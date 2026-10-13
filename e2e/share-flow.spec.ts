@@ -40,6 +40,10 @@ test.describe("Share capability flow", () => {
     const token = new URL(linkText!).hash.slice(1);
     const requestPaths: string[] = [];
     receiver.on("request", (request) => requestPaths.push(new URL(request.url()).pathname));
+    // Reuse an already-mounted /share page: navigating to a fragment does not
+    // reload the document and must still consume the newly supplied capability.
+    await receiver.goto("/share");
+    await expect(receiver.getByText("This share link is unavailable.")).toBeVisible();
     await receiver.goto(sharePath);
     await expect(receiver.getByRole("heading", { name: "Shared Receiver" })).toBeVisible();
     await expect(receiver).toHaveURL(/\/share$/);

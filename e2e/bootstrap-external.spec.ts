@@ -30,6 +30,8 @@ test("Bootstrap notes disappear, title stays private, and shared packet is sourc
   const handoffId = creator.url().split("/handoffs/")[1]?.split("/")[0];
   expect(handoffId).toBeTruthy();
   await expect(creator.getByText(/Original source not collected/)).toBeVisible();
+  await expect(creator.getByText("No source provenance (original source not collected).")).toBeVisible();
+  await expect(creator.getByText("No source provenance (source erased).")).toHaveCount(0);
   await expect(creator.getByText("Ask Sender before publishing.")).toHaveCount(0);
   await creator.getByRole("button", { name: "Approve & Publish" }).click();
   await expect(creator.getByRole("heading", { name: "Published Handoff" })).toBeVisible({ timeout: 30_000 });
