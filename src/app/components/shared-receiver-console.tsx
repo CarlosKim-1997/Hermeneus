@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { HandoffItemType, HandoffPriority } from "../../handoff/schema.js";
 import type { SharedProvenanceBundle } from "../../persistence/share-types.js";
 import type { Answerability } from "../../receiver/interpret.js";
@@ -48,6 +48,7 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
   const [question, setQuestion] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorContext, setErrorContext] = useState<"packet" | "verification" | "question">("question");
   const [answer, setAnswer] = useState<AnswerState | null>(null);
   const [provenanceByItem, setProvenanceByItem] = useState<Record<string, SharedProvenanceBundle["items"][number]>>({});
   const [provenancePending, setProvenancePending] = useState<string | null>(null);
@@ -59,12 +60,17 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
   const [verdict, setVerdict] = useState<ReceiverVerdict | null>(null);
   const [verificationPending, setVerificationPending] = useState(false);
   const [externalVerificationConsent, setExternalVerificationConsent] = useState(false);
+  const [copyMessage, setCopyMessage] = useState("");
+  const [copyPending, setCopyPending] = useState(false);
+  const copyGeneration = useRef(0);
+  useEffect(() => () => { copyGeneration.current += 1; }, []);
 
   async function verifyPastedAnswer() {
     if (!packet || !externalAnswer.trim() || verificationPending || (externalVerifierEnabled && !externalVerificationConsent)) return;
     setVerificationPending(true);
     setVerdict(null);
     setError(null);
+    setErrorContext("verification");
     try {
       const outcome = await verifyExternalAnswerAction({ token, externalProcessingConsent: externalVerificationConsent, submission: {
         protocol: "hermeneus.receiver-submission/v0", publicationRef: packet.publicationRef,
@@ -83,14 +89,20 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
 
   async function preparePacket() {
     if (!externalDisclosure || packetPending) return;
+    copyGeneration.current += 1;
+    const generation = copyGeneration.current;
     setPacketPending(true);
     setExternalVerificationConsent(false);
     setError(null);
+    setErrorContext("packet");
+    setCopyMessage("");
     try {
       const result = await loadSharedReceiverPacketAction(token);
+      if (generation !== copyGeneration.current) return;
       if (!result.ok) { setError(result.error.message); setPacket(null); return; }
       setPacket(result.packet);
     } catch {
+      if (generation !== copyGeneration.current) return;
       setError("The Receiver Packet is unavailable.");
       setPacket(null);
     } finally {
@@ -99,21 +111,43 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
   }
 
   async function copyPacket() {
-    if (!packet || !externalDisclosure) return;
+    if (!packet || !externalDisclosure || copyPending) return;
+    setCopyPending(true);
+    setCopyMessage("");
+    setError(null);
+    setErrorContext("packet");
+    const generation = copyGeneration.current;
     // Recheck the capability before copying a prepared packet.
-    const result = await loadSharedReceiverPacketAction(token);
-    if (!result.ok || result.packet.canonicalDigest !== packet.canonicalDigest) {
+    try {
+      const result = await loadSharedReceiverPacketAction(token);
+      if (generation !== copyGeneration.current) return;
+      if (!result.ok || result.packet.canonicalDigest !== packet.canonicalDigest) {
+        setPacket(null);
+        setError("The Receiver Packet is unavailable.");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(result.packet, null, 2));
+        if (generation !== copyGeneration.current) return;
+        setCopyMessage("Packet copied. You can paste it into your AI.");
+      } catch {
+        if (generation !== copyGeneration.current) return;
+        setCopyMessage("Could not copy automatically. Select the Packet text below and copy it manually.");
+      }
+    } catch {
+      if (generation !== copyGeneration.current) return;
       setPacket(null);
-      setError("The Receiver Packet is unavailable.");
-      return;
+      setError("The Receiver Packet is unavailable. Try preparing it again.");
+    } finally {
+      setCopyPending(false);
     }
-    await navigator.clipboard.writeText(JSON.stringify(result.packet, null, 2));
   }
 
   async function onAsk(event: FormEvent) {
     event.preventDefault();
     setPending(true);
     setError(null);
+    setErrorContext("question");
     setAnswer(null);
     setProvenanceByItem({});
     const result = await askSharedReceiverQuestionAction({ token, question });
@@ -134,6 +168,7 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
   async function onShowProvenance(itemId: string) {
     setProvenancePending(itemId);
     setError(null);
+    setErrorContext("question");
     const result = await fetchSharedReceiverProvenanceAction({ token, itemIds: [itemId] });
     setProvenancePending(null);
     if (!result.ok) {
@@ -171,21 +206,24 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
         ))}
       </section>
 
-      <section className="panel">
+      <section className="panel panel-transfer">
         <h3>Use with my AI</h3>
         <p>Published items may contain sensitive information. Copying sends them to a third-party AI under that service&apos;s terms. Revoking this link cannot erase a copy already made elsewhere.</p>
-        <label><input type="checkbox" checked={externalDisclosure} onChange={(event) => { setExternalDisclosure(event.target.checked); setPacket(null); setExternalVerificationConsent(false); }} /> I understand the external disclosure.</label>
+        <label><input type="checkbox" checked={externalDisclosure} onChange={(event) => { copyGeneration.current += 1; setExternalDisclosure(event.target.checked); setPacket(null); setExternalVerificationConsent(false); setCopyMessage(""); }} /> I understand the external disclosure.</label>
         <div className="actions"><button type="button" disabled={!externalDisclosure || packetPending} onClick={preparePacket}>{packetPending ? "Preparing..." : "Prepare Receiver Packet"}</button></div>
+        {!externalDisclosure ? <p className="field-help">Confirm the disclosure above to prepare a packet.</p> : null}
+        {error && errorContext === "packet" ? <p className="form-error" role="alert">{error}</p> : null}
         {packet ? <>
           <p>Pinned version {packet.version} · fingerprint {packet.canonicalDigest}</p>
           <p>Paste the packet into your AI and ask it to distinguish approved items, open questions, and outside facts. Citation labels are hints, not proof.</p>
-          <button type="button" onClick={copyPacket}>Copy packet</button>
+          <button type="button" disabled={copyPending} onClick={copyPacket}>{copyPending ? "Copying..." : "Copy packet"}</button>
+          {copyMessage ? <p className="inline-feedback" role="status">{copyMessage}</p> : null}
           <label htmlFor="receiver-packet-text">Packet text</label>
           <textarea id="receiver-packet-text" readOnly value={JSON.stringify(packet, null, 2)} />
         </> : null}
       </section>
 
-      <section className="panel">
+      <section className="panel panel-verification">
         <h3>Verify an AI answer</h3>
         <p>Hermeneus checks the submitted answer against this Published Canon version. It does not check the original conversation or prove that a person understood it.</p>
         <p>Paste an answer only if you agree to disclose its contents to Hermeneus. The answer may include personal information from your AI session.</p>
@@ -198,7 +236,11 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
           For this check, I agree to send the pinned Published Canon items, my question, and this answer to OpenAI for verification. OpenAI's default API abuse-monitoring logs may contain this content for up to 30 days, with limited exceptions. Hermeneus does not persist this answer or my consent choice.
         </label> : <p>External semantic verification is not configured; the result will be indeterminate.</p>}
         <button type="button" disabled={!packet || !externalAnswer.trim() || verificationPending || (externalVerifierEnabled && !externalVerificationConsent)} onClick={verifyPastedAnswer}>{verificationPending ? "Checking..." : "Check answer"}</button>
-        {verdict ? <div role="status"><strong>{verdict.verdict}</strong><p>{verdict.issues.join(" ")}</p><p>{verdict.limitations.join(" ")}</p></div> : null}
+        {!packet ? <p className="field-help">Prepare a Receiver Packet in “Use with my AI” first.</p>
+          : !externalAnswer.trim() ? <p className="field-help">Paste an AI answer to enable this check.</p>
+          : externalVerifierEnabled && !externalVerificationConsent ? <p className="field-help">Confirm the per-check consent above to enable verification.</p> : null}
+        {error && errorContext === "verification" ? <p className="form-error" role="alert">{error}</p> : null}
+        {verdict ? <div className="verification-result" role="status"><strong>{verdict.verdict}</strong><p>{verdict.issues.join(" ")}</p><p>{verdict.limitations.join(" ")}</p></div> : null}
       </section>
 
       <section className="panel panel-receiver-qa">
@@ -215,7 +257,7 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
             {pending ? "Asking…" : "Ask"}
           </button>
         </form>
-        {error ? <p className="form-error">{error}</p> : null}
+        {error && errorContext === "question" ? <p className="form-error" role="alert">{error}</p> : null}
         {answer ? (
           <div className="receiver-answer">
             <p className="answerability-label">{answer.classification}</p>

@@ -289,15 +289,94 @@ textarea {
 
 .handoff-library-item {
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  border-radius: 12px;
+  padding: 1.25rem;
+  min-width: 0;
+  background: #fff;
 }
 
 .empty-state {
   padding: 1rem 0;
   color: #475569;
+}
+
+.handoff-library {
+  padding: clamp(1rem, 3vw, 2rem);
+  border-radius: 16px;
+}
+
+.handoff-library .library-header {
+  align-items: flex-start;
+  margin-bottom: 1.75rem;
+}
+
+.library-eyebrow {
+  margin: 0 0 0.4rem;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.library-header h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  letter-spacing: -0.03em;
+}
+
+.library-description {
+  max-width: 42ch;
+  margin: 0.5rem 0 0;
+  color: #475569;
+}
+
+.library-create { flex-shrink: 0; }
+.handoff-library .button-link {
+  padding: 0.75rem 1rem;
+  min-height: 44px;
+  text-align: center;
+  border-radius: 8px;
+}
+
+.handoff-library a:focus-visible,
+.library-dates summary:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 4px;
+}
+
+.handoff-library .button-link:hover { background: #1d4ed8; }
+.library-count { margin: 0 0 1rem; color: #334155; font-size: 0.875rem; font-weight: 600; }
+.library-count span { color: #64748b; font-weight: 400; }
+.library-card-header { display: flex; align-items: flex-start; gap: 1rem; justify-content: space-between; }
+.library-card-header h3 { margin: 0; font-size: 1.125rem; line-height: 1.4; overflow-wrap: anywhere; min-width: 0; }
+.library-status { flex-shrink: 0; border: 1px solid; border-radius: 999px; padding: 0.2rem 0.65rem; font-size: 0.75rem; font-weight: 700; }
+.library-status-draft { color: #475569; background: #f8fafc; border-color: #cbd5e1; }
+.library-status-published { color: #065f46; background: #ecfdf5; border-color: #a7f3d0; }
+.library-id { font-size: 0.75rem; color: #64748b; overflow-wrap: anywhere; margin: 0.5rem 0 0; }
+.library-metadata { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1.25rem 0 0; }
+.library-metadata dt { color: #64748b; font-size: 0.75rem; margin-bottom: 0.25rem; }
+.library-metadata dd { margin: 0; font-size: 0.875rem; color: #334155; overflow-wrap: anywhere; }
+.library-dates { color: #475569; font-size: 0.8125rem; margin-top: 1rem; }
+.library-dates summary { cursor: pointer; width: fit-content; padding: 0.5rem 0; }
+.library-dates p { margin: 0.35rem 0; }
+.library-card-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; border-top: 1px solid #e5e7eb; padding-top: 1rem; margin-top: 0.75rem; }
+.library-action { display: inline-flex; gap: 1.5rem; align-items: center; justify-content: space-between; min-height: 44px; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; text-decoration: none; font-size: 0.875rem; font-weight: 600; }
+.library-action:hover { background: #f8fafc; border-color: #94a3b8; }
+.library-action-published { color: #065f46; border-color: #a7f3d0; background: #ecfdf5; }
+.library-action-published:hover { background: #d1fae5; }
+.library-empty { padding: clamp(1.5rem, 5vw, 3rem) 1rem; text-align: center; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; }
+.library-empty-icon { display: inline-grid; place-items: center; width: 48px; height: 48px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 12px; font-size: 1.5rem; }
+.library-empty h3 { font-size: 1.25rem; margin: 1rem 0 0.5rem; }
+.library-empty p { max-width: 48ch; margin: 0 auto 1.25rem; color: #475569; }
+.library-empty .library-empty-hint { font-size: 0.8125rem; margin: 1rem auto 0; }
+
+@media (max-width: 600px) {
+  .handoff-library .library-header { flex-direction: column; gap: 1.25rem; }
+  .library-create { width: 100%; }
+  .library-card-header { flex-direction: column-reverse; gap: 0.75rem; }
+  .library-metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .library-card-actions { flex-direction: column; }
+  .library-action { width: 100%; }
+  .library-empty { padding: 1.75rem 0.75rem; }
 }

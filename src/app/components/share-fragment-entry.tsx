@@ -17,11 +17,14 @@ export function ShareFragmentEntry({ semanticModeEnabled, externalVerifierEnable
 
   useEffect(() => bindShareFragment(window, tokenRef, loadSharedReceiverViewAction, setEntry), []);
 
-  if (entry.status === "loading") return <p role="status">Loading shared Handoff…</p>;
-  if (entry.status === "unavailable") return <p role="status">This share link is unavailable.</p>;
+  if (entry.status === "loading") return <p className="share-status panel" role="status">Loading shared Handoff…</p>;
+  if (entry.status === "unavailable") return <p className="share-status panel" role="status">This share link is unavailable.</p>;
 
   return <>
+    <header className="page-heading">
+    <p className="eyebrow">Receive / Explore</p>
     <h2>Shared Receiver</h2>
+    </header>
     <p className="receiver-notice">Access is authorized through this share link only. Canonical Handoff items remain the authority.</p>
     <SharedReceiverConsole
       key={entry.token}

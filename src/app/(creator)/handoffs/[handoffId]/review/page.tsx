@@ -11,10 +11,13 @@ export default async function ReviewPage({ params }: { params: Promise<{ handoff
   if (!review) notFound();
 
   return (
-    <section>
+    <section className="review-page">
+      <header className="page-heading">
+      <p className="eyebrow">02 / Review</p>
       <h2>Creator Review</h2>
-      <p>Handoff ID: {handoffId}</p>
-      <HandoffLifecyclePanel handoffId={handoffId} sourceKind={review.kind} />
+      <p className="page-lead">Shape the claims you want to carry forward. Publication is your decision.</p>
+      <p className="record-id">Handoff ID: {handoffId}</p>
+      </header>
       <ReviewEditor
         key={`${handoffId}-${review.revision}-${review.kind}`}
         handoffId={handoffId}
@@ -24,6 +27,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ handoff
         sourceConversation={review.kind === "retained" ? review.sourceConversation : undefined}
         erasedAt={review.kind === "erased" ? review.erasedAt : undefined}
       />
+      <HandoffLifecyclePanel handoffId={handoffId} sourceKind={review.kind} />
     </section>
   );
 }

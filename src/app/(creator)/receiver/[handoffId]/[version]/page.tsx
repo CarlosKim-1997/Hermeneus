@@ -18,11 +18,14 @@ export default async function ReceiverPage({
   if (!view) notFound();
 
   return (
-    <section>
+    <section className="receiver-page">
+      <header className="page-heading">
+      <p className="eyebrow">Receive / Explore</p>
       <h2>Receiver</h2>
-      <p>
+      <p className="record-id">
         Handoff <code>{handoffId}</code> · explicit version {version}
       </p>
+      </header>
       <ReceiverConsole
         handoffId={view.handoffId}
         version={view.version}
