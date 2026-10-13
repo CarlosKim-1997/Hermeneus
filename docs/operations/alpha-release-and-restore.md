@@ -49,9 +49,17 @@ The CLI metadata is tied to the workflow's exact clean checkout; it is not a
 third-party attestation of arbitrary uploaded files.
 
 On this new staged deployment only, the probe creates temporary URL access with
-a five-minute TTL. It sends the bypass secret in a header to the exact inspected
-deployment's `/api/ready`, never in a logged query string and never across a
-redirect. It requires 200, `no-store`, and exactly `{"status":"ready"}`.
+a five-minute TTL. Deployment share tokens require `_vercel_share` URL access;
+they are not project-wide `x-vercel-protection-bypass` automation secrets. The
+probe uses that URL only at the exact inspected deployment's `/api/ready`. If
+Vercel responds 307, it accepts only the same exact clean readiness URL and one
+well-formed `_vercel_jwt` cookie, then makes one request with that cookie. Foreign
+origins, other paths/query strings, missing/duplicate/malformed cookies and further
+redirects fail closed. API bearer credentials never enter either app request.
+It requires 200, private/no-store, and exactly `{"status":"ready"}`.
+The short-lived Vercel share token can appear in provider request-query logs;
+the probe never prints its URL, token, cookie or error body. It is not a
+Hermeneus Share bearer, and no product Share token is involved in this probe.
 Finally it revokes its own access and checks the returned map. An unexpected
 response or failed cleanup stops promotion. API errors print a generic message,
 not the response or secret. A killed runner may skip cleanup; the created access

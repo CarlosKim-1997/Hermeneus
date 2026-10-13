@@ -78,3 +78,46 @@ Authority is unchanged; this report records the later authorized integration.
 The separate real-data Pro/Small/PITR target, target recovery/retention decisions,
 fresh participant/protected Share/log checks and live verifier evaluation remain
 their existing distinct gates. No automatic real-data readiness claim is made.
+
+## Later activation preflight: deployment share-link interoperability
+
+After evidence PR #37 integrated (main
+`4249504f124ffb9182837c8447eacdd30310a493`, main CI `38396020158` all four
+required jobs PASS), protected HTTP preflight found that the earlier Gate's
+header assumption was wrong. A deployment-scoped shareable token sent as
+`x-vercel-protection-bypass` produced 302 rather than readiness. Vercel CLI
+source confirms that header's normal token comes from project-wide
+`automation-bypass`, a different access mechanism.
+
+Using the existing runtime deployment's `/api/ready`, a five-minute share token
+in `_vercel_share` produced 307 to the same exact clean readiness URL and one
+`_vercel_jwt` cookie. A single request with that cookie returned 200,
+private/no-store, `{"status":"ready"}`. This proves the transport/auth exchange
+on that runtime, not the complete future CI staging/promotion workflow.
+
+The ordinary T-025 repair uses that documented deployment-scoped exchange;
+no project-wide persistent bypass is provisioned. It accepts only one 307 to
+the same exact readiness URL and one syntactically valid expected cookie.
+Other origins/paths/query strings, missing/duplicate/invalid cookies and any
+second redirect stop the Gate. Both app requests omit the Vercel API bearer
+credential. URL/cookie/error body are never printed by the probe.
+
+This provider's short-lived share URL token can appear in provider query logs;
+the earlier guidance's “header only/no query” claim was incorrect and has been
+corrected. This is Vercel's temporary deployment access credential, not a
+Hermeneus product Share bearer. The owner already authorized bounded deployment
+verification access; this repair neither expands product visibility nor changes
+Canon, preserves all-deployment protection and five-minute URL-access TTL, and
+retains cleanup before promotion.
+
+Local final repair verification: unit 96 PASS including 41 Gate cases,
+typecheck/Governance/whitespace PASS. Existing DB/E2E suites are unchanged;
+the repair PR/main must pass their usual Node 22 checks before integration.
+All owned temporary access entries were revoked and the returned map excluded
+each owned key. Early transport/helper attempts produced no readiness evidence
+and were also cleaned up; only the native HTTPS cookie exchange is counted as
+successful. Transient files used in the sandbox's private Temp directory were
+removed; no API credential, share token or cookie is included in this report,
+Git, command-line arguments or printed responses. No new deployment or shared
+DB write occurred during this preflight. Environment Secret registration and
+the first complete hosted automatic release are still pending.

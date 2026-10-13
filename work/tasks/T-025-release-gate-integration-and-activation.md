@@ -63,6 +63,15 @@ environment and opt-in variable are prepared. Owner credential registration
 and the first hosted release remain pending; T-025 remains IN_PROGRESS.
 Details: `work/reports/t025-release-gate-integration.md`.
 
+Activation preflight later identified an authentication interop defect: the
+deployment share token is not a project-wide automation header secret. Native
+HTTPS verified the scoped share-link 307/cookie exchange and readiness 200 on
+the existing deployment, followed by owned access revocation. The Gate repair
+adds a bounded one-hop cookie exchange and negative regressions; local unit 96
+(Gate 41), typecheck, Governance and whitespace PASS. Its hosted integration is
+recorded separately in the same report. No full automatic release is claimed
+before credential registration and an actual hosted release succeeds.
+
 ## Stop Conditions
 
 Stop affected activation for missing credential, target/SHA mismatch, failing

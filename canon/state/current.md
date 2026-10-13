@@ -61,3 +61,8 @@ preparation are in `work/reports/t025-release-gate-integration.md`. Main CI
 passed all four required jobs for `e25655178a905f95c8f8da85e5998e08af9dc0c5`,
 including the actual isolated logical restore. No hosted automatic release run
 has yet occurred.
+
+Hosted activation preflight verified readiness through a scoped Vercel share-link
+cookie exchange; the Gate's earlier automation-header assumption required a
+repair. The bounded protocol, negative tests and cleanup evidence are recorded
+in the T-025 report. This is not evidence of the full automatic release path.
