@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { checkReadiness, probe, selectCommit, REPOSITORY, PROJECT, TEAM, validateDeployment, validateRun } from "../scripts/alpha-release-gate.mjs";
+import { checkCredential, checkReadiness, probe, selectCommit, REPOSITORY, PROJECT, TEAM, validateDeployment, validateRun } from "../scripts/alpha-release-gate.mjs";
 
 const sha = "a".repeat(40);
 const run = { id: 123, run_attempt: 1, repository: { full_name: REPOSITORY }, head_repository: { full_name: REPOSITORY },
@@ -11,6 +11,22 @@ const deployment = { id: "dpl_Test", url: "synthetic-stage.vercel.app", projectI
   target: "production", readyState: "READY", meta: { hermeneusCommitSha: sha }, regions: ["icn1"], alias: [], protectionBypass: {} };
 
 describe("synthetic Alpha release authority and readiness gate", () => {
+  it.each(["ready", "wrong-project", "wrong-team", "unprotected", "unauthorized", "redirect"])(
+    "checks the credential only against the fixed protected project: %s", async (mode) => {
+      const request = vi.fn(async (_url: string | URL | Request, _options?: RequestInit) => Response.json(
+        mode === "wrong-project" ? { ...project, id: "other" } :
+          mode === "wrong-team" ? { ...project, accountId: "other" } :
+            mode === "unprotected" ? { ...project, ssoProtection: null } : project,
+        { status: mode === "unauthorized" ? 401 : mode === "redirect" ? 302 : 200 },
+      ));
+      const result = checkCredential("private-fixture-api-token", request);
+      if (mode === "ready") await expect(result).resolves.toBeUndefined();
+      else await expect(result).rejects.toThrow("Alpha release gate failed");
+      expect(request).toHaveBeenCalledTimes(1);
+      expect(String(request.mock.calls[0][0])).toBe(`https://api.vercel.com/v9/projects/${PROJECT}?teamId=${TEAM}`);
+      expect(request.mock.calls[0][1]!.redirect).toBe("manual");
+    },
+  );
   it("accepts the exact current main CI with every required job", () => {
     expect(validateRun(event, run, jobs, { sha })).toBe(sha);
   });

@@ -66,7 +66,8 @@ jobs:
       - name: Stage production artifact without assigning domains
         run: |
           test -n "$VERCEL_TOKEN"
-          "$RUNNER_TEMP/hermeneus-vercel-cli/node_modules/.bin/vercel" deploy --prod --skip-domain --yes --scope carloslab --meta "hermeneusCommitSha=$RELEASE_SHA" > "$RUNNER_TEMP/hermeneus-staged-url"
+          node scripts/alpha-release-gate.mjs credential
+          "$RUNNER_TEMP/hermeneus-vercel-cli/node_modules/.bin/vercel" deploy --prod --skip-domain --yes --meta "hermeneusCommitSha=$RELEASE_SHA" > "$RUNNER_TEMP/hermeneus-staged-url"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       - name: Verify target, readiness and temporary access cleanup

@@ -42,6 +42,11 @@ that verified main SHA with persisted GitHub checkout credentials disabled.
 
 Vercel CLI 63.1.2 is installed without the deployment secret. The remote build
 uses the linked project's production settings and `--prod --skip-domain`:
+fixed `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` bind the project. Avoid a redundant
+`--scope` slug lookup: CLI 63.1.2 queries the personal user for it, which failed
+with 404 during the first scoped-token release. Before staging, check the
+credential against the exact protected project API; never print the response or
+credential. Token compatibility is verified by the actual hosted release.
 no Alpha domains are reassigned during staging. The Gate checks deployment
 owner, project, production target, SHA metadata, READY state, Seoul region and
 absence of assigned aliases; it also checks all-deployment project protection.
