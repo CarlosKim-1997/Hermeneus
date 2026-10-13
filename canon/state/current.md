@@ -12,6 +12,12 @@ The approved vNext S1–S6 vertical slice is integrated into `main`: source-free
 
 ## Active Work
 
+Migration serialization and `/api/ready` schema-history checks are implemented
+and verified locally in T-022. T-023 is authorized to commit, push/integrate,
+verify Node 22 hosted CI and check the protected synthetic target; the local
+endpoint is not yet deployed or wired into automatic promotion checks. Remaining
+Slice C work includes target backup/PITR provisioning and restore rehearsal.
+
 Complete authorized participant access, Share fragment survival through fresh Vercel authentication, and request-path log inspection in Seoul Supabase Free project `dzaibwrrylxlrxbgnyaw` and Vercel Hobby project `prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8`. The database has migrations 001–011, Data API disabled, and app-table/function client grants revoked. Vercel Authentication covers all deployments; unauthenticated requests to the default and deployment-specific Share URLs redirect to Vercel SSO. The external verifier remains off. The separate Supabase Pro/Small target with seven-day PITR selected for real-data use remains unprovisioned.
 
 ## Blockers
@@ -26,4 +32,12 @@ Before real data use, provision and verify the separate Pro/Small/PITR target, i
 
 ## Verification Basis
 
-Deployment `dpl_5koYzGyyRudeG7yYVmaADnd8vJJW` is READY in `icn1` at implementation commit `e3cb135ae9e9f28610f155bf470519c156b2a130`; [run 38367205289](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/38367205289) passed all four required jobs, including disposable-DB Share/Receiver E2E. The post-deployment browser check verified valid same-document Share navigation, fragment clearing, corrected not-collected provenance text, and rejection after revocation. Its synthetic Handoff was deleted; read-only counts found zero Handoffs, Drafts, Published versions, and Share capabilities. Earlier owner acceptance and DB observations corroborated account erasure/relogin. Detailed evidence and remaining hosted checks are in `work/reports/synthetic-alpha-smoke-2026-10-13.md`. These observations do not establish real-data readiness, restore capability, or paid-model behavior.
+The latest observed UI deployment is `dpl_FYCTSXpmed23sYptFpuFZGHkB2JX`, READY in
+`icn1`, at `feb32dec0f10935164ec0e4e4e48cf9380d1f793`;
+[main CI run 38382634361](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/38382634361)
+passed all four required jobs. Earlier deployed same-document Share and erasure
+evidence and remaining hosted checks are in
+`work/reports/synthetic-alpha-smoke-2026-10-13.md`. Local T-022 negative,
+concurrency and regression verification is recorded separately in
+`work/reports/t022-local-verification.md`; it does not establish hosted readiness,
+real-data readiness, restore capability or paid-model behavior.
