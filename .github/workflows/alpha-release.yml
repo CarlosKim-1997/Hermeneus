@@ -1,0 +1,85 @@
+name: Synthetic Alpha release
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: hermeneus-synthetic-alpha-release
+  cancel-in-progress: false
+
+jobs:
+  select:
+    if: >-
+      vars.HERMENEUS_ALPHA_AUTO_DEPLOY == 'enabled' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.repository.full_name == 'CarlosKim-1997/Hermeneus' &&
+      github.event.workflow_run.head_repository.full_name == 'CarlosKim-1997/Hermeneus'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      sha: ${{ steps.select.outputs.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+      - id: select
+        run: node scripts/alpha-release-gate.mjs select
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  release:
+    needs: select
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: synthetic-alpha
+    env:
+      VERCEL_ORG_ID: team_ll3FPTKyAnl8VYk0CqJ90tHV
+      VERCEL_PROJECT_ID: prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8
+      RELEASE_SHA: ${{ needs.select.outputs.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.select.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install pinned deployment CLI without deployment credentials
+        run: npm install --prefix "$RUNNER_TEMP/hermeneus-vercel-cli" vercel@63.1.2
+      - name: Recheck exact current main before staging
+        run: |
+          node scripts/alpha-release-gate.mjs select
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Stage production artifact without assigning domains
+        run: |
+          test -n "$VERCEL_TOKEN"
+          "$RUNNER_TEMP/hermeneus-vercel-cli/node_modules/.bin/vercel" deploy --prod --skip-domain --yes --scope carloslab --meta "hermeneusCommitSha=$RELEASE_SHA" > "$RUNNER_TEMP/hermeneus-staged-url"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      - name: Verify target, readiness and temporary access cleanup
+        id: probe
+        run: node scripts/alpha-release-gate.mjs probe
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          STAGED_URL_FILE: ${{ runner.temp }}/hermeneus-staged-url
+      - name: Recheck current main and promote the verified artifact
+        run: node scripts/alpha-release-gate.mjs promote
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_CLI: ${{ runner.temp }}/hermeneus-vercel-cli/node_modules/.bin/vercel
+          DEPLOYMENT_ID: ${{ steps.probe.outputs.deployment }}

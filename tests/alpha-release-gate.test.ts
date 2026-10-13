@@ -1,0 +1,88 @@
+import { describe, expect, it, vi } from "vitest";
+import { checkReadiness, probe, selectCommit, REPOSITORY, PROJECT, TEAM, validateDeployment, validateRun } from "../scripts/alpha-release-gate.mjs";
+
+const sha = "a".repeat(40);
+const run = { id: 123, run_attempt: 1, repository: { full_name: REPOSITORY }, head_repository: { full_name: REPOSITORY },
+  event: "push", head_branch: "main", status: "completed", conclusion: "success", path: ".github/workflows/ci.yml", head_sha: sha };
+const event = { repository: { full_name: REPOSITORY }, workflow_run: { id: 123, run_attempt: 1 } };
+const jobs = ["verify", "postgres", "e2e", "dependency-audit"].map((name) => ({ name, status: "completed", conclusion: "success" }));
+const project = { id: PROJECT, accountId: TEAM, ssoProtection: { deploymentType: "all" } };
+const deployment = { id: "dpl_Test", url: "synthetic-stage.vercel.app", projectId: PROJECT, ownerId: TEAM,
+  target: "production", readyState: "READY", meta: { hermeneusCommitSha: sha }, regions: ["icn1"], alias: [], protectionBypass: {} };
+
+describe("synthetic Alpha release authority and readiness gate", () => {
+  it("accepts the exact current main CI with every required job", () => {
+    expect(validateRun(event, run, jobs, { sha })).toBe(sha);
+  });
+  it.each([
+    { event: "pull_request" }, { head_branch: "other" }, { conclusion: "failure" }, { status: "in_progress" },
+    { path: ".github/workflows/other.yml" }, { head_repository: { full_name: "fork/Hermeneus" } }, { run_attempt: 2 },
+  ])("rejects unauthorized or obsolete CI %j", (change) => {
+    expect(() => validateRun(event, { ...run, ...change }, jobs, { sha })).toThrow();
+  });
+  it("rejects stale main, missing, duplicate or skipped required checks", () => {
+    expect(() => validateRun(event, run, jobs, { sha: "b".repeat(40) })).toThrow();
+    expect(() => validateRun(event, run, jobs.slice(1), { sha })).toThrow();
+    expect(() => validateRun(event, run, [...jobs, jobs[0]], { sha })).toThrow();
+    expect(() => validateRun(event, run, [...jobs.slice(1), { ...jobs[0], conclusion: "skipped" }], { sha })).toThrow();
+  });
+  it.each([
+    { projectId: "other" }, { ownerId: "other" }, { target: "preview" }, { readyState: "ERROR" },
+    { meta: { hermeneusCommitSha: "b".repeat(40) } }, { regions: ["iad1"] }, { url: "evil.example" },
+    { alias: ["hermeneus-alpha-synthetic.vercel.app"] }, { protectionBypass: { preexisting: {} } },
+  ])("rejects deployment target/provenance mismatch %j", (change) => {
+    expect(() => validateDeployment({ ...deployment, ...change }, project, sha)).toThrow();
+  });
+  it("rejects a project with deployment protection disabled", () => {
+    expect(() => validateDeployment(deployment, { ...project, ssoProtection: { enabled: false } }, sha)).toThrow();
+  });
+  it.each(["ready", "503", "redirect", "cached", "public", "wrong-body", "network", "cleanup-failure"])(
+    "requires fresh readiness and cleans up its own temporary access: %s", async (mode) => {
+      const requests: { url: string; options: RequestInit }[] = [];
+      const request = vi.fn(async (url: string | URL | Request, options?: RequestInit) => {
+        requests.push({ url: String(url), options: options! });
+        if (requests.length === 1) return Response.json({ protectionBypass: { "private-fixture-bypass": {} } });
+        if (requests.length === 3) {
+          if (mode === "cleanup-failure") throw new Error("private-fixture-error");
+          return Response.json({ protectionBypass: {} });
+        }
+        if (mode === "network") throw new Error("private-fixture-error");
+        return Response.json(mode === "wrong-body" ? { status: "unavailable" } : { status: "ready" }, {
+          status: mode === "503" ? 503 : mode === "redirect" ? 302 : 200,
+          headers: { "Cache-Control": mode === "cached" ? "public, max-age=60" : mode === "public" ? "public, no-store" : "private, no-store" },
+        });
+      });
+      const result = checkReadiness(deployment, project, sha, "private-fixture-api-token", request);
+      if (mode === "ready") await expect(result).resolves.toBeUndefined();
+      else await expect(result).rejects.toThrow();
+      expect(requests).toHaveLength(3);
+      expect(JSON.parse(requests[0].options.body as string)).toEqual({ ttl: 300 });
+      expect(requests[1].url).toBe("https://synthetic-stage.vercel.app/api/ready");
+      expect(requests[1].options.redirect).toBe("manual");
+      expect(requests[1].options.headers).toEqual({ "x-vercel-protection-bypass": "private-fixture-bypass" });
+      expect(JSON.parse(requests[2].options.body as string)).toEqual({ revoke: { secret: "private-fixture-bypass", regenerate: false } });
+    },
+  );
+  it("fetches CI jobs from the exact attempt, with bounded requests and no redirects", async () => {
+    const calls: { url: string; options: RequestInit }[] = [];
+    const request = vi.fn(async (url: string | URL | Request, options?: RequestInit) => {
+      calls.push({ url: String(url), options: options! });
+      return Response.json(calls.length === 1 ? run : calls.length === 2 ? { total_count: jobs.length, jobs } : { sha });
+    });
+    expect(await selectCommit(event, "private-github-fixture", request)).toBe(sha);
+    expect(calls[1].url).toBe(`https://api.github.com/repos/${REPOSITORY}/actions/runs/123/attempts/1/jobs?per_page=100`);
+    expect(calls.every((call) => call.options.redirect === "manual" && call.options.signal instanceof AbortSignal)).toBe(true);
+  });
+  it("rejects a redirected CI request before interpreting its body", async () => {
+    const request = vi.fn(async () => new Response("private-error-fixture", { status: 302, headers: { location: "https://evil.example" } }));
+    await expect(selectCommit(event, "private-github-fixture", request)).rejects.toThrow("Alpha release gate failed");
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+  it.each(["https://evil.example", "https://private:password@synthetic-stage.vercel.app", "https://synthetic-stage.vercel.app?private=token"])(
+    "never sends Vercel credentials to malformed stage output %s", async (url) => {
+      const request = vi.fn(async () => Response.json(request.mock.calls.length === 1 ? run : request.mock.calls.length === 2 ? { total_count: jobs.length, jobs } : { sha }));
+      await expect(probe(event, "private-github-fixture", "private-vercel-fixture", url, request)).rejects.toThrow();
+      expect(request).toHaveBeenCalledTimes(3);
+    },
+  );
+});

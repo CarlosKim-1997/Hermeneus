@@ -95,6 +95,8 @@ jobs:
         run: npm run migrate
 
       - name: Auth and integration tests
+        env:
+          TEST_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: |
           npm run test:auth
           npm run test:integration
