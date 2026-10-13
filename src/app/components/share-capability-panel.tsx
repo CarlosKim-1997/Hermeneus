@@ -65,7 +65,7 @@ export function ShareCapabilityPanel({ handoffId, version, initialCapabilities }
 
   return (
     <section className="panel panel-share">
-      <h3>Share capability (development)</h3>
+      <h3>Share capability</h3>
       <p className="receiver-notice">
         Share links grant access to one Published Handoff version. Give each link only to its intended recipient and revoke it when no longer needed.
       </p>
