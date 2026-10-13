@@ -1,7 +1,7 @@
 ---
 schema: task/v1
 id: T-025
-status: IN_PROGRESS
+status: COMPLETE
 areas:
   - handoff
 depends_on:
@@ -62,23 +62,21 @@ branch restriction, token-name presence only, opt-in variable, exact hosted
 release SHA, deployment team/project/region/provenance, readiness, access cleanup
 and promotion/alias state. Observe an interrupted side effect before retrying.
 
-PR #36 HEAD `e347800db6a2ee56d7943e17a0d3a0e47776e899` passed all four
-required jobs in CI `38394388834` and was merged without protection changes.
-Integrated main `e25655178a905f95c8f8da85e5998e08af9dc0c5` passed all four
-jobs in CI `38394774004` on Node 22.23.3, including actual synthetic logical
-restore, auth 72, integration 113 and E2E 15 PASS. The main-restricted deployment
-environment and opt-in variable are prepared. Owner credential registration
-and the first hosted release remain pending; T-025 remains IN_PROGRESS.
-Details: `work/reports/t025-release-gate-integration.md`.
+Complete on 2026-10-14. PR #42 HEAD
+`e8190dde8b28b858fac59ef72b9250dde4bd7615` passed all four required jobs in
+`38422539774`; integrated main `059a3a85c06f1386ef57047de4372b9dfbfa3e8c`
+passed `38422946338`. Automatic release `38423302896` succeeded through exact
+main selection, credential validation, staging, protected readiness and owned
+access cleanup, one same-artifact promotion and primary mapping confirmation.
+Fresh external reads confirmed READY production deployment
+`dpl_G8kS2EJRYKETiP1DC1MhxceLACjb` in `icn1`, the primary domain's mapping,
+all-deployment protection and opt-in `enabled`. Local final Gate 65,
+typecheck/Governance/whitespace PASS; hosted regression gates also passed.
 
-Activation preflight later identified an authentication interop defect: the
-deployment share token is not a project-wide automation header secret. Native
-HTTPS verified the scoped share-link 307/cookie exchange and readiness 200 on
-the existing deployment, followed by owned access revocation. The Gate repair
-adds a bounded one-hop cookie exchange and negative regressions; local unit 96
-(Gate 41), typecheck, Governance and whitespace PASS. Its hosted integration is
-recorded separately in the same report. No full automatic release is claimed
-before credential registration and an actual hosted release succeeds.
+Bounded detailed evidence and ordinary failure repairs:
+`work/reports/t025-generated-alias-decision.md`. Earlier integration/restore and
+authentication preflight are in `work/reports/t025-release-gate-integration.md`
+and the T-024 report. No real-data, target PITR or live-model readiness is claimed.
 
 ## Stop Conditions
 

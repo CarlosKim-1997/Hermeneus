@@ -1,5 +1,37 @@
 # T-025 — generated alias staging boundary
 
+## Final result — automatic synthetic release verified
+
+On 2026-10-14 KST, PR #42 HEAD `e8190dde8b28b858fac59ef72b9250dde4bd7615`
+passed all four required checks in CI `38422539774` and merged as
+`059a3a85c06f1386ef57047de4372b9dfbfa3e8c`. Its exact main CI
+[38422946338](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/38422946338)
+passed every required job. Automatic release
+[38423302896](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/38423302896)
+completed SUCCESS: exact main selection, protected project/credential validation,
+staging, target and primary mapping checks, readiness 200 private/no-store with
+the exact ready body, owned temporary-access revocation, one same-artifact
+promotion POST, and final primary mapping verification. The secret value was
+never retrieved or printed.
+
+The release log identifies `dpl_G8kS2EJRYKETiP1DC1MhxceLACjb` at that SHA.
+Fresh connector inspection confirmed READY production artifact in `icn1`,
+GitHub SHA metadata, project/team and all-deployment Vercel Authentication.
+Fresh primary alias inspection independently confirmed
+`hermeneus-alpha-synthetic.vercel.app` maps to this exact deployment.
+Repository opt-in is `enabled`; main-only environment and four required CI
+checks remain in effect. T-025 is complete. This is a bounded successful release
+observation; later deployments must be checked in the external systems.
+
+Local final Gate suite 65, typecheck/Governance/whitespace PASS. Each repair PR
+and integrated main passed required CI; internal adversarial review does not
+constitute external independent assurance. The existing synthetic DB and
+disabled model provider were not mutated. Paid target/PITR, actual target
+recovery, real data, external participant/fresh-login Share/log verification and
+live semantic evaluation retain their separate gates. Unowned attachments and
+other worktrees were preserved. Earlier sections below are historical evidence
+of failures and approved repairs, not current activation blockers.
+
 ## Later full probe and promotion repair
 
 PR #41 HEAD `006fa598c2185d679a5c2b6d27a769417f4c7273` passed CI
