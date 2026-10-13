@@ -74,10 +74,24 @@ export async function checkReadiness(deployment, project, sha, token, request = 
     const keys = Object.keys(created.protectionBypass ?? {});
     requireGate(keys.length === 1);
     ownedSecret = keys[0];
-    const response = await request(`${origin}/api/ready`, {
+    const endpointUrl = `${origin}/api/ready`;
+    const shareUrl = new URL(endpointUrl);
+    shareUrl.searchParams.set("_vercel_share", ownedSecret);
+    // Deployment share links are not project-wide automation header secrets.
+    // Perform their one-hop cookie exchange, never a general redirect chain.
+    let response = await request(shareUrl, {
       redirect: "manual", signal: AbortSignal.timeout(10_000),
-      headers: { "x-vercel-protection-bypass": ownedSecret },
     });
+    if (response.status === 307) {
+      const location = response.headers.get("location");
+      requireGate(location && new URL(location, endpointUrl).href === endpointUrl);
+      const cookies = response.headers.getSetCookie().map((cookie) => cookie.split(";")[0])
+        .filter((cookie) => cookie.startsWith("_vercel_jwt="));
+      requireGate(cookies.length === 1 && /^_vercel_jwt=[A-Za-z0-9._-]+$/.test(cookies[0]));
+      response = await request(endpointUrl, {
+        redirect: "manual", signal: AbortSignal.timeout(10_000), headers: { Cookie: cookies[0] },
+      });
+    }
     const cacheControl = response.headers.get("cache-control") ?? "";
     requireGate(response.status === 200 && /\bno-store\b/i.test(cacheControl) && /\bprivate\b/i.test(cacheControl));
     const body = await response.json();

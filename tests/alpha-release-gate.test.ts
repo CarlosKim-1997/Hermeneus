@@ -57,10 +57,42 @@ describe("synthetic Alpha release authority and readiness gate", () => {
       else await expect(result).rejects.toThrow();
       expect(requests).toHaveLength(3);
       expect(JSON.parse(requests[0].options.body as string)).toEqual({ ttl: 300 });
-      expect(requests[1].url).toBe("https://synthetic-stage.vercel.app/api/ready");
+      expect(new URL(requests[1].url).origin).toBe("https://synthetic-stage.vercel.app");
+      expect(new URL(requests[1].url).pathname).toBe("/api/ready");
+      expect(new URL(requests[1].url).searchParams.get("_vercel_share")).toBe("private-fixture-bypass");
       expect(requests[1].options.redirect).toBe("manual");
-      expect(requests[1].options.headers).toEqual({ "x-vercel-protection-bypass": "private-fixture-bypass" });
+      expect(requests[1].options.headers).toBeUndefined();
       expect(JSON.parse(requests[2].options.body as string)).toEqual({ revoke: { secret: "private-fixture-bypass", regenerate: false } });
+    },
+  );
+  it.each(["ready", "foreign", "other-path", "query", "missing-cookie", "duplicate-cookie", "invalid-cookie", "second-redirect", "503"])(
+    "bounds the real share-link cookie handshake: %s", async (mode) => {
+      const calls: { url: string; options: RequestInit }[] = [];
+      const request = vi.fn(async (url: string | URL | Request, options?: RequestInit) => {
+        calls.push({ url: String(url), options: options! });
+        if (calls.length === 1) return Response.json({ protectionBypass: { "private-fixture-bypass": {} } });
+        if (String(url).includes("api.vercel.com")) return Response.json({ protectionBypass: {} });
+        if (calls.length === 2) {
+          const headers = new Headers({ location: mode === "foreign" ? "https://evil.example/api/ready" : mode === "other-path" ? "/handoffs" : mode === "query" ? "/api/ready?secret=echo" : "/api/ready" });
+          if (mode !== "missing-cookie") headers.append("Set-Cookie", mode === "invalid-cookie" ? "_vercel_jwt=bad cookie; Secure" : "_vercel_jwt=private.jwt.fixture; Secure; HttpOnly");
+          if (mode === "duplicate-cookie") headers.append("Set-Cookie", "_vercel_jwt=other.jwt.fixture; Secure");
+          return new Response(null, { status: 307, headers });
+        }
+        return Response.json({ status: "ready" }, { status: mode === "second-redirect" ? 307 : mode === "503" ? 503 : 200,
+          headers: { "Cache-Control": "private, no-store" } });
+      });
+      const result = checkReadiness(deployment, project, sha, "private-fixture-api-token", request);
+      if (mode === "ready") await expect(result).resolves.toBeUndefined();
+      else await expect(result).rejects.toThrow();
+      expect(calls.at(-1)!.url).toContain("api.vercel.com/aliases/dpl_Test/protection-bypass");
+      expect(JSON.parse(calls.at(-1)!.options.body as string)).toEqual({ revoke: { secret: "private-fixture-bypass", regenerate: false } });
+      const forwarded = calls.filter((call) => call.options.headers && "Cookie" in (call.options.headers as object));
+      expect(forwarded.length).toBe(["ready", "second-redirect", "503"].includes(mode) ? 1 : 0);
+      for (const call of forwarded) {
+        expect(call.url).toBe("https://synthetic-stage.vercel.app/api/ready");
+        expect(call.options.headers).toEqual({ Cookie: "_vercel_jwt=private.jwt.fixture" });
+        expect(call.options.redirect).toBe("manual");
+      }
     },
   );
   it("fetches CI jobs from the exact attempt, with bounded requests and no redirects", async () => {
