@@ -45,11 +45,20 @@ export async function selectCommit(event, token, request = fetch) {
   return validateRun(event, run, jobs.jobs, main);
 }
 
-export function validateDeployment(deployment, project, sha) {
+function validateProject(project) {
   requireGate(project.id === PROJECT && project.accountId === TEAM);
   // REST project protection is nullable and uses deploymentType; the MCP summary
   // also adds an enabled flag. Do not mistake that summary for the wire schema.
   requireGate(project.ssoProtection?.deploymentType === "all" && project.ssoProtection?.enabled !== false);
+}
+
+export async function checkCredential(token, request = fetch) {
+  const project = await jsonRequest("https://api.vercel.com", `/v9/projects/${PROJECT}?teamId=${TEAM}`, token, {}, request);
+  validateProject(project);
+}
+
+export function validateDeployment(deployment, project, sha) {
+  validateProject(project);
   requireGate(deployment.projectId === PROJECT && deployment.ownerId === TEAM);
   requireGate(deployment.target === "production" && deployment.readyState === "READY");
   requireGate(deployment.meta?.hermeneusCommitSha === sha);
@@ -124,6 +133,9 @@ async function main() {
   if (action === "select") {
     const sha = await selectCommit(event, process.env.GITHUB_TOKEN);
     await appendFile(process.env.GITHUB_OUTPUT, `sha=${sha}\n`);
+  } else if (action === "credential") {
+    await checkCredential(process.env.VERCEL_TOKEN);
+    console.log("Synthetic Alpha deployment credential and protected project verified");
   } else if (action === "probe") {
     const result = await probe(event, process.env.GITHUB_TOKEN, process.env.VERCEL_TOKEN,
       await readFile(process.env.STAGED_URL_FILE, "utf8"));
@@ -135,7 +147,7 @@ async function main() {
     const deployment = await jsonRequest("https://api.vercel.com", `/v13/deployments/${process.env.DEPLOYMENT_ID}?teamId=${TEAM}`, process.env.VERCEL_TOKEN);
     const project = await jsonRequest("https://api.vercel.com", `/v9/projects/${PROJECT}?teamId=${TEAM}`, process.env.VERCEL_TOKEN);
     validateDeployment(deployment, project, sha);
-    const child = spawn(process.env.VERCEL_CLI, ["promote", process.env.DEPLOYMENT_ID, "--scope", "carloslab", "--timeout", "120s"], {
+    const child = spawn(process.env.VERCEL_CLI, ["promote", process.env.DEPLOYMENT_ID, "--timeout", "120s"], {
       stdio: "ignore", timeout: 150_000,
     });
     await new Promise((resolvePromise, reject) => {

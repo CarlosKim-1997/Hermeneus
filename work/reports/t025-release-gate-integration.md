@@ -1,5 +1,30 @@
 # T-025 — integrated release Gate and activation preparation
 
+## Credential registration and first hosted attempt
+
+Owner registration was confirmed by Secret name only: `VERCEL_TOKEN` exists in
+the main-only `synthetic-alpha` environment. The repository opt-in was set to
+`enabled` under existing approval. CI `38398072455`, attempt 2, passed all four
+required jobs for main `4fe6d7d22a7cc3334b9b115fd85921c3016b209f`.
+
+Automatic release `38415441845` selected that exact commit successfully, but
+CLI 63.1.2 failed at staging with `User not found (404)` while resolving
+`--scope carloslab`. Deployment inspection confirmed no new artifact; no
+readiness access or promotion ran. CLI source confirms it reads `VERCEL_TOKEN`
+and this scope path performs a personal-user lookup. The repair removes that
+redundant lookup, retaining fixed team/project IDs, and adds an exact protected
+project API credential preflight. This is a compatibility hypothesis until the
+next hosted attempt succeeds, not evidence that the token was wrong.
+
+Local adversarial review retains fixed API origin, denied redirects, bounded
+requests, exact project/owner and all-deployment protection; no secret is printed
+or passed in CLI arguments. Six added credential cases reject wrong project,
+team, missing protection, unauthorized and redirected requests. Gate 47 PASS,
+typecheck/Governance/whitespace PASS. First sandbox test attempts failed at
+`realpath` with EPERM and did not run; the authorized native rerun passed.
+Hosted integration and the first complete release remain pending at this
+bounded observation. Earlier credential-pending sections below are historical.
+
 ## Result
 
 **Integration complete; automatic release awaits a CI credential.**
