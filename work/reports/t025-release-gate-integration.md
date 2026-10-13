@@ -1,5 +1,15 @@
 # T-025 — integrated release Gate and activation preparation
 
+## Current outcome
+
+Automatic synthetic release is enabled and verified; T-025 is COMPLETE.
+Release `38423302896` succeeded for main
+`059a3a85c06f1386ef57047de4372b9dfbfa3e8c`, with exact required main CI
+`38422946338`, readiness, owned temporary-access cleanup and same-artifact
+primary-domain promotion. Detailed current bounded observation:
+`work/reports/t025-generated-alias-decision.md`. Preparation and pending-state
+sections below retain historical provenance; they are not current blockers.
+
 ## Credential registration and first hosted attempt
 
 Owner registration was confirmed by Secret name only: `VERCEL_TOKEN` exists in
