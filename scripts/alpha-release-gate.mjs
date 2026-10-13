@@ -28,14 +28,14 @@ export function validateRun(event, run, jobs, main) {
 }
 
 // No caller-provided origin is allowed to receive API credentials.
-async function jsonRequest(origin, pathname, token, options = {}, request = fetch) {
+async function jsonRequest(origin, pathname, token, options = {}, request = fetch, parseBody = true) {
   requireGate(typeof token === "string" && token.length > 0);
   const response = await request(new URL(pathname, origin), {
     ...options, redirect: "manual", signal: AbortSignal.timeout(10_000),
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...options.headers },
   });
   requireGate(response.ok, `api-status-${response.status}`);
-  return response.json();
+  return parseBody ? response.json() : undefined;
 }
 
 export async function selectCommit(event, token, request = fetch) {
@@ -80,7 +80,7 @@ export async function promoteArtifact(deployment, project, sha, prior, token, re
   // Same production artifact; official promotion API, no rebuild/force options.
   // Exactly one POST. A timeout or unknown outcome requires operator inspection.
   await jsonRequest("https://api.vercel.com", `/v10/projects/${PROJECT}/promote/${deployment.id}?teamId=${TEAM}`, token,
-    { method: "POST", body: "{}" }, request);
+    { method: "POST", body: "{}" }, request, false);
   const deadline = Date.now() + 120_000;
   for (let attempt = 0; attempt < 24 && Date.now() < deadline; attempt++) {
     const current = await readPrimary(token, request);

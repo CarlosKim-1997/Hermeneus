@@ -2,6 +2,18 @@
 
 ## Later full probe and promotion repair
 
+PR #41 HEAD `006fa598c2185d679a5c2b6d27a769417f4c7273` passed CI
+`38421241835`; main `c742b9cd7421842ee3484f1840260fc660310bae` passed
+`38421674938`. Release `38422028034` staged READY
+`dpl_4b7JvxNtbxUY733KRVQCF9Fwaexx`, passed readiness/access cleanup and made
+the single promotion API request. The job reported an unclassified failure,
+but fresh primary-alias inspection confirmed it now points to that exact
+artifact. Thus mutation succeeded; do not repeat it blindly. The helper parsed
+the success response as JSON, while the official CLI uses `json: false` for
+this endpoint. Accept successful HTTP status without parsing this empty body,
+then verify the primary mapping as before. Add a 204 empty-response regression.
+This repair does not change target checks, mutation count or authorization.
+
 PR #40 HEAD `530d52c67273af3f47bfcfc8d50bee2f59137479` passed CI
 `38419354325`; integrated main `8d5b3a6894a74e08e73f1e31c1d284160a03cb84`
 passed all four checks in `38419860182`. Automatic release `38420209954`

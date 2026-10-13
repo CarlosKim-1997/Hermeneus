@@ -11,7 +11,7 @@ const deployment = { id: "dpl_Test", url: "synthetic-stage.vercel.app", projectI
   target: "production", readyState: "READY", meta: { hermeneusCommitSha: sha }, regions: ["icn1"], alias: [], protectionBypass: {} };
 
 describe("synthetic Alpha release authority and readiness gate", () => {
-  it.each(["ready", "queued", "drift-before", "drift-after", "redirect", "denied", "network", "timeout"])(
+  it.each(["ready", "empty", "queued", "drift-before", "drift-after", "redirect", "denied", "network", "timeout"])(
     "promotes exactly once and verifies the primary mapping: %s", async (mode) => {
       const calls: { url: string; options: RequestInit }[] = [];
       let reads = 0;
@@ -19,6 +19,7 @@ describe("synthetic Alpha release authority and readiness gate", () => {
         calls.push({ url: String(url), options: options! });
         if (options?.method === "POST") {
           if (mode === "network") throw new Error("private-provider-error");
+          if (mode === "empty") return new Response(null, { status: 204 });
           return Response.json({}, { status: mode === "redirect" ? 302 : mode === "denied" ? 403 : mode === "queued" ? 202 : 201 });
         }
         reads++;
@@ -28,7 +29,7 @@ describe("synthetic Alpha release authority and readiness gate", () => {
       });
       const wait = vi.fn(async () => {});
       const result = promoteArtifact(deployment, project, sha, "dpl_Prior", "private-fixture-api-token", request, wait);
-      if (mode === "ready" || mode === "queued") await expect(result).resolves.toBeUndefined();
+      if (["ready", "empty", "queued"].includes(mode)) await expect(result).resolves.toBeUndefined();
       else await expect(result).rejects.toThrow();
       const posts = calls.filter((call) => call.options.method === "POST");
       expect(posts).toHaveLength(mode === "drift-before" ? 0 : 1);
