@@ -6,14 +6,21 @@ test.skip(!process.env.TEST_DATABASE_URL && !process.env.DATABASE_URL, "DATABASE
 test("Bootstrap notes disappear, title stays private, and shared packet is source-free", async ({ browser }) => {
   const creator = await browser.newPage();
   const receiver = await browser.newPage();
+  await creator.setViewportSize({ width: 390, height: 844 });
   await devSignIn(creator);
   await creator.goto("/new");
+  await creator.getByLabel("Portable Proposal JSON").fill("```json\n{}\n```");
+  await creator.getByRole("button", { name: "Preview proposal" }).click();
+  const previewError = creator.locator("p.error[role='alert']");
+  await expect(previewError).toContainText("not valid JSON");
+  await expect(previewError).toBeInViewport();
   await creator.getByLabel("Portable Proposal JSON").fill(JSON.stringify({
     protocol: "hermeneus.portable-proposal/v0", title: "Private bootstrap title",
     items: [{ proposalId: "P-001", type: "OPEN", priority: "IMPORTANT", statement: "Hosting remains undecided." }],
     reviewNotes: ["Ask Sender before publishing."],
   }));
   await creator.getByRole("button", { name: "Preview proposal" }).click();
+  await expect(creator.getByRole("heading", { name: "Review before creating a Draft" })).toBeInViewport();
   await expect(creator.getByRole("listitem").filter({ hasText: "Ask Sender before publishing." })).toBeVisible();
   await expect(creator.getByRole("button", { name: "Create Draft" })).toBeDisabled();
   await creator.getByLabel(/Save “Private bootstrap title”/).check();
