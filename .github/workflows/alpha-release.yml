@@ -84,6 +84,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_CLI: ${{ runner.temp }}/hermeneus-vercel-cli/node_modules/.bin/vercel
           DEPLOYMENT_ID: ${{ steps.probe.outputs.deployment }}
           PRIOR_DEPLOYMENT_ID: ${{ steps.stage.outputs.prior }}

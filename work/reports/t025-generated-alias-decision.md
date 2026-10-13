@@ -1,5 +1,32 @@
 # T-025 — generated alias staging boundary
 
+## Later full probe and promotion repair
+
+PR #40 HEAD `530d52c67273af3f47bfcfc8d50bee2f59137479` passed CI
+`38419354325`; integrated main `8d5b3a6894a74e08e73f1e31c1d284160a03cb84`
+passed all four checks in `38419860182`. Automatic release `38420209954`
+staged `dpl_5mRMACisSnMDysgG1CTQDVFGQxSa`, and its actual hosted target,
+primary mapping, readiness and temporary-access cleanup step PASS. The CLI
+promotion step then failed with an unclassified error; its suppressed output
+does not establish the precise underlying status. Fresh reads confirmed the
+primary and restored secondary still point to the previous verified deployment.
+No interrupted routing change is assumed. The automatic opt-in was disabled
+while repairing this ordinary compatibility problem.
+
+Use the same official `/v10/projects/{projectId}/promote/{deploymentId}` API
+that CLI 63.1.2 calls for an already-production artifact. This removes the CLI's
+separate account-context discovery without widening token permissions. Keep
+fresh CI/main and target validation and check the captured primary immediately
+before a single POST with `{}`. Poll only the fixed primary's mapping; accept
+the captured prior during bounded waiting and success only at the exact target.
+Reject a third deployment, redirects, API refusal, unknown outcome or timeout.
+Do not repeat the POST or rebuild. Response bodies, API credentials and cookies
+are never printed. Eight added cases cover success/202 waiting, drift before
+and after, denial, redirect, transport failure and bounded timeout. Local Gate
+64, typecheck/Governance/whitespace PASS. Adversarial review confirms unchanged
+target/protection checks, single mutation and no force/check bypass. Hosted
+integration and complete promotion remain pending at this observation.
+
 ## Observed result
 
 The owner registered `VERCEL_TOKEN` directly in `synthetic-alpha`; only its name

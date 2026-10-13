@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { checkCredential, checkPrimary, readPrimary, checkReadiness, probe, selectCommit, REPOSITORY, PROJECT, TEAM, PRIMARY, GENERATED, validateDeployment, validateRun } from "../scripts/alpha-release-gate.mjs";
+import { promoteArtifact, checkCredential, checkPrimary, readPrimary, checkReadiness, probe, selectCommit, REPOSITORY, PROJECT, TEAM, PRIMARY, GENERATED, validateDeployment, validateRun } from "../scripts/alpha-release-gate.mjs";
 
 const sha = "a".repeat(40);
 const run = { id: 123, run_attempt: 1, repository: { full_name: REPOSITORY }, head_repository: { full_name: REPOSITORY },
@@ -11,6 +11,36 @@ const deployment = { id: "dpl_Test", url: "synthetic-stage.vercel.app", projectI
   target: "production", readyState: "READY", meta: { hermeneusCommitSha: sha }, regions: ["icn1"], alias: [], protectionBypass: {} };
 
 describe("synthetic Alpha release authority and readiness gate", () => {
+  it.each(["ready", "queued", "drift-before", "drift-after", "redirect", "denied", "network", "timeout"])(
+    "promotes exactly once and verifies the primary mapping: %s", async (mode) => {
+      const calls: { url: string; options: RequestInit }[] = [];
+      let reads = 0;
+      const request = vi.fn(async (url: string | URL | Request, options?: RequestInit) => {
+        calls.push({ url: String(url), options: options! });
+        if (options?.method === "POST") {
+          if (mode === "network") throw new Error("private-provider-error");
+          return Response.json({}, { status: mode === "redirect" ? 302 : mode === "denied" ? 403 : mode === "queued" ? 202 : 201 });
+        }
+        reads++;
+        const current = mode === "drift-before" || (mode === "drift-after" && reads > 1) ? "dpl_Other" :
+          reads === 1 || mode === "timeout" || (mode === "queued" && reads === 2) ? "dpl_Prior" : deployment.id;
+        return Response.json({ alias: PRIMARY, projectId: PROJECT, deploymentId: current });
+      });
+      const wait = vi.fn(async () => {});
+      const result = promoteArtifact(deployment, project, sha, "dpl_Prior", "private-fixture-api-token", request, wait);
+      if (mode === "ready" || mode === "queued") await expect(result).resolves.toBeUndefined();
+      else await expect(result).rejects.toThrow();
+      const posts = calls.filter((call) => call.options.method === "POST");
+      expect(posts).toHaveLength(mode === "drift-before" ? 0 : 1);
+      for (const call of posts) {
+        expect(call.url).toBe(`https://api.vercel.com/v10/projects/${PROJECT}/promote/${deployment.id}?teamId=${TEAM}`);
+        expect(call.options.body).toBe("{}");
+        expect(call.options.redirect).toBe("manual");
+      }
+      expect(calls.every((call) => new URL(call.url).origin === "https://api.vercel.com")).toBe(true);
+      expect(wait.mock.calls.length).toBeLessThanOrEqual(23);
+    },
+  );
   it("allows only the exact owner-approved generated alias", () => {
     expect(validateDeployment({ ...deployment, alias: [GENERATED] }, project, sha)).toBe(`https://${deployment.url}`);
     for (const alias of [[PRIMARY], [GENERATED, PRIMARY], [GENERATED, GENERATED], ["other.vercel.app"]]) {

@@ -1,7 +1,6 @@
 import { readFile, appendFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import { spawn } from "node:child_process";
 
 export const REPOSITORY = "CarlosKim-1997/Hermeneus";
 export const TEAM = "team_ll3FPTKyAnl8VYk0CqJ90tHV";
@@ -72,6 +71,24 @@ export async function readPrimary(token, request = fetch) {
 export async function checkPrimary(token, expected, request = fetch) {
   requireGate(/^dpl_[a-zA-Z0-9]+$/.test(expected));
   requireGate(await readPrimary(token, request) === expected, "primary-mapping");
+}
+
+export async function promoteArtifact(deployment, project, sha, prior, token, request = fetch,
+  wait = (ms) => new Promise((done) => setTimeout(done, ms))) {
+  validateDeployment(deployment, project, sha);
+  await checkPrimary(token, prior, request);
+  // Same production artifact; official promotion API, no rebuild/force options.
+  // Exactly one POST. A timeout or unknown outcome requires operator inspection.
+  await jsonRequest("https://api.vercel.com", `/v10/projects/${PROJECT}/promote/${deployment.id}?teamId=${TEAM}`, token,
+    { method: "POST", body: "{}" }, request);
+  const deadline = Date.now() + 120_000;
+  for (let attempt = 0; attempt < 24 && Date.now() < deadline; attempt++) {
+    const current = await readPrimary(token, request);
+    if (current === deployment.id) return;
+    requireGate(current === prior, "promotion-mapping-drift");
+    if (attempt < 23) await wait(5_000);
+  }
+  throw new GateFailure("promotion-timeout");
 }
 
 export function validateDeployment(deployment, project, sha) {
@@ -169,16 +186,7 @@ async function main() {
     requireGate(sha === process.env.RELEASE_SHA && /^dpl_[a-zA-Z0-9]+$/.test(process.env.DEPLOYMENT_ID));
     const deployment = await jsonRequest("https://api.vercel.com", `/v13/deployments/${process.env.DEPLOYMENT_ID}?teamId=${TEAM}`, process.env.VERCEL_TOKEN);
     const project = await jsonRequest("https://api.vercel.com", `/v9/projects/${PROJECT}?teamId=${TEAM}`, process.env.VERCEL_TOKEN);
-    validateDeployment(deployment, project, sha);
-    await checkPrimary(process.env.VERCEL_TOKEN, process.env.PRIOR_DEPLOYMENT_ID);
-    const child = spawn(process.env.VERCEL_CLI, ["promote", process.env.DEPLOYMENT_ID, "--timeout", "120s"], {
-      stdio: "ignore", timeout: 150_000,
-    });
-    await new Promise((resolvePromise, reject) => {
-      child.on("error", reject);
-      child.on("exit", (code) => code === 0 ? resolvePromise() : reject(new Error("Promotion failed")));
-    });
-    await checkPrimary(process.env.VERCEL_TOKEN, process.env.DEPLOYMENT_ID);
+    await promoteArtifact(deployment, project, sha, process.env.PRIOR_DEPLOYMENT_ID, process.env.VERCEL_TOKEN);
     console.log(`Promoted synthetic Alpha ${process.env.DEPLOYMENT_ID} at ${sha}`);
   } else throw new Error("Unknown release action");
 }
