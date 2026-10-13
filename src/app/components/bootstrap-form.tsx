@@ -1,9 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { bootstrapHandoffAction } from "../../application/actions.js";
-import { parsePortableProposal, type PortableProposal } from "../../portable/proposal.js";
+import { parsePortableProposal, PortableProposalError, type PortableProposal } from "../../portable/proposal.js";
+
+function previewErrorMessage(error: unknown): string {
+  if (error instanceof PortableProposalError) {
+    if (error.code === "JSON_INVALID") {
+      return "The proposal is not valid JSON. Copy only the text inside the code block, without its markers.";
+    }
+    if (error.code === "LIMIT_EXCEEDED") return "The proposal exceeds the size limit.";
+    if (error.code === "DUPLICATE_KEY" || error.code === "DUPLICATE_PROPOSAL_ID") {
+      return "The proposal repeats a field or proposal ID.";
+    }
+    if (error.code === "PROTOCOL_UNSUPPORTED") return "The proposal protocol is unsupported.";
+    return "A proposal field or value is invalid. Check each item's ID, type, priority, and statement.";
+  }
+  return "This browser could not prepare the preview. Reload the page and try again.";
+}
 
 export function BootstrapForm() {
   const router = useRouter();
@@ -14,19 +29,29 @@ export function BootstrapForm() {
   const [requestKey, setRequestKey] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [previewAttempt, setPreviewAttempt] = useState(0);
+  const feedbackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (previewAttempt === 0) return;
+    feedbackRef.current?.focus({ preventScroll: true });
+    feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [previewAttempt]);
 
   function preview() {
     try {
       const parsed = parsePortableProposal(raw);
+      const nextRequestKey = crypto.randomUUID();
       setProposal(parsed);
-      setRequestKey(crypto.randomUUID());
+      setRequestKey(nextRequestKey);
       setAcknowledged(false);
       setSaveTitle(false);
       setError("");
-    } catch {
+    } catch (cause) {
       setProposal(null);
-      setError("Proposal format is invalid. Check the protocol, fields, IDs, and size limits.");
+      setError(previewErrorMessage(cause));
     }
+    setPreviewAttempt((attempt) => attempt + 1);
   }
 
   async function create() {
@@ -64,28 +89,30 @@ export function BootstrapForm() {
         placeholder={'{"protocol":"hermeneus.portable-proposal/v0","items":[...]}' }
       />
       <div className="actions"><button type="button" onClick={preview}>Preview proposal</button></div>
-      {proposal ? (
-        <section aria-label="Proposal preview">
-          <h3>Review before creating a Draft</h3>
-          <p>These are untrusted suggestions. Edit the Draft before publication.</p>
-          <ol>{proposal.items.map((item) => <li key={item.proposalId}><strong>{item.type}</strong> ({item.priority}): {item.statement}</li>)}</ol>
-          {proposal.title ? (
+      <div ref={feedbackRef} tabIndex={-1} aria-live="polite">
+        {proposal ? (
+          <section aria-label="Proposal preview">
+            <h3>Review before creating a Draft</h3>
+            <p>These are untrusted suggestions. Edit the Draft before publication.</p>
+            <ol>{proposal.items.map((item) => <li key={item.proposalId}><strong>{item.type}</strong> ({item.priority}): {item.statement}</li>)}</ol>
+            {proposal.title ? (
+              <label>
+                <input type="checkbox" checked={saveTitle} onChange={(event) => setSaveTitle(event.target.checked)} />
+                Save “{proposal.title}” as private navigation metadata. It will not be published or shared.
+              </label>
+            ) : null}
+            <h4>Review notes</h4>
+            {proposal.reviewNotes?.length ? <ul>{proposal.reviewNotes.map((note, index) => <li key={index}>{note}</li>)}</ul> : <p>No review notes.</p>}
+            <p>Review notes disappear after this step. If one belongs in the Canon, add it manually to the Draft after creation.</p>
             <label>
-              <input type="checkbox" checked={saveTitle} onChange={(event) => setSaveTitle(event.target.checked)} />
-              Save “{proposal.title}” as private navigation metadata. It will not be published or shared.
+              <input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} />
+              I have reviewed the notes and understand they will not be saved.
             </label>
-          ) : null}
-          <h4>Review notes</h4>
-          {proposal.reviewNotes?.length ? <ul>{proposal.reviewNotes.map((note, index) => <li key={index}>{note}</li>)}</ul> : <p>No review notes.</p>}
-          <p>Review notes disappear after this step. If one belongs in the Canon, add it manually to the Draft after creation.</p>
-          <label>
-            <input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} />
-            I have reviewed the notes and understand they will not be saved.
-          </label>
-          <div className="actions"><button className="primary" type="button" disabled={!acknowledged || pending} onClick={create}>{pending ? "Creating..." : "Create Draft"}</button></div>
-        </section>
-      ) : null}
-      {error ? <p className="error" role="alert">{error}</p> : null}
+            <div className="actions"><button className="primary" type="button" disabled={!acknowledged || pending} onClick={create}>{pending ? "Creating..." : "Create Draft"}</button></div>
+          </section>
+        ) : null}
+        {error ? <p className="error" role="alert">{error}</p> : null}
+      </div>
     </div>
   );
 }
