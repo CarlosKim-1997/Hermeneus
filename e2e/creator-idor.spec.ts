@@ -46,13 +46,13 @@ test.describe("Creator ownership IDOR", () => {
     await receiver.goto(sharePath!);
     await expect(receiver.getByRole("heading", { name: "Shared Receiver" })).toBeVisible();
     await receiver.getByLabel("Your question").fill("Are we web first?");
-    await receiver.getByRole("button", { name: "Ask" }).click();
+    await receiver.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(receiver.locator(".answerability-label", { hasText: "SUPPORTED" })).toBeVisible();
 
     await creatorA.getByRole("button", { name: "Revoke" }).first().click();
     await expect(creatorA.getByRole("listitem").filter({ hasText: /revoked/i })).toBeVisible();
     await receiver.getByLabel("Your question").fill("Again?");
-    await receiver.getByRole("button", { name: "Ask" }).click();
+    await receiver.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(receiver.getByText("This share link is unavailable.")).toBeVisible();
 
     await creatorA.getByRole("button", { name: "Sign out" }).click();
