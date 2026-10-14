@@ -1,5 +1,6 @@
 import { ImportForm } from "../../components/import-form";
 import { BootstrapForm } from "../../components/bootstrap-form";
+import { SenderPromptGuide } from "../../components/sender-prompt-guide";
 import { requireCreatorSessionPage } from "../../../application/creator-page-guards";
 
 export default async function NewImportPage() {
@@ -15,7 +16,7 @@ export default async function NewImportPage() {
       <section className="panel creation-proposal">
         <p className="eyebrow">From your AI</p>
         <h2>New Handoff from Portable Proposal</h2>
-        <p>Paste the Sender proposal JSON, review its items and transient notes, then create a Draft.</p>
+        <SenderPromptGuide />
         <BootstrapForm />
       </section>
       <section className="panel creation-import">

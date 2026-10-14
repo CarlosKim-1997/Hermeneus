@@ -9,6 +9,18 @@ test("Bootstrap notes disappear, title stays private, and shared packet is sourc
   await creator.setViewportSize({ width: 390, height: 844 });
   await devSignIn(creator);
   await creator.goto("/new");
+  await expect(creator.getByRole("heading", { name: "Start in your AI conversation" })).toBeVisible();
+  await creator.getByRole("button", { name: "View prompt", exact: true }).click();
+  const senderPrompt = creator.getByLabel("Sender prompt", { exact: true });
+  await expect(senderPrompt).toBeVisible();
+  await expect(senderPrompt).toHaveAttribute("readonly", "");
+  expect(await senderPrompt.inputValue()).toContain("hermeneus.portable-proposal/v0");
+  await creator.getByRole("button", { name: "Copy Sender prompt", exact: true }).click();
+  // Both native clipboard success and the manual-copy fallback must be actionable.
+  await expect(creator.getByRole("status")).toContainText(/Sender prompt copied|Select the prompt below/);
+  await expect(senderPrompt).toBeVisible();
+  await creator.getByRole("button", { name: "Hide prompt", exact: true }).click();
+  await expect(senderPrompt).toBeHidden();
   await creator.getByLabel("Portable Proposal JSON").fill("```json\n{}\n```");
   await creator.getByRole("button", { name: "Preview proposal" }).click();
   const previewError = creator.locator("p.error[role='alert']");
