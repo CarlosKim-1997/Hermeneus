@@ -64,7 +64,7 @@ test.describe("Share capability flow", () => {
     await expect(creator.getByRole("listitem").filter({ hasText: /revoked/i })).toBeVisible();
 
     await receiver.getByLabel("Your question").fill("Another question?");
-    await receiver.getByRole("button", { name: "Ask" }).click();
+    await receiver.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(receiver.getByText("This share link is unavailable.")).toBeVisible();
 
     await creator.close();
