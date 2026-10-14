@@ -52,6 +52,15 @@ test("Bootstrap notes disappear, title stays private, and shared packet is sourc
   expect(linkText).toBeTruthy();
   await receiver.goto(linkText!.includes("http") ? new URL(linkText!).pathname + new URL(linkText!).hash : linkText!);
   await expect(receiver.getByRole("navigation", { name: "Receiver routes" })).toBeVisible();
+  const receiverUrl = receiver.url();
+  const routes = receiver.getByRole("navigation", { name: "Receiver routes" });
+  await routes.getByRole("button", { name: "Ask on this site", exact: true }).click();
+  await expect(receiver.getByRole("heading", { name: "Ask on this site", exact: true })).toBeInViewport();
+  await expect(receiver).toHaveURL(receiverUrl);
+  await routes.getByRole("button", { name: "Use my AI", exact: true }).click();
+  await expect(receiver.getByRole("heading", { name: "Use my AI", exact: true })).toBeInViewport();
+  await expect(receiver).toHaveURL(receiverUrl);
+  await expect(receiver.getByText("This share link is unavailable.", { exact: true })).toHaveCount(0);
   await expect(receiver.getByRole("heading", { name: "Use my AI", exact: true })).toBeVisible();
   await expect(receiver.getByRole("heading", { name: "Ask on this site", exact: true })).toBeVisible();
   const availability = receiver.locator("#verification-availability");

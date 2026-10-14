@@ -63,6 +63,8 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
   const [copyMessage, setCopyMessage] = useState("");
   const [copyPending, setCopyPending] = useState(false);
   const copyGeneration = useRef(0);
+  const myAiPathRef = useRef<HTMLElement>(null);
+  const onsiteQuestionsRef = useRef<HTMLElement>(null);
   useEffect(() => () => { copyGeneration.current += 1; }, []);
 
   async function verifyPastedAnswer() {
@@ -205,16 +207,16 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
 
       <nav className="receiver-route-choice" aria-label="Receiver routes">
         <div>
-          <a href="#use-my-ai">Use my AI</a>
+          <button type="button" onClick={() => myAiPathRef.current?.scrollIntoView({ block: "start" })}>Use my AI</button>
           <p>Copy the approved content into your own AI, then return with its answer.</p>
         </div>
         <div>
-          <a href="#ask-here">Ask on this site</a>
+          <button type="button" onClick={() => onsiteQuestionsRef.current?.scrollIntoView({ block: "start" })}>Ask on this site</button>
           <p>Ask about the approved Handoff here, without copying a packet into your AI.</p>
         </div>
       </nav>
 
-      <section id="use-my-ai" className="receiver-ai-path" aria-labelledby="my-ai-heading">
+      <section id="use-my-ai" ref={myAiPathRef} className="receiver-ai-path" aria-labelledby="my-ai-heading">
         <header>
           <p className="eyebrow">Your AI / Transfer and return</p>
           <h2 id="my-ai-heading">Use my AI</h2>
@@ -266,7 +268,7 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
       </section>
       </section>
 
-      <section id="ask-here" className="panel panel-receiver-qa" aria-labelledby="ask-here-heading">
+      <section id="ask-here" ref={onsiteQuestionsRef} className="panel panel-receiver-qa" aria-labelledby="ask-here-heading">
         <p className="eyebrow">On this site / Questions</p>
         <h2 id="ask-here-heading">Ask on this site</h2>
         <p>Ask about the approved Handoff directly here. This is separate from checking an answer written by your own AI.</p>
