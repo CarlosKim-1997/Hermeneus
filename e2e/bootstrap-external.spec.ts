@@ -51,6 +51,13 @@ test("Bootstrap notes disappear, title stays private, and shared packet is sourc
   const linkText = await creator.locator("code").filter({ hasText: "/share#hsh_" }).first().textContent();
   expect(linkText).toBeTruthy();
   await receiver.goto(linkText!.includes("http") ? new URL(linkText!).pathname + new URL(linkText!).hash : linkText!);
+  await expect(receiver.getByRole("navigation", { name: "Receiver routes" })).toBeVisible();
+  await expect(receiver.getByRole("heading", { name: "Use my AI", exact: true })).toBeVisible();
+  await expect(receiver.getByRole("heading", { name: "Ask on this site", exact: true })).toBeVisible();
+  const availability = receiver.locator("#verification-availability");
+  await expect(availability).toContainText("Semantic verification is currently off.");
+  await expect(receiver.getByLabel("AI answer")).toHaveAttribute("aria-describedby", "verification-availability");
+  expect(await availability.evaluate((notice) => Boolean(notice.compareDocumentPosition(document.getElementById("external-question")!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
   await receiver.getByLabel(/I understand the external disclosure/).check();
   await receiver.getByRole("button", { name: "Prepare Receiver Packet" }).click();
   const packetText = await receiver.getByLabel("Packet text").inputValue();

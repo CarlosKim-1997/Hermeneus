@@ -184,10 +184,7 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
   return (
     <div className="receiver-layout">
       <p className="receiver-notice">
-        Shared Receiver view · pinned version {version}.{" "}
-        {semanticModeEnabled
-          ? "Questions use the same canonical interpretation pipeline as the internal Receiver."
-          : "Interpretation is deterministic in this environment."}
+        Shared Receiver view · pinned version {version}. Read the approved content below, then choose how to explore it.
       </p>
       <p className="receiver-pin">This link always resolves to version {version} and does not follow newer publications.</p>
 
@@ -206,8 +203,26 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
         ))}
       </section>
 
+      <nav className="receiver-route-choice" aria-label="Receiver routes">
+        <div>
+          <a href="#use-my-ai">Use my AI</a>
+          <p>Copy the approved content into your own AI, then return with its answer.</p>
+        </div>
+        <div>
+          <a href="#ask-here">Ask on this site</a>
+          <p>Ask about the approved Handoff here, without copying a packet into your AI.</p>
+        </div>
+      </nav>
+
+      <section id="use-my-ai" className="receiver-ai-path" aria-labelledby="my-ai-heading">
+        <header>
+          <p className="eyebrow">Your AI / Transfer and return</p>
+          <h2 id="my-ai-heading">Use my AI</h2>
+          <p>Prepare a packet, discuss it in your AI, then bring the answer back for a separate check.</p>
+        </header>
       <section className="panel panel-transfer">
-        <h3>Use with my AI</h3>
+        <p className="eyebrow">My AI · Step 1</p>
+        <h3>Prepare a Receiver Packet</h3>
         <p>Published items may contain sensitive information. Copying sends them to a third-party AI under that service&apos;s terms. Revoking this link cannot erase a copy already made elsewhere.</p>
         <label><input type="checkbox" checked={externalDisclosure} onChange={(event) => { copyGeneration.current += 1; setExternalDisclosure(event.target.checked); setPacket(null); setExternalVerificationConsent(false); setCopyMessage(""); }} /> I understand the external disclosure.</label>
         <div className="actions"><button type="button" disabled={!externalDisclosure || packetPending} onClick={preparePacket}>{packetPending ? "Preparing..." : "Prepare Receiver Packet"}</button></div>
@@ -224,27 +239,38 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
       </section>
 
       <section className="panel panel-verification">
+        <p className="eyebrow">My AI · Step 2 · Return here</p>
         <h3>Verify an AI answer</h3>
-        <p>Hermeneus checks the submitted answer against this Published Canon version. It does not check the original conversation or prove that a person understood it.</p>
+        {!externalVerifierEnabled ? (
+          <div className="receiver-notice" id="verification-availability">
+            <strong>Semantic verification is currently off.</strong>
+            <p>Submitting an answer will return INDETERMINATE. Hermeneus cannot assess whether it agrees with the Published Canon in this environment.</p>
+          </div>
+        ) : null}
+        <p>When semantic verification is enabled, Hermeneus checks the submitted answer against this Published Canon version. It does not check the original conversation or prove that a person understood it.</p>
         <p>Paste an answer only if you agree to disclose its contents to Hermeneus. The answer may include personal information from your AI session.</p>
         <label htmlFor="external-question">Question (optional)</label>
         <textarea id="external-question" value={externalQuestion} onChange={(event) => { setExternalQuestion(event.target.value); setExternalVerificationConsent(false); setVerdict(null); }} />
         <label htmlFor="external-answer">AI answer</label>
-        <textarea id="external-answer" value={externalAnswer} onChange={(event) => { setExternalAnswer(event.target.value); setExternalVerificationConsent(false); setVerdict(null); }} />
+        <textarea id="external-answer" aria-describedby={!externalVerifierEnabled ? "verification-availability" : undefined} value={externalAnswer} onChange={(event) => { setExternalAnswer(event.target.value); setExternalVerificationConsent(false); setVerdict(null); }} />
         {externalVerifierEnabled ? <label>
           <input type="checkbox" checked={externalVerificationConsent} onChange={(event) => setExternalVerificationConsent(event.target.checked)} />
           For this check, I agree to send the pinned Published Canon items, my question, and this answer to OpenAI for verification. OpenAI's default API abuse-monitoring logs may contain this content for up to 30 days, with limited exceptions. Hermeneus does not persist this answer or my consent choice.
-        </label> : <p>External semantic verification is not configured; the result will be indeterminate.</p>}
+        </label> : null}
         <button type="button" disabled={!packet || !externalAnswer.trim() || verificationPending || (externalVerifierEnabled && !externalVerificationConsent)} onClick={verifyPastedAnswer}>{verificationPending ? "Checking..." : "Check answer"}</button>
-        {!packet ? <p className="field-help">Prepare a Receiver Packet in “Use with my AI” first.</p>
+        {!packet ? <p className="field-help">Prepare a Receiver Packet in “Use my AI” first.</p>
           : !externalAnswer.trim() ? <p className="field-help">Paste an AI answer to enable this check.</p>
           : externalVerifierEnabled && !externalVerificationConsent ? <p className="field-help">Confirm the per-check consent above to enable verification.</p> : null}
         {error && errorContext === "verification" ? <p className="form-error" role="alert">{error}</p> : null}
         {verdict ? <div className="verification-result" role="status"><strong>{verdict.verdict}</strong><p>{verdict.issues.join(" ")}</p><p>{verdict.limitations.join(" ")}</p></div> : null}
       </section>
+      </section>
 
-      <section className="panel panel-receiver-qa">
-        <h3>Ask about this Handoff</h3>
+      <section id="ask-here" className="panel panel-receiver-qa" aria-labelledby="ask-here-heading">
+        <p className="eyebrow">On this site / Questions</p>
+        <h2 id="ask-here-heading">Ask on this site</h2>
+        <p>Ask about the approved Handoff directly here. This is separate from checking an answer written by your own AI.</p>
+        <p className="field-help">{semanticModeEnabled ? "Questions use this site's configured interpretation pipeline." : "Questions use deterministic interpretation in this environment."}</p>
         <form onSubmit={onAsk}>
           <label htmlFor="shared-receiver-question">Your question</label>
           <textarea

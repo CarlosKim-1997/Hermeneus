@@ -104,6 +104,11 @@ code { font-family: Consolas, "SFMono-Regular", monospace; font-size: 0.85em; ov
 .panel-share li { padding: 0.65rem 0; overflow-wrap: anywhere; font-size: 0.875rem; }
 .panel-share code { user-select: all; }
 .receiver-layout { gap: 1.25rem; }
+.receiver-ai-path { display: grid; gap: 1rem; scroll-margin-top: 1rem; }
+.receiver-route-choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 1rem; }
+.receiver-route-choice a { font-weight: 600; }
+.receiver-route-choice p { margin: .5rem 0 0; }
+#ask-here { scroll-margin-top: 1rem; }
 .receiver-layout > .receiver-notice, .receiver-layout > .receiver-pin { margin: 0; }
 .receiver-pin { color: #36596b; font-size: 0.8125rem; }
 .panel-receiver { border-left: 3px solid var(--teal); }
