@@ -56,7 +56,7 @@ test.describe("Share capability flow", () => {
     await expect(receiver.locator('a[href*="/receiver/"]')).toHaveCount(0);
 
     await receiver.getByLabel("Your question").fill("Are we web first?");
-    await receiver.getByRole("button", { name: "Ask" }).click();
+    await receiver.getByRole("button", { name: "Ask", exact: true }).click();
     await expect(receiver.locator(".answerability-label", { hasText: "SUPPORTED" })).toBeVisible();
 
     const revokeButton = creator.getByRole("button", { name: "Revoke" }).first();
