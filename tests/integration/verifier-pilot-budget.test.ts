@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPool } from "../../src/persistence/postgres/pool.js";
 import { PilotBudgetExhaustedError, reserveVerifierPilotBudget } from "../../src/receiver/external/pilot-budget.js";
 
@@ -18,6 +18,18 @@ if (!url) {
     });
     beforeEach(async () => { await pool.query("TRUNCATE verifier_pilot_budget"); });
     afterAll(async () => { await pool.end(); });
+    afterEach(() => vi.unstubAllEnvs());
+
+    it("allows only five smoke reservations under concurrency and retains their allowance", async () => {
+      vi.stubEnv("HERMENEUS_VERIFIER_SMOKE_MONTH", "2026-10");
+      vi.stubEnv("HERMENEUS_VERIFIER_SMOKE_LIMIT_CENTS", "25");
+      const results = await Promise.allSettled(Array.from({ length: 8 }, () =>
+        reserveVerifierPilotBudget(pool, new Date("2026-10-15T00:00:00Z"))));
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(5);
+      expect(results.filter((result) => result.status === "rejected")).toHaveLength(3);
+      const rows = await pool.query("SELECT period_kind, reserved_cents FROM verifier_pilot_budget ORDER BY period_kind");
+      expect(rows.rows).toEqual([{ period_kind: "day", reserved_cents: 25 }, { period_kind: "month", reserved_cents: 25 }]);
+    });
 
     it("atomically stops concurrent calls at the day ceiling", async () => {
       await pool.query("INSERT INTO verifier_pilot_budget VALUES ('day', '2026-10-11', 495)");
