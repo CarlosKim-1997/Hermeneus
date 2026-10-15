@@ -28,7 +28,7 @@ export function toExtractionFacingError(error: unknown): ExtractionFacingError {
 function creatorMessageForCode(error: ExtractionError): string {
   switch (error.code) {
     case "MODEL_NOT_CONFIGURED":
-      return "AI extraction is not configured on this server. Set OPENAI_API_KEY and OPENAI_MODEL, or continue manually.";
+      return "AI suggestions are unavailable. Continue editing manually or import a proposal from your own AI.";
     case "MODEL_REFUSAL":
       return "The AI provider declined to extract from this conversation. Continue manually.";
     case "PROVENANCE_INVALID":

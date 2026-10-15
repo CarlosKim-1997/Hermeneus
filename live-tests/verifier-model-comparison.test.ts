@@ -9,7 +9,7 @@ import { aggregateVerdict } from "../src/receiver/external/verifier.js";
 // execution environment. Do not pull a Vercel Secret or print provider errors.
 describe.skipIf(process.env.RUN_VERIFIER_COMPARISON !== "1")("T-026 live synthetic comparison", () => {
   it("compares identical fixtures in at most 20 generation calls", async () => {
-    if (!process.env.OPENAI_VERIFIER_API_KEY?.trim()) throw new Error("Dedicated verifier key missing.");
+    if (!process.env.OPENAI_API_KEY?.trim()) throw new Error("Dedicated verifier key missing.");
     if (process.env.VERIFIER_PROJECT_SPEND_CAP_CONFIRMED !== "1") throw new Error("Confirm dedicated project spend cap first.");
     const directory = "work/.verifier-comparison";
     const ledger = `${directory}/t026.json`;
@@ -29,7 +29,7 @@ describe.skipIf(process.env.RUN_VERIFIER_COMPARISON !== "1")("T-026 live synthet
         const row: typeof state.rows[number] = { fixture: fixture.id, model, expected: fixture.expected, critical: fixture.critical, status: "prepared" };
         state.rows.push(row);
         const started = performance.now();
-        const verifier = createOpenAiExternalVerifier(process.env.OPENAI_VERIFIER_API_KEY.trim(), {
+        const verifier = createOpenAiExternalVerifier(process.env.OPENAI_API_KEY.trim(), {
           model,
           reserve: async () => {
             if (state.reservedCents + 5 > 100 || state.rows.length > 20) throw new Error("Campaign limit reached.");
