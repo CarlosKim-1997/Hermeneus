@@ -15,11 +15,24 @@ export class PilotBudgetExhaustedError extends Error {
 export async function reserveVerifierPilotBudget(pool: pg.Pool, now = new Date()): Promise<void> {
   const date = now.toISOString().slice(0, 10);
   const month = `${date.slice(0, 7)}-01`;
+  const smokeMonth = process.env.HERMENEUS_VERIFIER_SMOKE_MONTH;
+  const smokeLimit = process.env.HERMENEUS_VERIFIER_SMOKE_LIMIT_CENTS;
+  let monthlyLimit = PILOT_MONTHLY_LIMIT_CENTS;
+  if (smokeMonth !== undefined || smokeLimit !== undefined) {
+    // Both values are server-only. A smoke campaign cannot reset in another month,
+    // or silently widen its allowance when configuration is partial or malformed.
+    if (smokeMonth !== date.slice(0, 7) || !/^[1-9]\d*$/.test(smokeLimit ?? "")) {
+      throw new PilotBudgetExhaustedError();
+    }
+    monthlyLimit = Number(smokeLimit);
+    if (!Number.isSafeInteger(monthlyLimit) || monthlyLimit < PILOT_RESERVATION_CENTS ||
+        monthlyLimit > PILOT_MONTHLY_LIMIT_CENTS) throw new PilotBudgetExhaustedError();
+  }
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     for (const [kind, start, limit] of [
-      ["month", month, PILOT_MONTHLY_LIMIT_CENTS],
+      ["month", month, monthlyLimit],
       ["day", date, PILOT_DAILY_LIMIT_CENTS],
     ] as const) {
       const result = await client.query(

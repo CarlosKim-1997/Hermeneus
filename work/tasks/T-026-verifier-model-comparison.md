@@ -1,7 +1,7 @@
 ---
 schema: task/v1
 id: T-026
-status: IN_PROGRESS
+status: COMPLETE
 areas:
   - handoff
 depends_on:
@@ -59,6 +59,15 @@ Local typecheck, production build and Governance checks passed during
 preparation. The live command without opt-in was skipped with no provider call;
 this is not live evaluation evidence. Usage/cost/run-gate negative tests cover
 the new execution boundary. Exact hosted CI follows the integration PR.
+
+Completed on 2026-10-15 at `4d341b90a8c9da0f3857b9fbb2efcdf82ec1b8ab`.
+Main CI `38666670825` passed all four required jobs; first-attempt comparison
+`38671965919` completed all 20 calls. Sol matched 10/10 expected verdicts and
+Luna 6/10; neither falsely aligned a critical case. Only Sol met the
+predeclared provisional pilot criteria. Combined conservative usage-derived
+cost estimate $0.09224325 (not an invoice); the campaign is exhausted.
+Evidence and remaining limitations: `work/reports/t026-verifier-comparison.md`.
+The service verifier remains off; activation/model choice is a next boundary.
 
 ## Stop Conditions
 
