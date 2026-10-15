@@ -1,0 +1,56 @@
+name: Synthetic verifier comparison T-026
+
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful current-main CI run ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: hermeneus-verifier-comparison-t026
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    if: github.repository == 'CarlosKim-1997/Hermeneus' && github.ref == 'refs/heads/main'
+    environment: synthetic-alpha
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+      - name: Check trusted main and single-use campaign
+        run: node scripts/verifier-comparison-gate.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Install without model credentials
+        run: npm ci
+      - name: Recheck immediately before bounded paid evaluation
+        run: node scripts/verifier-comparison-gate.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Compare only frozen synthetic fixtures
+        run: npm run test:verifier-comparison
+        env:
+          RUN_VERIFIER_COMPARISON: '1'
+          VERIFIER_PROJECT_SPEND_CAP_CONFIRMED: '1'
+          OPENAI_VERIFIER_API_KEY: ${{ secrets.OPENAI_VERIFIER_API_KEY }}
+      - name: Save sanitized usage and verdict ledger
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: t026-comparison-ledger
+          path: work/.verifier-comparison/t026.json
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 7

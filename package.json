@@ -14,6 +14,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:application": "vitest run --config vitest.application.config.ts",
     "test:receiver": "vitest run --config vitest.receiver.config.ts",
+    "test:verifier-comparison": "vitest run --config vitest.verifier-comparison.config.ts",
     "test:receiver-semantic": "vitest run --config vitest.receiver-semantic.config.ts",
     "test:live-receiver": "vitest run --config vitest.live-receiver.config.ts",
     "test:live-receiver-eval": "vitest run --config vitest.live-receiver-eval.config.ts",
