@@ -44,7 +44,7 @@ jobs:
         env:
           RUN_VERIFIER_COMPARISON: '1'
           VERIFIER_PROJECT_SPEND_CAP_CONFIRMED: '1'
-          OPENAI_VERIFIER_API_KEY: ${{ secrets.OPENAI_VERIFIER_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Save sanitized usage and verdict ledger
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

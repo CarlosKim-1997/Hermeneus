@@ -3,7 +3,7 @@ import { createOpenAiHandoffExtractor } from "../src/extraction/model-backed-ext
 import { validateExtractionProposal } from "../src/extraction/validation.js";
 import type { NormalizedConversation } from "../src/import/types.js";
 
-const apiKey = process.env.OPENAI_API_KEY?.trim();
+const apiKey = process.env.OPENAI_EXTRACTION_API_KEY?.trim();
 const model = process.env.OPENAI_MODEL?.trim();
 
 const fixtureConversation: NormalizedConversation = {
@@ -33,7 +33,7 @@ const fixtureConversation: NormalizedConversation = {
 
 if (!apiKey || !model) {
   describe.skip("live OpenAI extraction smoke", () => {
-    it("requires OPENAI_API_KEY and OPENAI_MODEL", () => undefined);
+    it("requires OPENAI_EXTRACTION_API_KEY and OPENAI_MODEL", () => undefined);
   });
 } else {
   describe("live OpenAI extraction smoke", () => {

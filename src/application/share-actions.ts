@@ -117,7 +117,7 @@ export async function verifyExternalAnswerAction(input: { token: string; submiss
     return { ok: false as const, error: "Confirm external processing for this verification request." };
   }
   const verifier = configured
-    ? createOpenAiExternalVerifier(process.env.OPENAI_VERIFIER_API_KEY!.trim(), { reserve: () => reserveVerifierPilotBudget(getPool()) })
+    ? createOpenAiExternalVerifier(process.env.OPENAI_API_KEY!.trim(), { reserve: () => reserveVerifierPilotBudget(getPool()) })
     : undefined;
   const outcome = await verifyExternalAnswer(getRepositories(), input.token, input.submission, verifier);
   if (outcome.kind === "unavailable") return { ok: false as const, error: SHARE_UNAVAILABLE_MESSAGE };

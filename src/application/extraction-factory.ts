@@ -25,7 +25,7 @@ export function getHandoffExtractor(): HandoffExtractor {
 
   throw new ExtractionError(
     "MODEL_NOT_CONFIGURED",
-    "Live extraction is not configured. Set OPENAI_API_KEY and OPENAI_MODEL, or use the manual workflow.",
+    "Live extraction is not configured. Set OPENAI_EXTRACTION_API_KEY and OPENAI_MODEL, or use the manual workflow.",
   );
 }
 

@@ -8,8 +8,16 @@ model. Keep the deployed verifier off until prerequisites and evaluation pass.
 
 Use the same dedicated OpenAI project, with owner-confirmed monthly $25 enforced
 limit, in Vercel Production and GitHub's main-only `synthetic-alpha` environment.
-The owner registers `OPENAI_VERIFIER_API_KEY` directly in each secret UI. Do not
+The owner registers `OPENAI_API_KEY` directly in each secret UI. Do not
 retrieve a Vercel Secret for transfer. No key is passed in CLI arguments or logs.
+
+`OPENAI_API_KEY` belongs to verification only. Registering it does not enable
+legacy source extraction or server-generated Receiver answers: those adapters
+require the separately configured `OPENAI_EXTRACTION_API_KEY` and `OPENAI_MODEL`.
+Leave that legacy credential unset for the personal-AI workflow. The verifier
+also still requires `HERMENEUS_EXTERNAL_VERIFIER=openai`; key registration is
+not activation. A Vercel secret is not available to the GitHub evaluation runner;
+the existing GitHub environment needs its own direct secret registration.
 
 After the exact PR and integrated main pass all four required CI jobs, manually
 dispatch `verifier-comparison.yml` on main, supplying that main CI run ID.

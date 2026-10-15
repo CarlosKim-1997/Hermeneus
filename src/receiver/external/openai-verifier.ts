@@ -29,7 +29,7 @@ type ResponsesClient = {
 };
 
 export function isOpenAiExternalVerifierConfigured(): boolean {
-  return process.env.HERMENEUS_EXTERNAL_VERIFIER === "openai" && Boolean(process.env.OPENAI_VERIFIER_API_KEY?.trim());
+  return process.env.HERMENEUS_EXTERNAL_VERIFIER === "openai" && Boolean(process.env.OPENAI_API_KEY?.trim());
 }
 
 export function createOpenAiExternalVerifier(apiKey: string, options: {

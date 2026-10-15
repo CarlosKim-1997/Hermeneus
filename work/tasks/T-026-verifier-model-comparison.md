@@ -34,6 +34,11 @@ monthly $25/daily $5 direction is retained. Credentials are entered directly by
 the owner in protected mechanisms, never read into chat or reports. Production
 model selection is not inferred from fixture success or a new policy ratified.
 
+The owner subsequently clarified that Sender proposal creation uses the
+Sender's personal AI and requested that the already registered `OPENAI_API_KEY`
+serve only the verifier. Align runtime and evaluation configuration with that
+name, isolating legacy server-generation credentials without activating them.
+
 ## Constraints
 
 Installed Governance, active Canon and C-012 govern. No source transcript,
