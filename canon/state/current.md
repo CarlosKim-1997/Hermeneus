@@ -24,7 +24,7 @@ its exact resulting mapping. Use only the primary domain for service access.
 Target backup/PITR
 provisioning and an actual target restore rehearsal remain outstanding.
 
-Complete authorized participant access, Share fragment survival through fresh Vercel authentication, and request-path log inspection in Seoul Supabase Free project `dzaibwrrylxlrxbgnyaw` and Vercel Hobby project `prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8`. The database has migrations 001–011, Data API disabled, and app-table/function client grants revoked. Vercel Authentication covers all deployments; unauthenticated requests to the default and deployment-specific Share URLs redirect to Vercel SSO. The external verifier remains off. The separate Supabase Pro/Small target with seven-day PITR selected for real-data use remains unprovisioned.
+Complete authorized participant access, Share fragment survival through fresh Vercel authentication, and request-path log inspection in Seoul Supabase Free project `dzaibwrrylxlrxbgnyaw` and Vercel Hobby project `prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8`. The database has migrations 001–011, Data API disabled, and app-table/function client grants revoked. Vercel Authentication covers all deployments; unauthenticated requests to the default and deployment-specific Share URLs redirect to Vercel SSO. The owner-approved Sol external verifier is enabled for synthetic Alpha under a reduced 25-cent reservation ceiling pinned to UTC October 2026. The actual-screen/provider smoke remains pending because this agent session has no available browser; no additional provider calls or target reservations were observed at activation. The separate Supabase Pro/Small target with seven-day PITR selected for real-data use remains unprovisioned.
 
 ## Blockers
 
@@ -32,7 +32,7 @@ Before real data use, provision and verify the separate Pro/Small/PITR target, i
 
 ## Material Risks
 
-- The live semantic verifier and its cost/consent controls have not been evaluated against an external model in the target environment. Deterministic checks cannot establish semantic quality by themselves.
+- A bounded hosted-provider comparison matched expected verdicts on 10/10 synthetic cases for Sol and 6/10 for Luna, with no critical false ALIGNED in either sample. This small comparison does not establish field reliability. The activated service browser/consent/budget/provider flow remains unverified; its pinned-month 25-cent smoke ceiling must not be removed to bypass the approved five-call allowance.
 - External participant access, Share fragment survival through a fresh Vercel authentication redirect, and absence of Share bearers in infrastructure request logs remain unverified. Current runtime log queries returned no records; they do not prove absence of a token leak.
 - Legal retention/hold and team ownership transfer are outside current product scope.
 - The approved generated secondary alias can serve a candidate before readiness;
@@ -43,6 +43,12 @@ Before real data use, provision and verify the separate Pro/Small/PITR target, i
   a real recovery target must remain isolated pending lifecycle reconciliation.
 
 ## Verification Basis
+
+Bounded live comparison evidence is in `work/reports/t026-verifier-comparison.md`.
+Sol activation, current protected-release identity, reduced budget configuration
+and remaining browser-dependent checks are in
+`work/reports/t027-sol-alpha-activation.md`. These observations do not establish
+completed live UI verification or real-data readiness.
 
 The observed full automatic release
 [38423302896](https://github.com/CarlosKim-1997/Hermeneus/actions/runs/38423302896)
