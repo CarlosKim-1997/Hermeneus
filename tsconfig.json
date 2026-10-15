@@ -30,6 +30,8 @@
     "playwright.config.ts",
     "src",
     "tests",
+    "live-tests",
+    "vitest.verifier-comparison.config.ts",
     "vitest.application.config.ts",
     "vitest.config.ts",
     "vitest.integration.config.ts",

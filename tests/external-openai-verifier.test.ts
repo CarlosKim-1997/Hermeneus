@@ -33,6 +33,7 @@ describe("external OpenAI verifier pilot boundary", () => {
     const request = parse.mock.calls[0]![0];
     expect(request.model).toBe(PILOT_VERIFIER_MODEL);
     expect(request.store).toBe(false);
+    expect(request.service_tier).toBe("default");
     expect(request.max_output_tokens).toBe(PILOT_MAX_OUTPUT_TOKENS);
     const serialized = JSON.stringify(request);
     expect(serialized).toContain("Web first");
@@ -50,5 +51,39 @@ describe("external OpenAI verifier pilot boundary", () => {
       .rejects.toThrow(/size limit/);
     expect(reserve).not.toHaveBeenCalled();
     expect(parse).not.toHaveBeenCalled();
+  });
+
+  it("allows the comparison model and observes usage without exposing answer content", async () => {
+    const observeUsage = vi.fn();
+    const parse = vi.fn(async () => ({ output_parsed: analysis, model: "gpt-6-luna", service_tier: "default",
+      usage: { input_tokens: 1000, output_tokens: 100, input_tokens_details: { cached_tokens: 0 } } } as ParsedResponse<unknown>));
+    const verifier = createOpenAiExternalVerifier("test-key", { reserve: async () => {}, model: "gpt-6-luna", observeUsage, client: { responses: { parse } } });
+    await verifier.analyze({ packet, submission });
+    expect(observeUsage).toHaveBeenCalledWith({ inputTokens: 1000, outputTokens: 100, cachedTokens: 0, model: "gpt-6-luna", serviceTier: "default" });
+  });
+
+  it("rejects unapproved models before creating a request", () => {
+    expect(() => createOpenAiExternalVerifier("test-key", { reserve: async () => {}, model: "other" as never })).toThrow("Unsupported verifier model");
+  });
+
+  it("includes schema overhead in the cost guard before reservation or provider access", async () => {
+    const reserve = vi.fn(async () => {});
+    const parse = vi.fn();
+    const verifier = createOpenAiExternalVerifier("test-key", { reserve, client: { responses: { parse } } });
+    await expect(verifier.analyze({ packet, submission: { ...submission, answerText: "x".repeat(8000) } }))
+      .rejects.toThrow("cost bound");
+    expect(reserve).not.toHaveBeenCalled();
+    expect(parse).not.toHaveBeenCalled();
+  });
+
+  it("stops usage collection when billing data is missing or invalid", async () => {
+    for (const usage of [undefined, { input_tokens: -1, output_tokens: 100 }]) {
+      const observeUsage = vi.fn();
+      const parse = vi.fn(async () => ({ output_parsed: analysis, usage } as ParsedResponse<unknown>));
+      const verifier = createOpenAiExternalVerifier("test-key", { reserve: async () => {}, observeUsage, client: { responses: { parse } } });
+      await expect(verifier.analyze({ packet, submission })).rejects.toThrow("usage is unavailable");
+      expect(parse).toHaveBeenCalledTimes(1);
+      expect(observeUsage).not.toHaveBeenCalled();
+    }
   });
 });
