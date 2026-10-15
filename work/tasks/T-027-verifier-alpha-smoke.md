@@ -57,6 +57,14 @@ Verify scoped budget parsing/expiry before DB/provider, atomic concurrency cap,
 consent rejection before DB/provider, exact CI and release SHA, readiness,
 effective settings and target budget delta. Record the actual observed scope.
 
+Activation preparation and protected deployment completed at main
+`6193e601e457d4634e4405d0c34af53c2f82c306` (CI `38682801606`, release
+`38682997295`). Primary alias, READY/icn1, mode=openai, pinned-month 25-cent
+ceiling and zero temporary bypass entries observed. Target budget remained
+empty after release; no additional paid calls. Browser-dependent verification
+is still pending, so this task is not COMPLETE. Detailed evidence and safe
+resumption: `work/reports/t027-sol-alpha-activation.md`.
+
 ## Stop Conditions
 
 Missing authority, real data, wrong target, uncertain external side effect,
