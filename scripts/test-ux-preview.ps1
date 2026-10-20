@@ -8,7 +8,7 @@ $uxImage='mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03
 $uxContainer=$null
 function Invoke-UxDocker { & docker @args; if($LASTEXITCODE -ne 0){throw 'UX Docker command failed'} }
 $uxFiles=@('package.json','package-lock.json','playwright.ux.config.ts','scripts/start-ux-preview.mjs','scripts/prepare-ux-test-container.mjs',
-'src/app/globals.css','src/app/theme.css','src/app/reference-ui.css','src/app/error.tsx','src/app/loading.tsx','src/app/not-found.tsx',
+'src/app/components/ui-dates.ts','src/app/globals.css','src/app/theme.css','src/app/reference-ui.css','src/app/error.tsx','src/app/loading.tsx','src/app/not-found.tsx',
 'src/handoff/schema.ts','src/portable/proposal.ts','src/portable/sender-prompt.ts','src/portable/receiver-packet.ts','src/portable/jcs.ts','src/receiver/external/verifier.ts')
 $uxFiles+=@(Get-ChildItem -LiteralPath (Join-Path $uxRepo 'src/app/components') -Filter '*.tsx' | ForEach-Object { 'src/app/components/'+$_.Name })
 $uxFiles+=@(Get-ChildItem -LiteralPath (Join-Path $uxRepo 'scripts/ux-preview') -File | ForEach-Object { 'scripts/ux-preview/'+$_.Name })

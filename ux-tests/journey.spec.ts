@@ -85,3 +85,27 @@ for(const width of [390,820,1280])test(`all screens at ${width}px have readable 
   expect(errors).toEqual([]);
   await page.goto('/new');await page.screenshot({path:`test-results/ux/new-${width}.png`,fullPage:true});await page.goto('/shared');await page.screenshot({path:`test-results/ux/shared-${width}.png`,fullPage:true});await page.goto('/library');await page.screenshot({path:`test-results/ux/library-${width}.png`,fullPage:true});
 });
+
+test("UTC metadata hydrates without errors in a Korean browser across the date boundary",async({browser,baseURL})=>{
+  const context=await browser.newContext({baseURL,locale:"ko-KR",timezoneId:"Asia/Seoul"});
+  const page=await context.newPage(),errors:string[]=[];
+  page.on("pageerror",error=>errors.push(error.message));
+  page.on("console",message=>{if(message.type()==="error")errors.push(message.text());});
+  try{
+    for(const route of ["/published?state=with-links","/shared","/receiver","/review?state=erased","/library"]){
+      await page.goto(route);
+      await expect(page.locator("html")).toHaveAttribute("data-preview-hydrated","true");
+      expect(errors,route).toEqual([]);
+      if(route.startsWith("/published")){
+        await expect(page.locator(".panel-share")).toContainText("2026-10-19 23:30:05 UTC");
+        await expect(page.locator(".panel-share")).toContainText("2026-10-20 01:02:03 UTC");
+      }
+      if(route==="/shared"||route==="/receiver"||route.startsWith("/published")){
+        await expect(page.locator(".canon-document")).toContainText("2026-10-20 00:00:00 UTC");
+      }
+      if(route.startsWith("/review"))await expect(page.locator(".panel-source")).toContainText("2026-10-19 23:30:05 UTC");
+      if(route==="/library")await expect(page.locator("time").first()).toHaveText("2026-10-19");
+      expect(errors,route).toEqual([]);
+    }
+  }finally{await context.close();}
+});

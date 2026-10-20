@@ -1,3 +1,4 @@
+import { formatDateTimeUtc } from "../../../../../components/ui-dates";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchPublishedHandoff } from "../../../../../../application/actions";
@@ -28,7 +29,7 @@ export default async function PublishedPage({
       <h2>이제 맥락을 건네세요.</h2>
       <p className="page-lead">전달 내용이 확정되었습니다. 이 버전의 링크를 만들어 원하는 상대에게 보내세요.</p>
       <p className="version-line">
-        버전 <strong>{published.version}</strong> · 확정 {new Date(published.publishedAt).toLocaleString("ko-KR")}
+        버전 <strong>{published.version}</strong> · 확정 {formatDateTimeUtc(published.publishedAt)}
       </p>
       </header><HandoffSteps current={3} />
       <p className="page-links">

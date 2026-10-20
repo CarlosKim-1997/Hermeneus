@@ -1,3 +1,4 @@
+import { formatDateTimeUtc } from "./ui-dates";
 import type { HandoffItemType, HandoffPriority } from "../../handoff/schema";
 import { ItemMeaning, ITEM_LABELS } from "./handoff-presentation";
 
@@ -16,7 +17,7 @@ export function PublishedDocument({ items, version, publishedAt, heading = "보�
     <header className="document-heading">
       <div className="document-stamp"><span>확정 전달본</span><span>버전 {version} · {items.length}개 항목</span></div>
       <h2 id="canon-document-title">{heading}</h2>
-      <p className="field-help">확정 {new Date(publishedAt).toLocaleString("ko-KR", { timeZone: "UTC" })} UTC · 보낸 사람이 확정한 전달 내용입니다.</p>
+      <p className="field-help">확정 {formatDateTimeUtc(publishedAt)} · 보낸 사람이 확정한 전달 내용입니다.</p>
     </header>
     <div className="document-layout">
       <nav className="document-outline" aria-label="전달본 목차">

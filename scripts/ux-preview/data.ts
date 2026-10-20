@@ -6,6 +6,6 @@ export const items = [
 ];
 export const publishedAt="2026-10-20T00:00:00.000Z";
 export const handoffs=[
-  {handoffId,displayTitle:"웹 화면 초안 요청",draftRevision:2,draftUpdatedAt:publishedAt,createdAt:publishedAt,latestPublishedVersion:1,latestPublishedAt:publishedAt},
+  {handoffId,displayTitle:"웹 화면 초안 요청",draftRevision:2,draftUpdatedAt:"2026-10-19T23:30:05.000Z",createdAt:publishedAt,latestPublishedVersion:1,latestPublishedAt:publishedAt},
   {handoffId:"hd_ux_draft",displayTitle:"동료 검토 전에 정리할 배경",draftRevision:1,draftUpdatedAt:publishedAt,createdAt:publishedAt},
 ];
