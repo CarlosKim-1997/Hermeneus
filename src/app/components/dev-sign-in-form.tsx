@@ -26,11 +26,11 @@ export function DevSignInForm({ showSecondary = false }: Props) {
   return (
     <div>
       <button type="button" onClick={() => onSignIn("primary")} disabled={pending !== null}>
-        {pending === "primary" ? "Signing in…" : "Sign in as development Creator"}
+        {pending === "primary" ? "로그인 중…" : "테스트 계정으로 시작"}
       </button>
       {showSecondary ? (
         <button type="button" onClick={() => onSignIn("secondary")} disabled={pending !== null} style={{ marginLeft: "0.5rem" }}>
-          {pending === "secondary" ? "Signing in…" : "Sign in as development Creator B"}
+          {pending === "secondary" ? "로그인 중…" : "테스트 계정 B로 시작"}
         </button>
       ) : null}
       {error ? <p className="form-error">{error}</p> : null}

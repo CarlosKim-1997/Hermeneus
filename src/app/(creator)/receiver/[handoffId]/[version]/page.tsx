@@ -20,10 +20,11 @@ export default async function ReceiverPage({
   return (
     <section className="receiver-page">
       <header className="page-heading">
-      <p className="eyebrow">Receive / Explore</p>
-      <h2>Receiver</h2>
+      <p className="eyebrow">내 계정으로 읽기</p>
+      <h2>확정한 맥락을 다시 살펴보세요.</h2>
+      <p className="page-lead">내 계정으로 확인하는 전달본입니다. 상대에게는 확정 전달본 화면에서 만든 공유 링크를 보내세요.</p>
       <p className="record-id">
-        Handoff <code>{handoffId}</code> · explicit version {version}
+        관리 번호 <code>{handoffId}</code> · 버전 {version}
       </p>
       </header>
       <ReceiverConsole

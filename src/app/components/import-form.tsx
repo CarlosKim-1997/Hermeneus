@@ -8,7 +8,7 @@ function ImportSubmitButton() {
   const { pending } = useFormStatus();
   return (
     <button className="primary" type="submit" disabled={pending}>
-      {pending ? "Importing..." : "Import"}
+      {pending ? "가져오는 중…" : "원문 가져오기"}
     </button>
   );
 }
@@ -18,7 +18,7 @@ export function ImportForm() {
 
   return (
     <form action={formAction}>
-      <label htmlFor="transcript">Conversation transcript</label>
+      <label htmlFor="transcript">대화 원문</label>
       <textarea
         id="transcript"
         name="transcript"

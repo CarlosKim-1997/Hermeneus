@@ -22,27 +22,27 @@ test.describe("Creator Handoff Library", () => {
     expect(handoffA).toBeTruthy();
 
     await creatorA.goto("/handoffs");
-    await expect(creatorA.getByRole("heading", { name: "Your Handoffs" })).toBeVisible();
-    await expect(creatorA.getByText(handoffA!)).toBeVisible();
-    await creatorA.getByRole("link", { name: "Review draft" }).first().click();
-    await expect(creatorA.getByRole("heading", { name: "Creator Review" })).toBeVisible();
+    await expect(creatorA.getByRole("heading", { name: "내 전달함" })).toBeVisible();
+    await expect(creatorA.getByRole("heading", { name: handoffA!, exact: true })).toBeVisible();
+    await creatorA.getByRole("link", { name: "초안 이어서 검토" }).first().click();
+    await expect(creatorA.getByRole("heading", { name: "내 뜻대로 전달될지 확인하세요." })).toBeVisible();
 
     await creatorA.goto(`/handoffs/${handoffA}/review`);
-    await creatorA.getByRole("button", { name: "Add item" }).click();
-    await creatorA.getByLabel("Statement").first().fill("Library smoke published.");
-    await creatorA.getByLabel("Type").first().selectOption("CONFIRMED");
-    await creatorA.getByLabel("Source message").first().selectOption({ index: 1 });
-    await creatorA.getByLabel("Excerpt (optional, must match source exactly)").first().fill("Handoff library smoke A");
-    await creatorA.getByRole("button", { name: "Save draft" }).click();
-    await expect(creatorA.getByText(/Saved draft revision/)).toBeVisible();
-    await creatorA.getByRole("button", { name: "Approve & Publish" }).click();
-    await expect(creatorA.getByRole("heading", { name: "Published Handoff" })).toBeVisible();
+    await creatorA.getByRole("button", { name: "항목 추가", exact: true }).click();
+    await creatorA.getByLabel("전달할 내용").first().fill("Library smoke published.");
+    await creatorA.getByLabel("내용 분류").first().selectOption("CONFIRMED");
+    await creatorA.getByLabel("근거가 되는 메시지").first().selectOption({ index: 1 });
+    await creatorA.getByLabel("원문 인용 · 선택 사항, 원문과 정확히 일치해야 합니다").first().fill("Handoff library smoke A");
+    await creatorA.getByRole("button", { name: "초안 저장" }).click();
+    await expect(creatorA.getByText(/초안 수정 \d+을 저장했습니다/)).toBeVisible();
+    await creatorA.getByRole("button", { name: "전달본으로 확정" }).click();
+    await expect(creatorA.getByRole("heading", { name: "이제 맥락을 건네세요." })).toBeVisible({ timeout: 30_000 });
 
     await creatorA.goto("/handoffs");
     const rowA = creatorA.locator(".handoff-library-item").filter({ hasText: handoffA! });
-    await expect(rowA.getByText("Version 1", { exact: true })).toBeVisible();
-    await rowA.getByRole("link", { name: "View published" }).click();
-    await expect(creatorA.getByRole("heading", { name: "Published Handoff" })).toBeVisible();
+    await expect(rowA.getByText("버전 1", { exact: true })).toBeVisible();
+    await rowA.getByRole("link", { name: "확정 전달본 보기" }).click();
+    await expect(creatorA.getByRole("heading", { name: "이제 맥락을 건네세요." })).toBeVisible();
 
     await devSignIn(creatorB, "secondary");
     await creatorB.goto("/new");

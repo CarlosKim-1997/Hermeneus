@@ -14,16 +14,16 @@ test.describe("Creator flow", () => {
     await page.goto("/new");
     await importTranscript(page, transcript);
 
-    await page.getByRole("button", { name: "Add item" }).click();
-    await page.getByLabel("Statement").first().fill("Web-first is confirmed.");
-    await page.getByLabel("Type").first().selectOption("CONFIRMED");
-    await page.getByLabel("Source message").first().selectOption({ index: 1 });
-    await page.getByLabel("Excerpt (optional, must match source exactly)").first().fill("web-first is the right call");
+    await page.getByRole("button", { name: "항목 추가", exact: true }).click();
+    await page.getByLabel("전달할 내용").first().fill("Web-first is confirmed.");
+    await page.getByLabel("내용 분류").first().selectOption("CONFIRMED");
+    await page.getByLabel("근거가 되는 메시지").first().selectOption({ index: 1 });
+    await page.getByLabel("원문 인용 · 선택 사항, 원문과 정확히 일치해야 합니다").first().fill("web-first is the right call");
 
-    await page.getByRole("button", { name: "Save draft" }).click();
-    await expect(page.getByText(/Saved draft revision/)).toBeVisible();
-    await page.getByRole("button", { name: "Approve & Publish" }).click();
-    await expect(page.getByRole("heading", { name: "Published Handoff" })).toBeVisible();
-    await expect(page.getByText(/Version/)).toBeVisible();
+    await page.getByRole("button", { name: "초안 저장" }).click();
+    await expect(page.getByText(/초안 수정 \d+을 저장했습니다/)).toBeVisible();
+    await page.getByRole("button", { name: "전달본으로 확정" }).click();
+    await expect(page.getByRole("heading", { name: "이제 맥락을 건네세요." })).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator(".version-line")).toContainText("버전");
   });
 });

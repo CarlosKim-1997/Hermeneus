@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import type { HandoffItem, HandoffItemType, HandoffPriority } from "../../handoff/schema.js";
 import type { NormalizedConversation } from "../../import/types.js";
+import { ITEM_LABELS, PRIORITY_LABELS } from "./handoff-presentation";
 import {
   generateExtractionSuggestionsAction,
   publishHandoffAction,
@@ -90,7 +91,7 @@ export function ReviewEditor({
       }
       setSuggestions(result.suggestions);
       setExtractionMessage(
-        `Received ${result.suggestions.length} AI suggestion(s). They are not saved until you accept them into the draft.`,
+        `AI 제안 ${result.suggestions.length}개를 받았습니다. 초안에 추가하고 저장하기 전에는 보관되지 않습니다.`,
       );
     });
   }
@@ -107,7 +108,7 @@ export function ReviewEditor({
   function acceptAllSuggestions() {
     setItems((current) => [...current, ...suggestions]);
     setSuggestions([]);
-    setExtractionMessage("All AI suggestions were added to the draft editor. Save draft to persist.");
+    setExtractionMessage("제안을 편집 중인 초안에 추가했습니다. 초안을 저장해야 보관됩니다.");
   }
 
   function addItem() {
@@ -140,7 +141,7 @@ export function ReviewEditor({
       }
       setRevision(result.revision);
       setSavedItems(JSON.stringify(items));
-      setSaveMessage(`Saved draft revision ${result.revision}.`);
+      setSaveMessage(`초안 수정 ${result.revision}을 저장했습니다.`);
     });
   }
 
@@ -165,22 +166,21 @@ export function ReviewEditor({
   }
 
   return (
-    <div className="grid-two review-layout">
-      <section className="panel panel-source" aria-labelledby="source-heading">
-        <h2 id="source-heading">Source Conversation</h2>
+    <div className={`grid-two review-layout ${sourceRetained ? "review-with-source" : "review-without-source"}`}>
+      <details className="panel panel-source" open={sourceRetained}>
+        <summary id="source-heading">검토에 쓰인 자료</summary>
         {sourceErased ? (
           <>
             <p className="notice">
-              <strong>Source erased / provenance unavailable.</strong>
-              {erasedAt ? ` Erased ${new Date(erasedAt).toLocaleString()}.` : null} Canonical Draft items remain editable
-              without source references.
+              <strong>원문 삭제됨 · 원문 근거 확인 불가</strong>
+              {erasedAt ? ` 삭제일 ${new Date(erasedAt).toLocaleString('ko-KR')}.` : null} 원문 연결 없이 전달 초안을 계속 편집할 수 있습니다.
             </p>
           </>
         ) : reviewKind === "not_collected" ? (
-          <p className="notice"><strong>Original source not collected.</strong> This Draft came from a portable AI proposal. Its statements require your review; no original transcript or source citations are available.</p>
+          <p className="notice"><strong>대화 원문을 수집하지 않았습니다.</strong> 내 AI에서 가져온 제안으로 만든 초안입니다. 원래 대화와 원문 인용은 없으므로 내용을 직접 확인하세요.</p>
         ) : (
           <>
-            <p>Provenance only. This is not the published Handoff.</p>
+            <p>검토를 위한 원문입니다. 상대에게 전달되는 내용은 직접 확정한 전달본입니다.</p>
             {sourceConversation?.messages.map((message) => (
               <article key={message.id} className="message">
                 <div className="message-role">{message.role}</div>
@@ -189,25 +189,24 @@ export function ReviewEditor({
             ))}
           </>
         )}
-      </section>
+      </details>
 
       <section className="panel panel-draft" aria-labelledby="draft-heading">
-        <h2 id="draft-heading">Handoff Draft</h2>
+        <h2 id="draft-heading">상대에게 전할 내용</h2>
         {sourceRetained ? (
           <div className="extraction-panel">
-            <h3>AI suggestions (optional)</h3>
+            <h3>대화에서 AI 제안 받기 · 선택 사항</h3>
             <p className="notice">
-              Generate AI suggestions sends the imported conversation to the configured external model provider.
-              Suggestions are proposals only — not saved and not published until you accept them, edit the draft, save,
-              and explicitly approve publication.
+              이 기능은 가져온 대화 원문을 설정된 외부 AI 제공자에게 보냅니다. 제안을 초안에 추가하고,
+              내용을 검토·저장·확정하기 전에는 상대에게 전달되지 않습니다.
             </p>
             <div className="actions">
               <button type="button" onClick={generateSuggestions} disabled={pending}>
-                Generate AI suggestions
+                원문으로 AI 제안 받기
               </button>
               {suggestions.length ? (
                 <button type="button" onClick={acceptAllSuggestions} disabled={pending}>
-                  Add all suggestions to draft
+                  모든 제안을 초안에 추가
                 </button>
               ) : null}
             </div>
@@ -219,20 +218,20 @@ export function ReviewEditor({
             ) : null}
             {suggestions.map((suggestion) => (
               <div key={suggestion.id} className="item-card suggestion-card">
-                <p className="suggestion-label">AI suggestion — not saved</p>
+                <p className="suggestion-label">AI 제안 · 아직 저장 전</p>
                 <p>
-                  <strong>{suggestion.type}</strong> — {suggestion.statement}
+                  <strong>{ITEM_LABELS[suggestion.type]}</strong> — {suggestion.statement}
                 </p>
                 <p style={{ color: "#64748b", fontSize: "0.9rem" }}>
-                  Provenance:{" "}
+                  원문 근거:{" "}
                   {suggestion.sources.map((source) => `${source.messageId} (“${source.excerpt ?? ""}”)`).join("; ")}
                 </p>
                 <div className="actions">
                   <button type="button" onClick={() => acceptSuggestion(suggestion)}>
-                    Add to draft
+                    초안에 추가
                   </button>
                   <button type="button" className="danger" onClick={() => dismissSuggestion(suggestion.id)}>
-                    Dismiss
+                    제안 제외
                   </button>
                 </div>
               </div>
@@ -240,19 +239,19 @@ export function ReviewEditor({
           </div>
         ) : (
           <p className="notice">{sourceErased
-            ? "AI extraction is unavailable because source provenance was erased."
-            : "AI extraction is unavailable because the original source was not collected."}</p>
+            ? "원문 근거가 삭제되어 원문에서 AI 제안을 만들 수 없습니다."
+            : "대화 원문을 수집하지 않은 경로입니다. 내 AI의 제안을 직접 검토하세요."}</p>
         )}
         <p>
-          Draft revision: <strong>{revision}</strong>
+          초안 수정: <strong>{revision}</strong>
         </p>
         <p className={`draft-save-state ${hasUnsavedChanges ? "draft-save-state-dirty" : ""}`} role="status">
-          {hasUnsavedChanges ? "Unsaved changes — save the draft or approve publication to save these edits." : "Showing the saved draft."}
+          {hasUnsavedChanges ? "저장하지 않은 변경이 있습니다. 초안을 저장하거나 전달본으로 확정하세요." : "저장된 초안을 보고 있습니다."}
         </p>
-        {items.length === 0 ? <div className="editor-empty"><h3>No claims yet</h3><p>Add an item to begin shaping this Draft.</p><button type="button" onClick={addItem}>Add first item</button></div> : null}
+        {items.length === 0 ? <div className="editor-empty"><h3>전할 내용을 하나씩 담아보세요</h3><p>부탁할 일이나 배경부터 한 항목씩 추가할 수 있습니다.</p><button type="button" onClick={addItem}>첫 항목 추가</button></div> : null}
         {conflict ? (
           <p className="error" role="alert">
-            Draft conflict detected. Reload this page before continuing so you do not overwrite a newer draft.
+            다른 곳에서 초안이 변경되었습니다. 현재 입력을 따로 보관하고 새로고침해 최신 초안을 확인하세요.
           </p>
         ) : null}
         {saveMessage ? <p role="status">{saveMessage}</p> : null}
@@ -260,14 +259,14 @@ export function ReviewEditor({
 
         {items.map((item, index) => (
           <div key={item.id} className="item-card draft-item">
-            <p className="eyebrow">Item {index + 1}</p>
-            <label htmlFor={`statement-${item.id}`}>Statement</label>
+            <p className="eyebrow">항목 {index + 1}</p>
+            <label htmlFor={`statement-${item.id}`}>전달할 내용</label>
             <textarea
               id={`statement-${item.id}`}
               value={item.statement}
               onChange={(event) => updateItem(index, { statement: event.target.value })}
             />
-            <label htmlFor={`type-${item.id}`}>Type</label>
+            <label htmlFor={`type-${item.id}`}>내용 분류</label>
             <select
               id={`type-${item.id}`}
               value={item.type}
@@ -275,11 +274,11 @@ export function ReviewEditor({
             >
               {TYPES.map((type) => (
                 <option key={type} value={type}>
-                  {type}
+                  {ITEM_LABELS[type]}
                 </option>
               ))}
             </select>
-            <label htmlFor={`priority-${item.id}`}>Priority</label>
+            <label htmlFor={`priority-${item.id}`}>중요도</label>
             <select
               id={`priority-${item.id}`}
               value={item.priority}
@@ -287,17 +286,17 @@ export function ReviewEditor({
             >
               {PRIORITIES.map((priority) => (
                 <option key={priority} value={priority}>
-                  {priority}
+                  {PRIORITY_LABELS[priority]}
                 </option>
               ))}
             </select>
 
             {sourceRetained ? (
             <fieldset style={{ marginTop: "0.75rem", border: "1px solid #e5e7eb", borderRadius: 6, padding: "0.75rem" }}>
-              <legend>Provenance</legend>
+              <legend>원문 근거</legend>
               {(item.sources.length ? item.sources : [{ messageId: "", excerpt: "" }]).map((source, sourceIndex) => (
                 <div key={`${item.id}-${sourceIndex}`} style={{ marginBottom: "0.75rem" }}>
-                  <label htmlFor={`message-${item.id}-${sourceIndex}`}>Source message</label>
+                  <label htmlFor={`message-${item.id}-${sourceIndex}`}>근거가 되는 메시지</label>
                   <select
                     id={`message-${item.id}-${sourceIndex}`}
                     value={source.messageId}
@@ -307,14 +306,14 @@ export function ReviewEditor({
                       updateItem(index, { sources: nextSources.filter((entry) => entry.messageId) });
                     }}
                   >
-                    <option value="">Select message</option>
+                    <option value="">메시지 선택</option>
                     {messageOptions.map((option) => (
                       <option key={option.id} value={option.id}>
                         {option.label}
                       </option>
                     ))}
                   </select>
-                  <label htmlFor={`excerpt-${item.id}-${sourceIndex}`}>Excerpt (optional, must match source exactly)</label>
+                  <label htmlFor={`excerpt-${item.id}-${sourceIndex}`}>원문 인용 · 선택 사항, 원문과 정확히 일치해야 합니다</label>
                   <input
                     id={`excerpt-${item.id}-${sourceIndex}`}
                     value={source.excerpt ?? ""}
@@ -332,13 +331,13 @@ export function ReviewEditor({
             </fieldset>
             ) : (
               <p className="muted" style={{ marginTop: "0.75rem" }}>
-                {sourceErased ? "No source provenance (source erased)." : "No source provenance (original source not collected)."}
+                {sourceErased ? "원문이 삭제되어 근거를 확인할 수 없습니다." : "대화 원문을 수집하지 않아 연결된 근거가 없습니다."}
               </p>
             )}
 
             <div className="actions">
               <button type="button" className="danger" onClick={() => removeItem(index)}>
-                Delete item
+                항목 삭제
               </button>
             </div>
           </div>
@@ -346,17 +345,17 @@ export function ReviewEditor({
 
         <div className="actions draft-actions">
           <button type="button" onClick={addItem}>
-            Add item
+            항목 추가
           </button>
           <button type="button" onClick={saveDraft} disabled={pending}>
-            Save draft
+            초안 저장
           </button>
           <button type="button" className="primary" onClick={publishDraft} disabled={pending}>
-            Approve &amp; Publish
+            전달본으로 확정
           </button>
         </div>
         <p style={{ marginTop: "1rem", color: "#64748b" }}>
-          Approve &amp; Publish creates an immutable version. Later edits require a new version. Source conversation remains provenance, not authority.
+          확정하면 수정되지 않는 새 버전이 만들어집니다. 이후 변경은 다음 버전으로 확정해야 하며, 대화 원문은 검토 근거로만 사용됩니다.
         </p>
       </section>
     </div>

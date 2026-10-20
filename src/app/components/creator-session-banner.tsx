@@ -9,9 +9,9 @@ export async function CreatorSessionBanner() {
   if (config.mode === "external" && principal) {
     return (
       <div className="creator-session">
-        <p>Signed in as Creator <span className="session-id">({principal.creatorId}).</span></p>
+        <div><p>내 계정으로 작업 중</p><details className="session-id"><summary>계정 식별 정보</summary><code>{principal.creatorId}</code></details></div>
         <form action={signOutAction}>
-          <button type="submit">Sign out</button>
+          <button type="submit">로그아웃</button>
         </form>
       </div>
     );
@@ -20,9 +20,9 @@ export async function CreatorSessionBanner() {
   if (isDevCreatorAuthAllowedInRuntime() && config.mode === "dev" && principal) {
     return (
       <div className="creator-session">
-        <p>Development Creator session <span className="session-id">({principal.creatorId}).</span></p>
+        <div><p>개발용 테스트 계정</p><details className="session-id"><summary>계정 식별 정보</summary><code>{principal.creatorId}</code></details></div>
         <form action={signOutAction}>
-          <button type="submit">Sign out</button>
+          <button type="submit">로그아웃</button>
         </form>
       </div>
     );

@@ -3,6 +3,7 @@ import { fetchCreatorReview } from "../../../../../application/actions";
 import { requireOwnedHandoffPage } from "../../../../../application/creator-page-guards";
 import { HandoffLifecyclePanel } from "../../../../components/handoff-lifecycle-panel";
 import { ReviewEditor } from "../../../../components/review-editor";
+import { HandoffSteps } from "../../../../components/handoff-presentation";
 
 export default async function ReviewPage({ params }: { params: Promise<{ handoffId: string }> }) {
   const { handoffId } = await params;
@@ -13,11 +14,12 @@ export default async function ReviewPage({ params }: { params: Promise<{ handoff
   return (
     <section className="review-page">
       <header className="page-heading">
-      <p className="eyebrow">02 / Review</p>
-      <h2>Creator Review</h2>
-      <p className="page-lead">Shape the claims you want to carry forward. Publication is your decision.</p>
-      <p className="record-id">Handoff ID: {handoffId}</p>
+      <p className="eyebrow">전달 내용 검토</p>
+      <h2>내 뜻대로 전달될지 확인하세요.</h2>
+      <p className="page-lead">요청과 배경이 충분한지, 확정한 내용과 미정인 내용이 구분되는지 검토하세요.</p>
+      <p className="record-id">관리 번호: {handoffId}</p>
       </header>
+      <HandoffSteps current={2} />
       <ReviewEditor
         key={`${handoffId}-${review.revision}-${review.kind}`}
         handoffId={handoffId}

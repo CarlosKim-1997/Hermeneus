@@ -4,6 +4,8 @@ import { useState, type FormEvent } from "react";
 import type { HandoffItemType, HandoffPriority } from "../../handoff/schema.js";
 import type { ProvenanceBundle } from "../../persistence/receiver-types.js";
 import type { Answerability } from "../../receiver/interpret.js";
+import { ItemMeaning } from "./handoff-presentation";
+import { PublishedDocument } from "./published-document";
 import {
   askReceiverQuestionAction,
   fetchReceiverProvenanceAction,
@@ -33,10 +35,10 @@ type AnswerState = {
 };
 
 const CLASSIFICATION_HELP: Record<Answerability, string> = {
-  SUPPORTED: "Directly supported by the approved Handoff.",
-  DERIVED: "Follows only from approved items under conservative derivation rules.",
-  OPEN: "The Creator explicitly left this unresolved.",
-  UNKNOWN: "The approved Handoff does not contain enough information.",
+  SUPPORTED: "보낸 사람이 확정한 내용에 직접 근거합니다.",
+  DERIVED: "확정된 내용만으로 좁게 도출되는 설명입니다.",
+  OPEN: "보낸 사람이 아직 정하지 않은 사항입니다.",
+  UNKNOWN: "이 전달본만으로는 알 수 없습니다.",
 };
 
 export function ReceiverConsole({ handoffId, version, publishedAt, items, semanticModeEnabled }: Props) {
@@ -53,8 +55,8 @@ export function ReceiverConsole({ handoffId, version, publishedAt, items, semant
     setError(null);
     setAnswer(null);
     setProvenanceByItem({});
+    try {
     const result = await askReceiverQuestionAction({ handoffId, version, question });
-    setPending(false);
     if (!result.ok) {
       setError(result.error.message);
       return;
@@ -66,13 +68,15 @@ export function ReceiverConsole({ handoffId, version, publishedAt, items, semant
       interpretationNotice: result.answer.interpretationNotice,
       answerNotice: result.answer.answerNotice,
     });
+    } catch { setError("질문을 처리하지 못했습니다. 입력한 내용을 확인하고 다시 시도하세요."); }
+    finally { setPending(false); }
   }
 
   async function onShowProvenance(itemId: string) {
     setProvenancePending(itemId);
     setError(null);
+    try {
     const result = await fetchReceiverProvenanceAction({ handoffId, version, itemIds: [itemId] });
-    setProvenancePending(null);
     if (!result.ok) {
       setError(result.error.message);
       return;
@@ -81,51 +85,40 @@ export function ReceiverConsole({ handoffId, version, publishedAt, items, semant
     if (entry) {
       setProvenanceByItem((current) => ({ ...current, [itemId]: entry }));
     }
+    } catch { setError("원문 근거를 불러오지 못했습니다. 다시 시도할 수 있습니다."); }
+    finally { setProvenancePending(null); }
   }
 
   return (
     <div className="receiver-layout">
       <p className="receiver-notice">
         {semanticModeEnabled
-          ? "Receiver uses live semantic interpretation over this pinned canonical Handoff."
-          : "Receiver interpretation is currently deterministic. Live natural-language interpretation is not enabled yet."}
+          ? "이 화면의 질문은 현재 버전의 전달본을 기준으로 AI가 해석합니다."
+          : "이 화면은 정해진 규칙으로 질문을 해석합니다. 자유로운 자연어 설명 기능은 켜져 있지 않습니다."}
       </p>
 
-      <section className="panel panel-receiver">
-        <h2>Published Handoff (Receiver view)</h2>
-        <p>
-          Version <strong>{version}</strong> · Published {new Date(publishedAt).toLocaleString()}
-        </p>
-        <p className="receiver-pin">Pinned to version {version}. This view does not follow newer publications automatically.</p>
-        {items.map((item) => (
-          <article key={item.id} className="item-card">
-            <div>
-              <strong>{item.type}</strong> · {item.priority}
-            </div>
-            <p>{item.statement}</p>
-          </article>
-        ))}
-      </section>
+      <p className="receiver-pin">버전 {version}을 읽고 있습니다. 이후 새 버전이 만들어져도 이 화면은 자동으로 바뀌지 않습니다.</p>
+      <PublishedDocument items={items} version={version} publishedAt={publishedAt} heading="내 계정으로 읽는 확정 전달본"/>
 
       <section className="panel panel-receiver-qa">
-        <h3>Ask about this Handoff</h3>
+        <h3>이 전달본에서 질문하기</h3>
         <form onSubmit={onAsk}>
-          <label htmlFor="receiver-question">Your question</label>
+          <label htmlFor="receiver-question">궁금한 점</label>
           <textarea
             id="receiver-question"
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder="Example: Are we building web first?"
+            placeholder="예: 웹 화면부터 준비하기로 확정됐나요?"
             rows={3}
           />
           <div className="actions">
             <button type="submit" className="primary" disabled={pending || !question.trim()}>
-              {pending ? "Answering…" : "Ask"}
+              {pending ? "답변 확인 중…" : "질문하기"}
             </button>
           </div>
         </form>
 
-        {error ? <p className="error">{error}</p> : null}
+        {error ? <p className="error" role="alert">{error}</p> : null}
 
         {answer ? (
           <div className="receiver-answer">
@@ -138,16 +131,14 @@ export function ReceiverConsole({ handoffId, version, publishedAt, items, semant
             {answer.answerNotice ? <p className="notice">{answer.answerNotice}</p> : null}
             {answer.citedItems.length > 0 ? (
               <div className="receiver-citations">
-                <h4>Canonical citations</h4>
+                <h4>전달본의 근거</h4>
                 {answer.citedItems.map((item) => (
                   <article key={item.id} className="item-card citation-card">
-                    <div>
-                      <strong>{item.type}</strong> · {item.priority}
-                    </div>
+                    <ItemMeaning type={item.type} priority={item.priority} />
                     <p>{item.statement}</p>
                     <div className="actions">
                       <button type="button" onClick={() => onShowProvenance(item.id)} disabled={provenancePending === item.id}>
-                        {provenancePending === item.id ? "Loading…" : "Show source evidence"}
+                        {provenancePending === item.id ? "불러오는 중…" : "원문 근거 보기"}
                       </button>
                     </div>
                     {provenanceByItem[item.id] ? (
@@ -159,10 +150,10 @@ export function ReceiverConsole({ handoffId, version, publishedAt, items, semant
                               <p>{reference.excerpt}</p>
                             ) : (
                               <p className="provenance-missing">
-                                Source reference exists, but no Receiver-safe excerpt is available.
+                                원문 참조는 있지만 이 화면에 공개할 수 있는 인용은 없습니다.
                               </p>
                             )}
-                            <p className="provenance-meta">Message {reference.messageId}</p>
+                            <p className="provenance-meta">메시지 {reference.messageId}</p>
                           </li>
                         ))}
                       </ul>
