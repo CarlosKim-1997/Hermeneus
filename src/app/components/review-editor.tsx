@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateTimeUtc } from "./ui-dates";
+
 import { useMemo, useState, useTransition } from "react";
 import type { HandoffItem, HandoffItemType, HandoffPriority } from "../../handoff/schema.js";
 import type { NormalizedConversation } from "../../import/types.js";
@@ -173,7 +175,7 @@ export function ReviewEditor({
           <>
             <p className="notice">
               <strong>원문 삭제됨 · 원문 근거 확인 불가</strong>
-              {erasedAt ? ` 삭제일 ${new Date(erasedAt).toLocaleString('ko-KR')}.` : null} 원문 연결 없이 전달 초안을 계속 편집할 수 있습니다.
+              {erasedAt ? ` 삭제일 ${formatDateTimeUtc(erasedAt)}.` : null} 원문 연결 없이 전달 초안을 계속 편집할 수 있습니다.
             </p>
           </>
         ) : reviewKind === "not_collected" ? (

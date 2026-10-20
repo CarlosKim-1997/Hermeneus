@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateTimeUtc } from "./ui-dates";
+
 import { useState } from "react";
 import type { ShareCapabilityMetadata } from "../../share/types.js";
 import {
@@ -100,8 +102,8 @@ export function ShareCapabilityPanel({ handoffId, version, initialCapabilities }
         {capabilities.map((capability) => (
           <li key={capability.id}>
             <code>{capability.id.slice(0, 12)}…</code> · v{capability.version} · 생성{" "}
-            {new Date(capability.createdAt).toLocaleString()} ·{" "}
-            {capability.revokedAt ? `해제됨 · ${new Date(capability.revokedAt).toLocaleString('ko-KR')}` : "사용 가능"}
+            {formatDateTimeUtc(capability.createdAt)} ·{" "}
+            {capability.revokedAt ? `해제됨 · ${formatDateTimeUtc(capability.revokedAt)}` : "사용 가능"}
             {!capability.revokedAt ? (
               <>
                 {" "}
