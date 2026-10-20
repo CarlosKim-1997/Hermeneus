@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export const metadata: Metadata = {
-  title: "Shared Handoff · Hermeneus",
+  title: "공유받은 전달본 · Hermeneus",
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };

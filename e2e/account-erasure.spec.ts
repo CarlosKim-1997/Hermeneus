@@ -10,12 +10,12 @@ test.describe("Account erasure", () => {
   test("confirmation gate requires exact DELETE", async ({ page }) => {
     await devSignIn(page);
     await page.goto("/account");
-    await expect(page.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /delete account/i })).toBeDisabled();
-    await page.getByLabel(/type DELETE/i).fill("delete");
-    await expect(page.getByRole("button", { name: /delete account/i })).toBeDisabled();
-    await page.getByLabel(/type DELETE/i).fill("DELETE");
-    await expect(page.getByRole("button", { name: /delete account/i })).toBeEnabled();
+    await expect(page.getByRole("heading", { name: "계정·데이터", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /계정 영구 삭제/ })).toBeDisabled();
+    await page.getByLabel(/DELETE를 정확히 입력/).fill("delete");
+    await expect(page.getByRole("button", { name: /계정 영구 삭제/ })).toBeDisabled();
+    await page.getByLabel(/DELETE를 정확히 입력/).fill("DELETE");
+    await expect(page.getByRole("button", { name: /계정 영구 삭제/ })).toBeEnabled();
   });
 
   test("successful deletion clears workspace access", async ({ page }) => {
@@ -23,8 +23,8 @@ test.describe("Account erasure", () => {
     await page.goto("/new");
     await importTranscript(page, transcript);
     await page.goto("/account");
-    await page.getByLabel(/type DELETE/i).fill("DELETE");
-    await page.getByRole("button", { name: /delete account/i }).click();
+    await page.getByLabel(/DELETE를 정확히 입력/).fill("DELETE");
+    await page.getByRole("button", { name: /계정 영구 삭제/ }).click();
     await page.waitForURL("**/login?accountDeleted=1**");
     await page.goto("/handoffs");
     await expect(page).toHaveURL(/\/login/);

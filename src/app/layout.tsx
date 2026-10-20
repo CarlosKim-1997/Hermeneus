@@ -1,18 +1,20 @@
 import type { ReactNode } from "react";
 import "./globals.css";
 import "./theme.css";
+import "./reference-ui.css";
 
 export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ko">
       <body>
-        <main className="app-shell">
+        <a className="skip-link" href="#main-content">본문으로 바로 가기</a>
+        <main className="app-shell" id="main-content" tabIndex={-1}>
           <header className="app-brand">
             <span className="brand-symbol" aria-hidden="true">H</span>
             <h1>Hermeneus</h1>
-            <span className="brand-caption">A clearer handoff.</span>
+            <span className="brand-caption">생각은 분명하게. 맥락은 이어지게.</span>
           </header>
           {children}
         </main>

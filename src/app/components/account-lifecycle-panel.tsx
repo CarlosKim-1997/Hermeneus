@@ -50,14 +50,13 @@ export function AccountLifecyclePanel({ lifecycleStatus }: Props) {
   if (lifecycleStatus === "erasing") {
     return (
       <section className="panel panel-account">
-        <h2>Account deletion in progress</h2>
+        <h2>계정 삭제를 마무리하고 있습니다</h2>
         <p>
-          Account deletion was initiated. Ordinary Handoff editing, publishing, and sharing are locked until deletion
-          completes or is retried successfully.
+          계정 삭제가 시작되었습니다. 삭제가 완료될 때까지 전달 내용의 편집·확정·공유는 잠깁니다.
         </p>
-        <p>Deletion has not fully completed yet. You can retry account deletion below.</p>
+        <p>아직 삭제가 완료되지 않았습니다. 아래에서 다시 시도할 수 있습니다.</p>
         <button type="button" className="danger" onClick={onRetry} disabled={pending}>
-          {pending ? "Working…" : "Retry account deletion"}
+          {pending ? "처리 중…" : "계정 삭제 다시 시도"}
         </button>
         {error ? (
           <p className="error" role="alert">
@@ -70,17 +69,14 @@ export function AccountLifecyclePanel({ lifecycleStatus }: Props) {
 
   return (
     <section className="panel panel-account">
-      <h2>Delete account</h2>
+      <h2>계정 영구 삭제</h2>
       <p>
-        Permanently removes all Handoffs you own, including Drafts, Published versions, provenance, source associations
-        for those Handoffs, and all Share links. Your external sign-in mapping and Creator lifecycle are deleted. This
-        cannot be undone.
+        내가 만든 모든 초안·확정 전달본·원문 근거·원문 연결과 공유 링크를 영구 삭제합니다. 외부 로그인 연결과 현재 계정의 기록도 삭제되며 되돌릴 수 없습니다.
       </p>
       <p>
-        If you sign in again later with the same external identity, you start a new Creator lifecycle. Previous Handoffs
-        are not restored.
+        같은 Google 계정으로 다시 로그인해도 새 계정으로 시작합니다. 이전 전달 데이터는 복구되지 않습니다.
       </p>
-      <label htmlFor="delete-confirm">Type DELETE to confirm</label>
+      <label htmlFor="delete-confirm">삭제하려면 DELETE를 정확히 입력하세요</label>
       <input
         id="delete-confirm"
         name="delete-confirm"
@@ -90,7 +86,7 @@ export function AccountLifecyclePanel({ lifecycleStatus }: Props) {
         spellCheck={false}
       />
       <button type="button" className="danger" onClick={onDelete} disabled={!canDelete || pending}>
-        {pending ? "Working…" : "Delete account"}
+        {pending ? "처리 중…" : "계정 영구 삭제"}
       </button>
       {error ? (
         <p className="error" role="alert">

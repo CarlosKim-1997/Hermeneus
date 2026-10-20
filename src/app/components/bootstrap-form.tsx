@@ -4,20 +4,21 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { bootstrapHandoffAction } from "../../application/actions.js";
 import { parsePortableProposal, PortableProposalError, type PortableProposal } from "../../portable/proposal.js";
+import { ITEM_LABELS, PRIORITY_LABELS } from "./handoff-presentation";
 
 function previewErrorMessage(error: unknown): string {
   if (error instanceof PortableProposalError) {
     if (error.code === "JSON_INVALID") {
-      return "The proposal is not valid JSON. Copy only the text inside the code block, without its markers.";
+      return "초안을 읽을 수 없습니다. AI가 만든 코드블록에서 ``` 표시를 뺀 JSON 내용만 복사해 붙여넣으세요.";
     }
-    if (error.code === "LIMIT_EXCEEDED") return "The proposal exceeds the size limit.";
+    if (error.code === "LIMIT_EXCEEDED") return "초안이 허용 크기를 넘었습니다. 내용을 나누거나 줄인 뒤 다시 가져오세요.";
     if (error.code === "DUPLICATE_KEY" || error.code === "DUPLICATE_PROPOSAL_ID") {
-      return "The proposal repeats a field or proposal ID.";
+      return "초안에 같은 필드나 항목 번호가 중복되어 있습니다.";
     }
-    if (error.code === "PROTOCOL_UNSUPPORTED") return "The proposal protocol is unsupported.";
-    return "A proposal field or value is invalid. Check each item's ID, type, priority, and statement.";
+    if (error.code === "PROTOCOL_UNSUPPORTED") return "지원하지 않는 초안 형식입니다. 위의 안내문으로 다시 만들어주세요.";
+    return "항목의 번호·분류·중요도·내용 중 잘못된 값이 있습니다. AI에 형식을 다시 확인하도록 요청하세요.";
   }
-  return "This browser could not prepare the preview. Reload the page and try again.";
+  return "미리보기를 만들지 못했습니다. 입력한 초안을 따로 보관한 뒤 새로고침해 다시 시도하세요.";
 }
 
 export function BootstrapForm() {
@@ -73,7 +74,7 @@ export function BootstrapForm() {
       }
       router.push(`/handoffs/${result.handoffId}/review`);
     } catch {
-      setError("Could not create the Handoff. You can retry safely.");
+      setError("초안을 만들지 못했습니다. 같은 요청을 안전하게 다시 시도할 수 있습니다.");
     } finally {
       setPending(false);
     }
@@ -81,8 +82,8 @@ export function BootstrapForm() {
 
   return (
     <div className="bootstrap-form">
-      <label htmlFor="portable-proposal">Portable Proposal JSON</label>
-      <p className="field-help" id="proposal-help">Paste the JSON contents of the proposal, without the surrounding code-block markers.</p>
+      <label htmlFor="portable-proposal">AI가 만든 전달 초안(JSON)</label>
+      <p className="field-help" id="proposal-help">AI 답변에서 JSON 내용만 붙여넣으세요. 미리보기 단계에서는 아직 서버에 초안을 만들지 않습니다.</p>
       <textarea
         id="portable-proposal"
         aria-describedby="proposal-help"
@@ -90,28 +91,28 @@ export function BootstrapForm() {
         onChange={(event) => { setRaw(event.target.value); setProposal(null); setAcknowledged(false); setSaveTitle(false); setError(""); }}
         placeholder={'{"protocol":"hermeneus.portable-proposal/v0","items":[...]}' }
       />
-      <div className="actions"><button type="button" onClick={preview}>Preview proposal</button></div>
+      <div className="actions"><button type="button" onClick={preview}>초안 미리보기</button></div>
       <div ref={feedbackRef} tabIndex={-1} aria-live="polite">
         {proposal ? (
-          <section className="proposal-preview" aria-label="Proposal preview">
-            <h3>Review before creating a Draft</h3>
-            <p>These are untrusted suggestions. Edit the Draft before publication.</p>
-            <ol>{proposal.items.map((item) => <li key={item.proposalId}><strong>{item.type}</strong> ({item.priority}): {item.statement}</li>)}</ol>
+          <section className="proposal-preview" aria-label="가져온 초안 미리보기">
+            <h3>3. 저장 전, 빠진 맥락 확인</h3>
+            <p>아직 AI의 제안입니다. 다음 단계에서 내용을 편집한 뒤 직접 확정할 수 있습니다.</p>
+            <ol>{proposal.items.map((item) => <li key={item.proposalId}><strong>{ITEM_LABELS[item.type]}</strong> · {PRIORITY_LABELS[item.priority]}<p>{item.statement}</p></li>)}</ol>
             {proposal.title ? (
               <label>
                 <input type="checkbox" checked={saveTitle} onChange={(event) => setSaveTitle(event.target.checked)} />
-                Save “{proposal.title}” as private navigation metadata. It will not be published or shared.
+                “{proposal.title}”을 내 전달함에서만 쓸 이름으로 저장합니다. 전달본과 공유 내용에는 포함되지 않습니다.
               </label>
             ) : null}
-            <h4>Review notes</h4>
-            {proposal.reviewNotes?.length ? <ul>{proposal.reviewNotes.map((note, index) => <li key={index}>{note}</li>)}</ul> : <p>No review notes.</p>}
-            <p>Review notes disappear after this step. If one belongs in the Canon, add it manually to the Draft after creation.</p>
+            <h4>AI의 검토 메모</h4>
+            {proposal.reviewNotes?.length ? <ul>{proposal.reviewNotes.map((note, index) => <li key={index}>{note}</li>)}</ul> : <p>검토 메모가 없습니다.</p>}
+            <p>이 메모는 저장되지 않습니다. 전달할 내용에 포함할 사항은 다음 편집 단계에서 직접 추가하세요.</p>
             <label>
               <input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} />
-              I have reviewed the notes and understand they will not be saved.
+              검토 메모를 확인했고, 메모가 저장되지 않는다는 점을 이해했습니다.
             </label>
-            <div className="actions"><button className="primary" type="button" disabled={!acknowledged || pending} onClick={create}>{pending ? "Creating..." : "Create Draft"}</button></div>
-            {!acknowledged ? <p className="field-help">Review and acknowledge the notes above to enable Draft creation.</p> : null}
+            <div className="actions"><button className="primary" type="button" disabled={!acknowledged || pending} onClick={create}>{pending ? "초안 만드는 중…" : "초안 만들고 검토하기"}</button></div>
+            {!acknowledged ? <p className="field-help">검토 메모를 확인하고 위 항목에 체크하면 다음 단계로 이동할 수 있습니다.</p> : null}
           </section>
         ) : null}
         {error ? <p className="error" role="alert">{error}</p> : null}

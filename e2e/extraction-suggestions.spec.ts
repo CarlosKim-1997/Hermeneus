@@ -14,15 +14,15 @@ test.describe("Creator extraction UI", () => {
     await page.goto("/new");
     await importTranscript(page, transcript);
 
-    await page.getByRole("button", { name: "Generate AI suggestions" }).click();
-    await expect(page.getByText("AI suggestion — not saved")).toBeVisible();
-    await page.getByRole("button", { name: "Add to draft" }).click();
+    await page.getByRole("button", { name: "원문으로 AI 제안 받기" }).click();
+    await expect(page.getByText("AI 제안 · 아직 저장 전")).toBeVisible();
+    await page.getByRole("button", { name: "초안에 추가", exact: true }).click();
 
-    await page.getByLabel("Statement").first().fill("Web-first is confirmed for the MVP (edited).");
+    await page.getByLabel("전달할 내용").first().fill("Web-first is confirmed for the MVP (edited).");
 
-    await page.getByRole("button", { name: "Save draft" }).click();
-    await expect(page.getByText(/Saved draft revision/)).toBeVisible();
-    await page.getByRole("button", { name: "Approve & Publish" }).click();
-    await expect(page.getByRole("heading", { name: "Published Handoff" })).toBeVisible();
+    await page.getByRole("button", { name: "초안 저장" }).click();
+    await expect(page.getByText(/초안 수정 \d+을 저장했습니다/)).toBeVisible();
+    await page.getByRole("button", { name: "전달본으로 확정" }).click();
+    await expect(page.getByRole("heading", { name: "이제 맥락을 건네세요." })).toBeVisible();
   });
 });

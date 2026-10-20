@@ -6,9 +6,9 @@ export default async function AccountPage() {
   return (
     <section className="account-page">
       <header className="page-heading">
-        <p className="eyebrow">Your workspace / Account</p>
-        <h2>Account</h2>
-        <p className="page-lead">Manage the lifecycle of your Creator account and its Handoffs.</p>
+        <p className="eyebrow">내 작업 공간 / 계정·데이터</p>
+        <h2>계정·데이터</h2>
+        <p className="page-lead">계정과 전달 데이터의 삭제 범위를 확인하고 관리하세요.</p>
       </header>
       <AccountLifecyclePanel lifecycleStatus={principal.lifecycleStatus} />
     </section>

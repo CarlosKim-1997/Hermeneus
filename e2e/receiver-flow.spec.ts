@@ -18,36 +18,36 @@ test.describe("Receiver flow", () => {
     const handoffId = reviewUrl.split("/handoffs/")[1]?.split("/")[0];
     expect(handoffId).toBeTruthy();
 
-    await page.getByRole("button", { name: "Add item" }).click();
-    await page.getByLabel("Statement").first().fill("Web-first is confirmed.");
-    await page.getByLabel("Type").first().selectOption("CONFIRMED");
-    await page.getByLabel("Source message").first().selectOption({ index: 1 });
-    await page.getByLabel("Excerpt (optional, must match source exactly)").first().fill("web-first is the right call");
+    await page.getByRole("button", { name: "항목 추가", exact: true }).click();
+    await page.getByLabel("전달할 내용").first().fill("Web-first is confirmed.");
+    await page.getByLabel("내용 분류").first().selectOption("CONFIRMED");
+    await page.getByLabel("근거가 되는 메시지").first().selectOption({ index: 1 });
+    await page.getByLabel("원문 인용 · 선택 사항, 원문과 정확히 일치해야 합니다").first().fill("web-first is the right call");
 
-    await page.getByRole("button", { name: "Save draft" }).click();
-    await expect(page.getByText(/Saved draft revision/)).toBeVisible();
-    await page.getByRole("button", { name: "Approve & Publish" }).click();
-    await expect(page.getByRole("heading", { name: "Published Handoff" })).toBeVisible();
+    await page.getByRole("button", { name: "초안 저장" }).click();
+    await expect(page.getByText(/초안 수정 \d+을 저장했습니다/)).toBeVisible();
+    await page.getByRole("button", { name: "전달본으로 확정" }).click();
+    await expect(page.getByRole("heading", { name: "이제 맥락을 건네세요." })).toBeVisible({ timeout: 30_000 });
 
     await page.goto(`/receiver/${handoffId}/1`);
-    await expect(page.getByRole("heading", { name: "Receiver", exact: true })).toBeVisible();
-    await expect(page.getByText("Pinned to version 1")).toBeVisible();
-    await expect(page.getByText("Web-first is confirmed.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "확정한 맥락을 다시 살펴보세요.", exact: true })).toBeVisible();
+    await expect(page.getByText("버전 1을 읽고 있습니다")).toBeVisible();
+    await expect(page.locator(".document-body").getByText("Web-first is confirmed.", { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "View publication record" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /Return to draft review/i })).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "Source Conversation" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "검토에 쓰인 자료" })).toHaveCount(0);
     await expect(page.locator('a[href*="/handoffs/"]')).toHaveCount(0);
 
-    await page.getByLabel("Your question").fill("Are we building web first?");
-    await page.getByRole("button", { name: "Ask" }).click();
+    await page.getByLabel("궁금한 점").fill("Are we building web first?");
+    await page.getByRole("button", { name: "질문하기" }).click();
     await expect(page.locator(".answerability-label", { hasText: "SUPPORTED" })).toBeVisible();
     await expect(page.locator(".receiver-answer p").filter({ hasText: "Web-first is confirmed." }).first()).toBeVisible();
 
-    await page.getByRole("button", { name: "Show source evidence" }).click();
+    await page.getByRole("button", { name: "원문 근거 보기" }).click();
     await expect(page.getByText("web-first is the right call")).toBeVisible();
 
-    await page.getByLabel("Your question").fill("What will this cost users?");
-    await page.getByRole("button", { name: "Ask" }).click();
+    await page.getByLabel("궁금한 점").fill("What will this cost users?");
+    await page.getByRole("button", { name: "질문하기" }).click();
     await expect(page.locator(".answerability-label", { hasText: "UNKNOWN" })).toBeVisible();
     await expect(page.locator(".receiver-answer").getByText(/^UNKNOWN\./)).toBeVisible();
   });
