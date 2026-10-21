@@ -30,9 +30,14 @@
     "typecheck": "tsc --noEmit",
     "governance": "node tooling/governance/check.mjs",
     "migrate": "node scripts/migrate.mjs",
-    "preflight:m12-provenance": "node scripts/preflight-m12-provenance.mjs"
+    "preflight:m12-provenance": "node scripts/preflight-m12-provenance.mjs",
+    "test:mcp-local": "vitest run --config vitest.mcp-local.config.ts",
+    "typecheck:mcp-local": "tsc --noEmit -p tsconfig.mcp-local.json"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "express": "5.3.0",
+    "jose": "6.2.12",
     "next": "^15.5.3",
     "next-auth": "5.0.0-beta.32",
     "openai": "^7.23.0",
@@ -43,6 +48,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
+    "@types/express": "5.0.6",
     "@types/node": "^24.3.1",
     "@types/pg": "^8.15.5",
     "@types/react": "^19.1.13",
