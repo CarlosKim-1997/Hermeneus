@@ -101,6 +101,10 @@ jobs:
           npm run test:auth
           npm run test:integration
 
+      - name: Scoped MCP disposable PostgreSQL and browser regressions
+        shell: pwsh
+        run: ./scripts/test-scoped-mcp-local.ps1
+
   e2e:
     name: e2e
     runs-on: ubuntu-latest

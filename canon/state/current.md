@@ -12,6 +12,15 @@ The approved vNext S1–S6 vertical slice is integrated into `main`: source-free
 
 ## Active Work
 
+D-015 records the owner-approved per-share AI-client delegation and anonymous
+OAuth connection policy, separately from Creator Google login. Its local issuer,
+scoped resource server and inline original-review widget are verified on synthetic
+fixtures. This delegated route is not integrated or deployed. Next activation
+requires separately authorized synthetic-target metadata/least-privilege role and
+key provisioning, exact ChatGPT client/callback registration, bounded cleanup and
+live-host verification. The existing web Share path and fixed synthetic plugin
+remain independent; this local widget does not call a semantic provider.
+
 Migration serialization and `/api/ready` schema-history checks are integrated,
 passed Node 22 hosted CI and deployed in synthetic Alpha. Protected readiness
 returns 200. The automatic promotion Gate and isolated synthetic logical restore
@@ -24,7 +33,7 @@ its exact resulting mapping. Use only the primary domain for service access.
 Target backup/PITR
 provisioning and an actual target restore rehearsal remain outstanding.
 
-Complete authorized participant access, Share fragment survival through fresh Vercel authentication, and request-path log inspection in Seoul Supabase Free project `dzaibwrrylxlrxbgnyaw` and Vercel Hobby project `prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8`. The database has migrations 001–011, Data API disabled, and app-table/function client grants revoked. Vercel Authentication covers all deployments; unauthenticated requests to the default and deployment-specific Share URLs redirect to Vercel SSO. The owner-approved Sol external verifier is enabled for synthetic Alpha under a reduced 25-cent reservation ceiling pinned to UTC October 2026. The actual-screen/provider smoke remains pending because this agent session has no available browser; no additional provider calls or target reservations were observed at activation. The separate Supabase Pro/Small target with seven-day PITR selected for real-data use remains unprovisioned.
+Complete authorized participant access, Share fragment survival through fresh Vercel authentication, and request-path log inspection in Seoul Supabase Free project `dzaibwrrylxlrxbgnyaw` and Vercel Hobby project `prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8`. The database has migrations 001–011, Data API disabled, and app-table/function client grants revoked. Vercel Authentication covers all deployments; unauthenticated requests to the default and deployment-specific Share URLs redirect to Vercel SSO. The owner-approved Sol external verifier is enabled for synthetic Alpha under a reduced 25-cent reservation ceiling pinned to UTC October 2026. The cited activation evidence does not establish actual-screen/provider smoke completion; no additional provider calls or target reservations were observed at activation. The separate Supabase Pro/Small target with seven-day PITR selected for real-data use remains unprovisioned.
 
 ## Blockers
 
@@ -43,6 +52,11 @@ Before real data use, provision and verify the separate Pro/Small/PITR target, i
   a real recovery target must remain isolated pending lifecycle reconciliation.
 
 ## Verification Basis
+
+Local scoped delegation, real authorization-code/PKCE HTTP flow, database lifecycle
+and browser/widget evidence are in `work/reports/t033-anonymous-oauth-local.md`.
+These establish local behavior only, not live ChatGPT callback compatibility,
+external activation, semantic verification or real-data readiness.
 
 Bounded live comparison evidence is in `work/reports/t026-verifier-comparison.md`.
 Sol activation, current protected-release identity, reduced budget configuration

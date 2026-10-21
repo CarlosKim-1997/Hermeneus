@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["src/mcp", "tests/mcp", "tests/integration/mcp-scoped.test.ts", "tests/integration/mcp-oauth.test.ts", "mcp-browser-tests", "playwright.mcp-local.config.ts", "vitest.mcp-local.config.ts", "vitest.oauth-local.config.ts"]
+}
