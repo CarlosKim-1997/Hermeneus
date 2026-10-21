@@ -162,3 +162,36 @@ To resolve the actual startup failure, add fixed stage and whitelisted cause
 categories to operational logs, never an exception message, URL, SQL, key or
 request body. Failed initialization closes its DB pool. Focused runtime tests
 include arbitrary-detail redaction and generic failure behavior; 9/9 PASS.
+
+Cleanup run 1 succeeded at 2026-10-21 15:30:00 UTC (2026-10-22 00:30 KST),
+return_message DO, observed through cron.job_run_details. The schedule is active.
+PR56 head 1bfb46508202b9c60bf3b8b754c84f671b6d8ffc passed all four checks in
+39625332923 and merged as 98c21a0a42d4a4c500aaff27e6225ec9fb67b9dd. Its deployment
+is dpl_GhjrdKEQxruHwZJKkuzCNYwEPZjF; generic initialization 503 persists and log
+queries still returned no records. Do not infer a cause from absent logs.
+
+A credential-free Node22 PostgreSQL TLS probe to the actual Seoul pooler failed
+with SELF_SIGNED_CERT_IN_CHAIN under default roots. The project's Database Settings
+Download certificate link provides this public provider CA:
+https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt .
+Browser download event timed out; the same observed HTTPS file was fetched directly.
+X509 checks: CA=true, self-signature valid, Supabase Root 2021 CA, validity through
+2031-04-26, SHA256 fingerprint
+80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA.
+A second credential-free TLS probe using only this CA and hostname verification
+succeeded, authorized=true, peer CN *.pooler.supabase.com, issuer Supabase
+Intermediate 2021 CA. The Vercel startup cause is still not independently logged.
+
+Register the public CA as MCP_DATABASE_CA_CERT only on the dedicated MCP project.
+Runtime pins its fingerprint/CA validity and exact observed aws-0 Seoul host/6543;
+pg retains rejectUnauthorized=true. Do not disable certificate or hostname checks
+and do not change the OS/global trust store. A valid unrelated root is rejected.
+The public certificate is a test fixture, not a private key. Local Node22 units
+212/212, scoped types and Governance PASS (dist/t034-ca-unit.log).
+
+After a normal ChatGPT UI reload, the actual new custom-MCP callback loaded as
+https://chatgpt.com/connector/oauth/HhtKfq0OQ3jX . Only this exact redirect was
+registered for public client hermeneus-chatgpt-alpha; no secret/OIDC/email scope,
+DCR or wildcard. The creation form has both handoff scopes and PKCE S256 set;
+final private-plugin creation/access confirmation has not yet been requested or
+performed. Existing public client configuration alone creates no Share grant.
