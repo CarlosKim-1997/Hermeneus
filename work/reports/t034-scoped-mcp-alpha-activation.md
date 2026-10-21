@@ -321,3 +321,31 @@ token/revoke requests despite rotating forged forwarding headers, with no sessio
 issued by invalid requests. This correction changes request grouping only; the
 actual full ChatGPT success above is explicitly bound to 2542f8d. Final hosted
 CI/deployment identity and forward-header probe are reported in the final handoff.
+
+## Final artifact observation and closure
+
+PR60 final head 2498b0a6888bd28e429e86d71c00055e95ca76ea passed all four required
+jobs in 39634031448, then merged as 5532cef32947dae379cb133cee9cd2a44319b761.
+That exact main CI 39634523337 also passed all four jobs. Dedicated MCP deployment
+dpl_3TGyxqFwea8NuvjbMAZfhQwAjvZD is READY in icn1 and /api/ready returned exactly
+5532cef, SYNTHETIC_ONLY and semanticProvider NOT_CONNECTED.
+
+Small public boundary probes on that deployment included forwarding headers:
+authorization page 200 with approval form and limit100; unissued authorization
+code exchange 400 with limit50; unissued token revocation 200 with limit50.
+They created no connection or delegation. The scoped error-log query since10m
+returned no records after these probes; that observation is not proof of complete
+log coverage or of absent infrastructure data retention.
+
+Final metadata observation before the public probe: zero active test-client
+sessions, zero active test grants, zero unrevoked test capabilities; scheduled
+cleanup remains active. The probe's unapproved transaction expires in60s and is
+covered by that cleanup. No new keys or grants were created for the final probe.
+
+T-034's synthetic activation criteria are satisfied. This closure changes only
+Work records; it does not expand D-015 or claim semantic verification, real-data
+readiness, distributed abuse protection, or enforced global ChatGPT CSP. The
+previously listed real-data gates and repeated/multiple-share user-experience
+acceptance remain separate. Existing web automatic release 39634914836 was
+in progress when this record was prepared; observe its external result rather
+than treating this Work record as release evidence.
