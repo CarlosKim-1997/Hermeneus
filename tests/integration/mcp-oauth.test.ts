@@ -40,6 +40,11 @@ async function seeded(){
   return {auth,make,http,store,metadata,parents,share,issue,now,advance:(ms:number)=>{time+=ms;}};
 }
 describe("OAuth security metadata on disposable PostgreSQL",()=>{
+  it('previews the actual issued Share format under the restricted role without creating a delegation',async()=>{
+    const f=await seeded(),p=await f.auth.previewShare(f.share.rawToken);expect(f.share.rawToken).toMatch(/^hsh_/);expect(p.version).toBe(1);expect(p.fingerprint).toBe(createHash('sha256').update(f.share.rawToken).digest('hex'));
+    expect(JSON.stringify(p)).not.toContain(f.share.rawToken);expect(JSON.stringify(p)).not.toContain('PRIVATE NAVIGATION');expect((await pool.query('SELECT 1 FROM mcp_delegations')).rowCount).toBe(0);
+    await expect(f.auth.previewShare(opaque())).rejects.toThrow();
+  });
   it("uses the migration-created restricted role and denies private source, identities, titles, drafts and Creator writes",async()=>{
     await seeded();
     for(const sql of ["SELECT * FROM source_messages","SELECT * FROM creator_external_identities","SELECT display_title FROM handoffs","SELECT * FROM handoff_drafts","SELECT * FROM published_handoff_provenance","SELECT * FROM schema_migrations","UPDATE handoffs SET id=id","DELETE FROM creators","CREATE TABLE public.mcp_forbidden(id text)"])

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { oauthFixture,serveOAuth,authQuery,oauthClient,oauthResource } from "../tests/mcp/oauth-helpers.js";
 import { opaque } from "../src/mcp/oauth.js";
 import { fixtureIssuer } from "../tests/mcp/helpers.js";
+import { generateShareToken } from '../src/share/token.js';
 const pluginUrl="https://chatgpt.com/plugins/synthetic_fixture";
 async function harness(context:BrowserContext){
   const f=await oauthFixture(),http=await serveOAuth(f.auth,true,pluginUrl),urls:string[]=[];
@@ -30,7 +31,7 @@ test("Share fragment -> ephemeral same-browser selection -> PKCE -> context-only
 });
 test("two simultaneous Share windows offer explicit separate choices and clear only the selected handover",async({context,page})=>{
   const h=await harness(context);try{
-    const rawB=opaque(),original=h.parents.byBearer;h.parents.byBearer=raw=>original(raw===rawB?'fixture-share-b':raw);
+    const rawB=generateShareToken(),original=h.parents.byBearer;h.parents.byBearer=raw=>original(raw===rawB?'fixture-share-b':raw);
     await page.goto(fixtureIssuer+'/handoff#'+h.rawShare);await expect(page.locator('#version')).toContainText('버전 1');await page.locator('#transfer').check();
     const second=await context.newPage();await second.goto(fixtureIssuer+'/handoff#'+rawB);await expect(second.locator('#version')).toContainText('버전 2');await second.locator('#transfer').check();
     const approval=await context.newPage(),q=authQuery(createHash('sha256').update(opaque()).digest('base64url'));await approval.goto(fixtureIssuer+'/authorize?'+q);await expect(approval.locator('#handoff-offers input')).toHaveCount(2);

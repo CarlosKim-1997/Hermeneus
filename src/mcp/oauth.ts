@@ -7,6 +7,7 @@ import { createJwtConnectionVerifier } from "./jwt-verifier.js";
 import { createScopedHandoff, hash } from "./scoped-handoff.js";
 import { policy, scopes, unavailable, type MetadataStore, type ParentPort } from "./contracts.js";
 import { jcs } from "../portable/jcs.js";
+import { isShareTokenFormat } from '../share/token.js';
 
 export const opaque = () => randomBytes(32).toString("base64url");
 export const opaquePattern = /^[A-Za-z0-9_-]{43}$/;
@@ -159,7 +160,7 @@ export async function createAnonymousOAuth(options: {
     },
   };
   async function previewShare(raw:string){
-    if(!opaquePattern.test(raw))throw unavailable();const p=await options.parents.byBearer(raw);if(!p)throw unavailable();
+    if(raw.length>512||!isShareTokenFormat(raw))throw unavailable();const p=await options.parents.byBearer(raw);if(!p)throw unavailable();
     return {version:p.packet.version,publicationRef:p.packet.publicationRef,fingerprint:hash(raw),summary:p.packet.items[0]?.statement.slice(0,180)??"Published Canon"};
   }
   return { issuer, resource, origin, now, begin, approve, disconnect, callback, previewShare, provider, service, verifier, jwks: { keys: [publicJwk] } };
