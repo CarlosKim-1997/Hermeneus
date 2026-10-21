@@ -68,6 +68,21 @@ describe("dedicated anonymous OAuth, real SDK HTTP handlers and signed tokens",(
     const bad=await f.request("/authorize?"+authQuery(challenge(opaque()),{ui_locales:"ko-KR",resource:"https://evil.fixture.invalid/mcp"}));
     expect([400,302]).toContain(bad.status);expect((f.oauthStore as TestOAuthStore).sessions.size).toBe(0);
   });
+  it("keeps SDK endpoint limits with spoofed proxy headers in a shared instance bucket",async()=>{
+    const f=await running();
+    const proxy=(n:number)=>({"x-forwarded-for":"192.0.2."+n,"forwarded":"for=198.51.100."+n});
+    for(let n=0;n<100;n++)expect((await f.request("/authorize?"+authQuery(challenge(opaque())),{headers:proxy(n)})).status).toBe(200);
+    expect((await f.request("/authorize?"+authQuery(challenge(opaque())),{headers:proxy(101)})).status).toBe(429);
+    const token=form({client_id:oauthClient.id,grant_type:"authorization_code",code:opaque(),code_verifier:opaque(),redirect_uri:oauthClient.redirectUris[0]!,resource:fixtureResource});
+    const revoke=form({client_id:oauthClient.id,token:"unissued-token"});
+    for(let n=0;n<50;n++){
+      expect((await f.request("/token",{...token,headers:{...token.headers,...proxy(n)}})).status).toBe(400);
+      expect((await f.request("/revoke",{...revoke,headers:{...revoke.headers,...proxy(n)}})).status).toBe(200);
+    }
+    expect((await f.request("/token",{...token,headers:{...token.headers,...proxy(51)}})).status).toBe(429);
+    expect((await f.request("/revoke",{...revoke,headers:{...revoke.headers,...proxy(51)}})).status).toBe(429);
+    expect((f.oauthStore as TestOAuthStore).sessions.size).toBe(0);
+  });
   it("declines explicitly with state and issuer and creates no delegation",async()=>{
     const f=await running(),a=await authorized(f),r=await f.request("/approve",{...form({ref:a.ref,csrf:a.csrf,deny:"yes"}),headers:{...form({}).headers,origin:fixtureIssuer,cookie:a.cookie}});
     expect(r.status).toBe(200);const body=await r.text(),u=new URL(/id="return-to-ai" href="([^"]+)"/.exec(body)![1]!.replaceAll("&amp;","&"));expect(u.searchParams.get("error")).toBe("access_denied");expect(u.searchParams.get("iss")).toBe(fixtureIssuer);expect(u.searchParams.get("state")).toBe(a.q.get("state"));expect(f.store.grants.size).toBe(0);

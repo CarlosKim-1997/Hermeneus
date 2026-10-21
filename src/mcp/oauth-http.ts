@@ -10,6 +10,10 @@ import { handoverLandingScript, authorizationHandoverScript, handoverReceiptScri
 const escape = (s: string) => s.replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]!));
 const cookieOptions = { secure: true, httpOnly: true, sameSite: "lax" as const, path: "/" };
 const fail = (res: Response, status = 400) => res.status(status).json({ error: "invalid_request" });
+// A conservative shared bucket per warm instance and endpoint. Do not infer a
+// trusted client IP from proxy headers. SDK limits/windows remain unchanged;
+// this is not a distributed or per-user abuse-control guarantee.
+const alphaRateLimit = { keyGenerator: () => "hermeneus-synthetic-alpha" };
 function cookie(raw: string | undefined, name: string) {
   const matches = (raw ?? "").split(";").map(v => v.trim()).filter(v => v.startsWith(name + "="));
   if (matches.length !== 1) return "";
@@ -73,7 +77,7 @@ export function createAnonymousOAuthApp(auth: AnonymousOAuth, options: { enabled
       res.redirect = ((status: number, url: string) => { const target=new URL(url);target.searchParams.set("iss",auth.issuer);return original(status,target.href); }) as Response["redirect"];
       next();
     }).catch(()=>fail(res));
-  }, authorizationHandler({provider}));
+  }, authorizationHandler({provider,rateLimit:alphaRateLimit}));
   app.use(express.urlencoded({ extended:false,limit:4096,parameterLimit:12 }));
   const formOnly: RequestHandler = (req,res,next) => {
     if (!req.is("application/x-www-form-urlencoded") || !req.body || Object.values(req.body).some(v=>typeof v!=="string")) { fail(res);return; } next();
@@ -109,8 +113,8 @@ export function createAnonymousOAuthApp(auth: AnonymousOAuth, options: { enabled
   };
   app.use("/token",formOnly,protocolBody(["client_id","grant_type","code","code_verifier","redirect_uri","resource"]),(req,res,next)=>{
     if (req.body.grant_type==="authorization_code" && (!opaquePattern.test(req.body.code??"") || !/^[A-Za-z0-9_.~-]{43,128}$/.test(req.body.code_verifier??""))) { fail(res);return; } next();
-  },tokenHandler({provider:auth.provider}));
-  app.use("/revoke",formOnly,protocolBody(["client_id","token","token_type_hint"]),revocationHandler({provider:auth.provider}));
+  },tokenHandler({provider:auth.provider,rateLimit:alphaRateLimit}));
+  app.use("/revoke",formOnly,protocolBody(["client_id","token","token_type_hint"]),revocationHandler({provider:auth.provider,rateLimit:alphaRateLimit}));
   const handleMcp=createScopedMcpHandler({service:auth.service,resource:auth.resource,issuer:auth.issuer,enabled:true});
   app.use(async(req,res,next)=>{
     if (![new URL(auth.resource).pathname,"/.well-known/oauth-protected-resource"].includes(req.path)) { next();return; }

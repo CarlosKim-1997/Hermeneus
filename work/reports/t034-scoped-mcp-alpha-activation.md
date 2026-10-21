@@ -244,3 +244,80 @@ client/redirect/resource/scopes, PKCE and CSRF checks remain intact. Internal
 adversarial review examined parameter pollution, injection, identity/scope bypass
 and metadata persistence; the targeted 26-test OAuth suite and scoped types PASS.
 This is interoperability within D-015, not OIDC identity or new authority.
+
+## Actual private-plugin scoped acceptance, 2026-10-22 KST
+
+PR59 head 29499f99657ca96e0c8698d302c7d079daa0fb3d passed four required jobs in
+39630953943 and merged as 2542f8d1b0693d00811a5331d79b1cf3284791e1. Main CI
+39631414685 succeeded. Dedicated MCP dpl_4L7YkaqRL2kxq79Xd6wZy6iRR55b was READY
+in icn1; actual /api/ready returned that SHA, SYNTHETIC_ONLY and NOT_CONNECTED.
+
+Created only the private plugin Hermeneus Scoped Alpha:
+https://chatgpt.com/plugins/plugin_asdk_app_6ad8e1087cfc8191a698657416e5c290 .
+Its URL is configured only on the dedicated MCP Production. The real ChatGPT
+request with ui_locales=ko-KR reached approval, discovered the consenting v1
+landing window, selected that one offer and completed the exact registered
+callback. DB observation: one grant, 30-minute grant, 60-minute connection,
+authorization code consumed. The original Share remained outside the Chat URL,
+model prompt and tool arguments; the new Chat received only a non-secret selector.
+
+Actual normal Chat https://chatgpt.com/c/6ad8e302-3ab8-83ee-b25c-cc917c919d42
+called get_handoff_packet and displayed the two pinned Canon statements with
+CONFIRMED/OPEN distinguished. The explicitly selected two-sentence answer with
+its newline and HI citations returned through review_handoff_answer to the widget.
+Agent compared the visible original, checked confirmation and clicked inspection.
+The widget displayed INDETERMINATE / semantic verification not executed, structure
+and pinned version confirmed, and disabled repeat inspection. DB had one consumed
+ticket and no answer/question/submission/confirmation body columns in the six MCP
+security tables. This does not assert that ChatGPT has no copies or retention.
+Local ignored screenshot: dist/t034-live-scoped-widget-result.png.
+
+The web Production-only HERMENEUS_MCP_ALPHA_ORIGIN flag now points to the exact
+MCP origin. Existing automatic release 39631810425 attempt 2 succeeded, promoting
+dpl_5rWsAuCe5hkQ68WGtpS2sDcDbmVx at the same 2542f8d commit after readiness and
+temporary-access cleanup. The actual protected web Share showed the new explicit
+connection control; its click opened the v1 first-party handover with fragment
+removed and consent unchecked. No grant was created just by this preview. Web
+Vercel all-deployment SSO remained enabled, and an unauthenticated request was
+302 to vercel.com. The original fixed synthetic plugin was not modified.
+
+Negative live-host checks:
+- Set only the named test grant's expiry to the past, preserving the valid schema
+  interval. This is forced registry expiry, not a claim of waiting 30/60 minutes.
+  A fresh real Chat tool call returned HANDOFF_ACCESS_UNAVAILABLE.
+- Started a second ChatGPT authorization and pressed Cancel before selecting any
+  Share. ChatGPT returned access_denied; session count stayed one and no active
+  grant appeared. No second connection was approved.
+- Revoked the one named test client's sole connection in security metadata. A real
+  Chat tool call surfaced ChatGPT's reconnect requirement; chose Later, with no
+  new sign-in or delegation. This is administrative registry revocation, distinct
+  from the locally tested browser-cookie disconnect and token revocation paths.
+- Revoked the named synthetic parent capability. A fresh first-party handover
+  preview failed closed; both test capabilities are now revoked. Closed the Share
+  and landing test tabs and discarded the raw bearer from agent memory.
+
+Cleanup natural runs at 15:45 and 16:00 UTC also succeeded. No paid semantic API,
+real data or new plan was used. Observed ChatGPT global custom-app CSP enforcement
+was off; it was not changed because it affects other apps. Local widget CSP
+metadata/negative tests do not establish enforced host CSP in this setting.
+Infrastructure logging/privacy remains a separate unproven boundary.
+
+## Final proxy-throttle correction
+
+Post-flow runtime logs exposed SDK express-rate-limit validation warnings for
+Vercel Forwarded/X-Forwarded-For with Express trust proxy false. There was no
+observed authorization failure or request-body disclosure in those warning lines.
+Keep proxy trust disabled; explicitly key each endpoint's existing limiter to a
+conservative shared warm-instance bucket. Keep SDK windows/limits (authorize100,
+token50, revoke50 per15min), validation and enforcement enabled. Rotating spoofed
+forwarding headers cannot create fresh buckets. This is neither per-user fairness
+nor a distributed abuse limit; broad rollout needs separate capacity assessment.
+
+Internal adversarial review examined spoofed IP bypass, cross-endpoint counters,
+threshold off-by-one and authorization changes. Focused Node22 OAuth suite 27/27,
+including the unchanged successful exchange/inspection and negative security flow,
+and scoped TypeScript PASS. A new test observes 429 after100 authorization and50
+token/revoke requests despite rotating forged forwarding headers, with no session
+issued by invalid requests. This correction changes request grouping only; the
+actual full ChatGPT success above is explicitly bound to 2542f8d. Final hosted
+CI/deployment identity and forward-header probe are reported in the final handoff.

@@ -12,19 +12,18 @@ The approved vNext S1–S6 vertical slice is integrated into `main`: source-free
 
 ## Active Work
 
-D-015 records the owner-approved per-share AI-client delegation and anonymous
-OAuth connection policy, separately from Creator Google login. The issuer,
-scoped server and inline original-review widget foundation is integrated and
-verified locally. Synthetic metadata schema 012, a restricted DB role and separate
-MCP project keys are provisioned. The dedicated issuer passes hosted readiness;
-its 15-minute metadata cleanup has completed a scheduled run. The actual ChatGPT
-callback is registered with owner approval. Deployed-host acceptance is still in
-progress: the initial link rejected ChatGPT's optional locale hint, and no scoped
-roundtrip is claimed. The web handover remains disabled pending acceptance.
-Only the new MCP Production uses application OAuth; its Preview,
-the existing web Alpha and fixed synthetic plugin retain their existing settings.
-The delegated widget does not call a semantic provider. T-034 evidence and next
-actions are in work/reports/t034-scoped-mcp-alpha-activation.md.
+D-015's scoped synthetic route is activated: the dedicated anonymous issuer,
+restricted schema-012 DB role, independent keys and 15-minute metadata cleanup are
+provisioned. A private ChatGPT plugin completed exact-version Canon retrieval,
+selected-answer widget return and one-use structural inspection. The actual result
+was INDETERMINATE, with no semantic provider call. The web Share connection button
+is enabled and its same-browser handover was observed. Cancellation, forced test-
+grant expiry, session revocation and parent Share revocation blocked further access;
+test authority was closed. Only the new MCP Production uses application OAuth;
+its Preview, existing web Alpha and fixed synthetic plugin retain their settings.
+Evidence and exact artifact boundaries are in
+work/reports/t034-scoped-mcp-alpha-activation.md. This is synthetic acceptance,
+not real-data readiness or independent security assurance.
 
 Migration serialization and `/api/ready` schema-history checks are integrated,
 passed Node 22 hosted CI and deployed in synthetic Alpha. Protected readiness
