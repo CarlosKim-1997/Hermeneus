@@ -1,0 +1,27 @@
+{
+  "framework": null,
+  "buildCommand": "",
+  "installCommand": "cd ../.. && npm ci",
+  "regions": ["icn1"],
+  "functions": { "api/entry.ts": { "maxDuration": 30 } },
+  "rewrites": [
+    { "source": "/.well-known/oauth-authorization-server", "destination": "/api/entry" },
+    { "source": "/.well-known/oauth-protected-resource", "destination": "/api/entry" },
+    { "source": "/jwks", "destination": "/api/entry" },
+    { "source": "/authorize", "destination": "/api/entry" },
+    { "source": "/approve", "destination": "/api/entry" },
+    { "source": "/token", "destination": "/api/entry" },
+    { "source": "/revoke", "destination": "/api/entry" },
+    { "source": "/disconnect", "destination": "/api/entry" },
+    { "source": "/mcp", "destination": "/api/entry" },
+    { "source": "/handoff", "destination": "/api/entry" },
+    { "source": "/handoff/preview", "destination": "/api/entry" },
+    { "source": "/api/ready", "destination": "/api/entry" }
+  ],
+  "headers": [
+    { "source": "/(.*)", "headers": [
+      { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+      { "key": "Cache-Control", "value": "no-store" }
+    ] }
+  ]
+}

@@ -8,6 +8,7 @@ export const REQUIRED_MIGRATIONS = [
   "006_creator_handoff_library_index.sql", "007_published_provenance_split.sql",
   "008_creator_lifecycle.sql", "009_bootstrap_ingress.sql", "010_verifier_pilot_budget.sql",
   "011_private_public_schema_grants.sql",
+  "012_scoped_mcp_metadata.sql",
 ] as const;
 
 export async function isSchemaReady(db: Queryable): Promise<boolean> {

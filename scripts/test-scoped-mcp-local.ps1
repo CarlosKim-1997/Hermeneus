@@ -13,7 +13,7 @@ foreach($folder in @('src','migrations','tests/mcp','mcp-browser-tests')){
  $dest=Join-Path $mcpStage $folder;New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force | Out-Null
  Copy-Item -LiteralPath (Join-Path $mcpRepo $folder) -Destination $dest -Recurse
 }
-foreach($file in @('package.json','package-lock.json','tsconfig.json','tsconfig.mcp-local.json','next-env.d.ts','vitest.mcp-local.config.ts','vitest.oauth-local.config.ts','playwright.mcp-local.config.ts','tests/integration/mcp-scoped.test.ts','tests/integration/mcp-oauth.test.ts','scripts/prepare-ux-test-container.mjs','scripts/migrate.mjs','scripts/migration-runner.mjs')){
+foreach($file in @('package.json','package-lock.json','tsconfig.json','tsconfig.mcp-local.json','next-env.d.ts','vitest.mcp-local.config.ts','vitest.oauth-local.config.ts','playwright.mcp-local.config.ts','tests/integration/mcp-scoped.test.ts','tests/integration/mcp-oauth.test.ts','scripts/prepare-mcp-db.mjs','scripts/prepare-ux-test-container.mjs','scripts/migrate.mjs','scripts/migration-runner.mjs')){
  $dest=Join-Path $mcpStage $file;New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force | Out-Null
  Copy-Item -LiteralPath (Join-Path $mcpRepo $file) -Destination $dest
 }
@@ -29,7 +29,7 @@ try{
  Invoke-McpDocker network disconnect bridge $mcpBrowser
  Invoke-McpDocker network connect $mcpNetwork $mcpBrowser
  Invoke-McpDocker exec $mcpDb pg_isready -U mcp_fixture -d hermeneus_mcp_local_test
- Invoke-McpDocker exec $mcpBrowser node --input-type=module -e 'import{readFileSync}from"node:fs";import{spawnSync}from"node:child_process";import{dirname}from"node:path";const n=readFileSync(".fixture-node22","utf8").trim();for(const args of [["scripts/migrate.mjs"],["node_modules/vitest/vitest.mjs","run","--config","vitest.mcp-local.config.ts"],["node_modules/vitest/vitest.mjs","run","--config","vitest.oauth-local.config.ts"],["node_modules/@playwright/test/cli.js","test","--config","playwright.mcp-local.config.ts"]]){const r=spawnSync(n,args,{stdio:"inherit",env:{...process.env,PATH:dirname(n)+":"+process.env.PATH}});if(r.status!==0)process.exit(r.status??1)}'
+ Invoke-McpDocker exec $mcpBrowser node --input-type=module -e 'import{readFileSync}from"node:fs";import{spawnSync}from"node:child_process";import{dirname}from"node:path";const n=readFileSync(".fixture-node22","utf8").trim();for(const args of [["scripts/prepare-mcp-db.mjs"],["scripts/migrate.mjs"],["node_modules/vitest/vitest.mjs","run","--config","vitest.mcp-local.config.ts"],["node_modules/vitest/vitest.mjs","run","--config","vitest.oauth-local.config.ts"],["node_modules/@playwright/test/cli.js","test","--config","playwright.mcp-local.config.ts"]]){const r=spawnSync(n,args,{stdio:"inherit",env:{...process.env,PATH:dirname(n)+":"+process.env.PATH}});if(r.status!==0)process.exit(r.status??1)}'
  Write-Output "Scoped MCP evidence: $mcpStage/test-results/mcp-local"
 }finally{
  foreach($container in @($mcpBrowser,$mcpDb)){if($container -match '^[a-f0-9]{64}$'){& docker stop $container|Out-Null}}

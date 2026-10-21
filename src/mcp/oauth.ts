@@ -55,7 +55,7 @@ export async function createAnonymousOAuth(options: {
   const origin = https(issuer, true).origin;
   https(resource);
   if (!options.keyId || options.publicJwk.kty !== "EC" || options.publicJwk.crv !== "P-256" || options.publicJwk.d ||
-      options.publicJwk.kid !== options.keyId || options.signingKey.type !== "private" || !options.clients.length) throw unavailable();
+      options.publicJwk.kid !== options.keyId || options.signingKey.type !== "private") throw unavailable();
   // Whitelist public JWK fields; never echo private or supplied arbitrary fields.
   const publicJwk: JWK = { kty: "EC", crv: "P-256", x: options.publicJwk.x, y: options.publicJwk.y, kid: options.keyId, alg: "ES256", use: "sig" };
   const keys = createLocalJWKSet({ keys: [publicJwk] });
@@ -158,6 +158,10 @@ export async function createAnonymousOAuth(options: {
       try { const c = await verifier.verify(request.token); if (c.clientId === client.client_id) await store.revokeSession(c.sessionId); } catch { /* RFC 7009: unknown token is a successful no-op. */ }
     },
   };
-  return { issuer, resource, origin, now, begin, approve, disconnect, callback, provider, service, verifier, jwks: { keys: [publicJwk] } };
+  async function previewShare(raw:string){
+    if(!opaquePattern.test(raw))throw unavailable();const p=await options.parents.byBearer(raw);if(!p)throw unavailable();
+    return {version:p.packet.version,publicationRef:p.packet.publicationRef,fingerprint:hash(raw),summary:p.packet.items[0]?.statement.slice(0,180)??"Published Canon"};
+  }
+  return { issuer, resource, origin, now, begin, approve, disconnect, callback, previewShare, provider, service, verifier, jwks: { keys: [publicJwk] } };
 }
 export type AnonymousOAuth = Awaited<ReturnType<typeof createAnonymousOAuth>>;

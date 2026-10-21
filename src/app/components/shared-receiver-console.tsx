@@ -29,6 +29,7 @@ type Props = {
   items: ReceiverItemView[];
   semanticModeEnabled: boolean;
   externalVerifierEnabled: boolean;
+  mcpOrigin?: string;
 };
 
 type AnswerState = {
@@ -57,7 +58,7 @@ function focusReceiverSection(section: HTMLElement | null) {
   section?.scrollIntoView({ block: "start" });
 }
 
-export function SharedReceiverConsole({ token, version, publishedAt, items, semanticModeEnabled, externalVerifierEnabled }: Props) {
+export function SharedReceiverConsole({ token, version, publishedAt, items, semanticModeEnabled, externalVerifierEnabled, mcpOrigin }: Props) {
   const [question, setQuestion] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -218,7 +219,7 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
           <h2>내 맥락으로<br />더 알아보기</h2>
           <button className="primary" type="button" onClick={() => focusReceiverSection(myAiPathRef.current)}>내 AI로 설명받기</button>
           <p>전달본과 안내문을 내 AI의 새 대화에 가져가 설명받으세요.</p>
-          <p className="field-help">현재는 자료를 복사해 옮깁니다. ChatGPT 자동 연결은 이 화면에 아직 통합되지 않았습니다.</p>
+          <p className="field-help">{mcpOrigin ? "ChatGPT 플러그인으로 이 공유 건을 연결하거나, 설명 자료를 직접 복사할 수 있습니다." : "현재는 자료를 복사해 옮깁니다. ChatGPT 자동 연결은 이 화면에 아직 통합되지 않았습니다."}</p>
           <button className="route-check" type="button" onClick={() => focusReceiverSection(verificationRef.current)}>가져온 답변 검사로 이동 <span aria-hidden="true">↓</span></button>
         </div>
         <div>
@@ -239,6 +240,12 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
         <h3>내 AI에 가져갈 자료 준비</h3>
         <p>전달본에 민감한 정보가 포함될 수 있습니다. 복사한 내용을 외부 AI에 붙여넣으면 해당 서비스의 처리 조건이 적용됩니다. 이 링크를 해제해도 외부에 만든 사본은 지워지지 않습니다.</p>
         <label><input type="checkbox" checked={externalDisclosure} onChange={(event) => { copyGeneration.current += 1; verificationGeneration.current += 1; setExternalDisclosure(event.target.checked); setPacket(null); setVerdict(null); setExternalVerificationConsent(false); setCopyMessage(""); }} /> 전달본을 외부 AI로 옮길 때의 공개 범위를 이해했습니다.</label>
+        {mcpOrigin ? <aside className="receiver-notice">
+          <strong>내 ChatGPT 플러그인으로 이 전달본 연결</strong>
+          <p>새 Hermeneus 연결 화면에서 범위를 확인하고 공유 건별 권한을 승인합니다. 이 화면의 공유 비밀을 ChatGPT 주소나 프롬프트에 넣지 않습니다.</p>
+          <p>연결은 최대 60분, 공유 건별 권한은 최대 30분입니다. 위젯은 선택한 답변의 구조만 확인하며 의미 검증 API를 호출하지 않습니다.</p>
+          <button type="button" disabled={!externalDisclosure} onClick={() => { if (mcpOrigin !== "https://hermeneus-mcp-alpha.vercel.app") return; window.open(mcpOrigin + "/handoff#" + token, "_blank", "noopener,noreferrer"); }}>내 ChatGPT에 이 공유 건 연결</button>
+        </aside> : null}
         <div className="actions"><button type="button" disabled={!externalDisclosure || packetPending} onClick={preparePacket}>{packetPending ? "자료 준비 중…" : "설명 자료 준비"}</button></div>
         {!externalDisclosure ? <p className="field-help">위 내용을 확인하고 체크하면 설명 자료를 준비할 수 있습니다.</p> : null}
         {error && errorContext === "packet" ? <p className="form-error" role="alert">{error}</p> : null}

@@ -17,17 +17,17 @@ const url=process.env.TEST_DATABASE_URL;
 if(!url||process.env.HERMENEUS_MCP_DISPOSABLE!=="1")throw Error("Disposable OAuth database required");
 const parsed=new URL(url);
 if(!/^mcp-db-[a-f0-9]{32}$/.test(parsed.hostname)||parsed.pathname!=="/hermeneus_mcp_local_test"||parsed.username!=="mcp_fixture")throw Error("Target database forbidden");
-const pool=new pg.Pool({connectionString:url,max:16}),repos=createPostgresRepositories(pool),servers:Array<Awaited<ReturnType<typeof serveOAuth>>>=[];
-beforeAll(async()=>{await pool.query(await readFile("src/mcp/oauth-schema.sql","utf8"));});
+const pool=new pg.Pool({connectionString:url,max:16}),rolePool=new pg.Pool({connectionString:url,max:16,options:"-c role=hermeneus_mcp_alpha"}),repos=createPostgresRepositories(pool),servers:Array<Awaited<ReturnType<typeof serveOAuth>>>=[];
+beforeAll(async()=>{expect((await rolePool.query("SELECT current_user AS role")).rows[0].role).toBe("hermeneus_mcp_alpha");});
 beforeEach(async()=>{await pool.query("TRUNCATE creators CASCADE; TRUNCATE mcp_oauth_transactions; TRUNCATE mcp_oauth_sessions CASCADE; TRUNCATE mcp_web_approvals");});
-afterAll(async()=>{for(const s of servers)await s.close();await pool.end();});
+afterAll(async()=>{for(const s of servers)await s.close();await rolePool.end();await pool.end();});
 async function seeded(){
   let time=Date.now();const now=()=>time;
   await repos.creators.ensure({id:"creator_oauth_a",createdAt:new Date(time).toISOString()});
   await repos.bootstrapHandoff.createAtomic({ownerCreatorId:"creator_oauth_a",handoffId:"hd_oauth_a",requestKey:"oauth-synthetic-key-a",displayTitle:"PRIVATE NAVIGATION",draft:{id:"hd_oauth_a",items:[{id:"a",type:"CONFIRMED",priority:"CORE",createdBy:"CREATOR",sources:[],statement:"금요일까지 웹 초안을 준비합니다."}]}});
   await repos.published.publish("hd_oauth_a",new Date(time).toISOString(),1);
   const share=await issueShareCapability(repos,{handoffId:"hd_oauth_a",version:1}),pair=await generateKeyPair("ES256"),jwk={...await exportJWK(pair.publicKey),kid:"oauth-pg-local"},inspectionKey=randomBytes(32);
-  const store=new PostgresOAuthStore(pool),metadata=new PostgresOAuthMcpMetadata(pool,now),parents=new PostgresShareParents(pool);
+  const store=new PostgresOAuthStore(rolePool),metadata=new PostgresOAuthMcpMetadata(rolePool,now),parents=new PostgresShareParents(rolePool);
   const make=()=>createAnonymousOAuth({issuer:fixtureIssuer,resource:oauthResource,clients:[oauthClient],signingKey:pair.privateKey,keyId:jwk.kid,publicJwk:jwk,inspectionKey,store,metadata,parents,now});
   const auth=await make(),http=await serveOAuth(auth);servers.push(http);
   async function issue(){
@@ -40,6 +40,13 @@ async function seeded(){
   return {auth,make,http,store,metadata,parents,share,issue,now,advance:(ms:number)=>{time+=ms;}};
 }
 describe("OAuth security metadata on disposable PostgreSQL",()=>{
+  it("uses the migration-created restricted role and denies private source, identities, titles, drafts and Creator writes",async()=>{
+    await seeded();
+    for(const sql of ["SELECT * FROM source_messages","SELECT * FROM creator_external_identities","SELECT display_title FROM handoffs","SELECT * FROM handoff_drafts","SELECT * FROM published_handoff_provenance","SELECT * FROM schema_migrations","UPDATE handoffs SET id=id","DELETE FROM creators","CREATE TABLE public.mcp_forbidden(id text)"])
+      await expect(rolePool.query(sql)).rejects.toMatchObject({code:"42501"});
+    const flags=(await rolePool.query("SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication FROM pg_roles WHERE rolname=current_user")).rows[0];expect(Object.values(flags).every(v=>v===false)).toBe(true);
+    const tables=await pool.query("SELECT relname,relrowsecurity FROM pg_class WHERE relname IN ('mcp_web_approvals','mcp_delegations','mcp_widget_tickets','mcp_oauth_transactions','mcp_oauth_sessions','mcp_oauth_codes')");expect(tables.rowCount).toBe(6);expect(tables.rows.every(r=>r.relrowsecurity)).toBe(true);
+  });
   it("runs code/PKCE -> real HTTP MCP packet/review/inspection with current registry and exact Canon",async()=>{
     const f=await seeded(),g=await f.issue(),r=await g.exchange();expect(r.status).toBe(200);const t=await r.json();
     const client=new Client({name:"oauth-pg-local",version:"1"}),transport=new StreamableHTTPClientTransport(new URL(oauthResource),{

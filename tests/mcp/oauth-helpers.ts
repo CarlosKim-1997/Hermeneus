@@ -30,8 +30,8 @@ export async function oauthFixture(store?:OAuthStore){
     keyId:jwk.kid,publicJwk:jwk,inspectionKey:randomBytes(32),store:metadata,metadata:f.store,parents:f.parents,now:f.time});
   return {...f,auth,oauthStore:metadata,rawShare};
 }
-export async function serveOAuth(auth:Awaited<ReturnType<typeof oauthFixture>>["auth"],enabled=true){
-  const app=createAnonymousOAuthApp(auth,{enabled,shareOrigin:new URL(fixtureResource).origin}),server=createServer(app);
+export async function serveOAuth(auth:Awaited<ReturnType<typeof oauthFixture>>["auth"],enabled=true,pluginUrl?:string){
+  const app=createAnonymousOAuthApp(auth,{enabled,shareOrigin:new URL(fixtureResource).origin,pluginUrl}),server=createServer(app);
   await new Promise<void>(resolve=>server.listen(0,"127.0.0.1",resolve));
   const address=server.address();if(!address||typeof address==="string")throw Error("Missing fixture port");
   const base=`http://127.0.0.1:${address.port}`;

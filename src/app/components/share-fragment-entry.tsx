@@ -8,9 +8,10 @@ import { SharedReceiverConsole } from "./shared-receiver-console";
 type SharedView = NonNullable<Awaited<ReturnType<typeof loadSharedReceiverViewAction>>>;
 type EntryState = ShareFragmentState<SharedView>;
 
-export function ShareFragmentEntry({ semanticModeEnabled, externalVerifierEnabled }: {
+export function ShareFragmentEntry({ semanticModeEnabled, externalVerifierEnabled, mcpOrigin }: {
   semanticModeEnabled: boolean;
   externalVerifierEnabled: boolean;
+  mcpOrigin?: string;
 }) {
   const tokenRef = useRef<string | null>(null);
   const [entry, setEntry] = useState<EntryState>({ status: "loading" });
@@ -34,6 +35,7 @@ export function ShareFragmentEntry({ semanticModeEnabled, externalVerifierEnable
       items={entry.view.items}
       semanticModeEnabled={semanticModeEnabled}
       externalVerifierEnabled={externalVerifierEnabled}
+      mcpOrigin={mcpOrigin}
     />
   </>;
 }
