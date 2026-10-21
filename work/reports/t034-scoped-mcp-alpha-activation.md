@@ -220,3 +220,27 @@ isolated scoped DB 9 + OAuth DB 9 + browser 10 PASS, types PASS. Exact logs:
 dist/t034-prefixed-unit.log and dist/t034-issued-share-regression.log.
 The initial named live fixture has not been delegated; its invalid test capability
 will be revoked and replaced using the actual app token format for acceptance.
+
+## Final ChatGPT callback and locale compatibility
+
+Owner action-time approval confirmed the actual stable callback
+https://chatgpt.com/connector_platform_oauth_redirect, private plugin creation and
+one prepared synthetic Published v1 read/review grant (connection <=60min,
+grant <=30min; no paid verification). The exact redirect replaced the obsolete
+pre-discovery redirect; dpl_CvoUVE7RRBE8aQgQwRu5jT4vMbrF serves main
+44e1a03512ccbfb2103439971ed82325bf285aeb with actual readiness 200. Its main CI
+39629134448 and regular web release 39629544526 both succeeded.
+
+The actually issued hsh_ Share preview succeeded, removed the fragment and exposed
+only the safe v1 summary, excluding its private navigation title. ChatGPT's final
+OAuth request included ui_locales=ko-KR; our unknown-input guard rejected this
+presentation hint before creating a transaction. No scoped connection/grant or
+roundtrip success is claimed from that attempt.
+
+Allow only a bounded language-tag list as this optional hint, ignore it for all
+authorization decisions, and neither reflect nor persist it. Other unknown keys,
+duplicates, URL-like/empty/oversized hints remain rejected. Exact registered
+client/redirect/resource/scopes, PKCE and CSRF checks remain intact. Internal
+adversarial review examined parameter pollution, injection, identity/scope bypass
+and metadata persistence; the targeted 26-test OAuth suite and scoped types PASS.
+This is interoperability within D-015, not OIDC identity or new authority.
