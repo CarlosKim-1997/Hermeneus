@@ -1,4 +1,5 @@
 import type { IncomingMessage,ServerResponse } from "node:http";
+import { X509Certificate } from "node:crypto";
 import { importJWK, type JWK } from "jose";
 import pg from "pg";
 import { z } from "zod";
@@ -23,20 +24,22 @@ export function readMcpRuntimeConfig(env:Record<string,string|undefined>){
   const issuer=env.MCP_OAUTH_ISSUER,shareOrigin=env.MCP_SHARE_ORIGIN;
   if(issuer!=="https://hermeneus-mcp-alpha.vercel.app"||shareOrigin!=="https://hermeneus-alpha-synthetic.vercel.app")throw Error("MCP origin unavailable");
   const url=new URL(env.MCP_DATABASE_URL??"");
-  if(url.protocol!=="postgresql:"||!url.hostname.endsWith(".pooler.supabase.com")||decodeURIComponent(url.username)!==role+"."+target||url.pathname!=="/postgres"||!url.password||url.hash)throw Error("MCP database unavailable");
+  if(url.protocol!=="postgresql:"||url.hostname!=="aws-0-ap-northeast-2.pooler.supabase.com"||url.port!=="6543"||decodeURIComponent(url.username)!==role+"."+target||url.pathname!=="/postgres"||!url.password||url.hash)throw Error("MCP database unavailable");
   // pg connection-string sslmode must not override certificate verification.
   for(const key of [...url.searchParams.keys()])url.searchParams.delete(key);
+  const databaseCa=env.MCP_DATABASE_CA_CERT??'',ca=new X509Certificate(databaseCa);
+  if(!ca.ca||ca.fingerprint256!=='80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA'||Date.now()<Date.parse(ca.validFrom)||Date.now()>=Date.parse(ca.validTo))throw Error('MCP database CA unavailable');
   const jwk=JSON.parse(env.MCP_OAUTH_PRIVATE_JWK??"null") as JWK|null;
   if(!jwk||jwk.kty!=="EC"||jwk.crv!=="P-256"||typeof jwk.d!=="string"||typeof jwk.kid!=="string"||!jwk.kid)throw Error("MCP signing key unavailable");
   const inspectionKey=Buffer.from(env.MCP_INSPECTION_KEY??"","base64url");if(inspectionKey.length!==32)throw Error("MCP ticket key unavailable");
   const clients=clientsSchema.parse(JSON.parse(env.MCP_OAUTH_CLIENTS??"[]"));
-  return {issuer,resource:issuer+"/mcp",shareOrigin,databaseUrl:url.href,jwk,inspectionKey,clients,pluginUrl:env.MCP_CHATGPT_PLUGIN_URL};
+  return {issuer,resource:issuer+"/mcp",shareOrigin,databaseUrl:url.href,databaseCa,jwk,inspectionKey,clients,pluginUrl:env.MCP_CHATGPT_PLUGIN_URL};
 }
 export async function createMcpAlphaRuntime(env:Record<string,string|undefined>){
   let stage:'CONFIG'|'SIGNING_KEY'|'DB_CONNECT'|'DB_ROLE'|'DB_CLEANUP'|'AUTH_SETUP'='CONFIG',activePool:pg.Pool|undefined;
   try{
   const config=readMcpRuntimeConfig(env);stage='SIGNING_KEY';const key=await importJWK(config.jwk,"ES256");if(key instanceof Uint8Array)throw Error("MCP key unavailable");
-  const pool=new pg.Pool({connectionString:config.databaseUrl,ssl:{rejectUnauthorized:true},max:2,idleTimeoutMillis:10_000,connectionTimeoutMillis:8_000,application_name:"hermeneus-mcp-alpha"});
+  const pool=new pg.Pool({connectionString:config.databaseUrl,ssl:{ca:config.databaseCa,rejectUnauthorized:true},max:2,idleTimeoutMillis:10_000,connectionTimeoutMillis:8_000,application_name:"hermeneus-mcp-alpha"});
   activePool=pool;stage='DB_CONNECT';
   pool.on("error",()=>{/* Do not log connection strings, queries, tokens or bodies. */});
   const identity=await pool.query("SELECT current_user AS role");stage='DB_ROLE';if(identity.rows[0]?.role!==role)throw Error("MCP role unavailable");
