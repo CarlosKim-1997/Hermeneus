@@ -57,10 +57,14 @@ export function createAnonymousOAuthApp(auth: AnonymousOAuth, options: { enabled
       authorizationHandoverScript(b.ref,b.expiresAt-auth.now(),options.shareOrigin));
   } };
   // SDK validates standard OAuth requests. Add stricter fixed-client, no-duplicate and no-echo boundaries.
-  const allowedQuery = new Set(["client_id","redirect_uri","response_type","code_challenge","code_challenge_method","scope","state","resource"]);
+  const allowedQuery = new Set(["client_id","redirect_uri","response_type","code_challenge","code_challenge_method","scope","state","resource","ui_locales"]);
   app.use("/authorize", (req,res,next) => {
     if (req.method!=="GET") { fail(res,405);return; }
     if (Object.entries(req.query).some(([k,v]) => !allowedQuery.has(k) || typeof v !== "string" || v.length>1024)) { fail(res); return; }
+    // ChatGPT sends this optional presentation hint even without OIDC. It never
+    // affects authorization, is not persisted/reflected, and cannot smuggle URLs.
+    const locales=req.query.ui_locales;
+    if(locales!==undefined&&(typeof locales!=="string"||locales.length>128||!/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*(?: [A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*){0,7}$/.test(locales))){fail(res);return;}
     const redirect = req.query.redirect_uri, clientId=req.query.client_id;
     void Promise.resolve(typeof clientId==="string" ? auth.provider.clientsStore.getClient(clientId) : undefined).then(c=>{
       if (!c || typeof redirect!=="string" || !c.redirect_uris.includes(redirect)) { fail(res); return; }

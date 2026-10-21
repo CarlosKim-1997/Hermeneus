@@ -57,6 +57,17 @@ describe("dedicated anonymous OAuth, real SDK HTTP handlers and signed tokens",(
     const wrong=form({...Object.fromEntries(new URLSearchParams(body.body)),csrf:opaque()});expect((await f.request("/approve",{...wrong,headers:{...wrong.headers,origin:fixtureIssuer,cookie:a.cookie}})).status).toBe(400);
     expect((f.oauthStore as TestOAuthStore).sessions.size).toBe(0);
   });
+  it("accepts the actual ChatGPT locale hint without storing or reflecting it",async()=>{
+    const f=await running(),a=await authorized(f,{ui_locales:"ko-KR en-US"});
+    expect(a.page).not.toContain("ko-KR");
+    expect(JSON.stringify([...(f.oauthStore as TestOAuthStore).transactions.values()])).not.toContain("ko-KR");
+    for(const suffix of ["&ui_locales=ko-KR&ui_locales=en-US","&ui_locales=https%3A%2F%2Fevil.invalid","&ui_locales=", "&ui_locales="+"en-US ".repeat(30),"&unknown_hint=en-US"]){
+      expect((await f.request("/authorize?"+authQuery(challenge(opaque()))+suffix)).status).toBe(400);
+    }
+    // Presentation hints cannot turn a bad security boundary into an approval.
+    const bad=await f.request("/authorize?"+authQuery(challenge(opaque()),{ui_locales:"ko-KR",resource:"https://evil.fixture.invalid/mcp"}));
+    expect([400,302]).toContain(bad.status);expect((f.oauthStore as TestOAuthStore).sessions.size).toBe(0);
+  });
   it("declines explicitly with state and issuer and creates no delegation",async()=>{
     const f=await running(),a=await authorized(f),r=await f.request("/approve",{...form({ref:a.ref,csrf:a.csrf,deny:"yes"}),headers:{...form({}).headers,origin:fixtureIssuer,cookie:a.cookie}});
     expect(r.status).toBe(200);const body=await r.text(),u=new URL(/id="return-to-ai" href="([^"]+)"/.exec(body)![1]!.replaceAll("&amp;","&"));expect(u.searchParams.get("error")).toBe("access_denied");expect(u.searchParams.get("iss")).toBe(fixtureIssuer);expect(u.searchParams.get("state")).toBe(a.q.get("state"));expect(f.store.grants.size).toBe(0);

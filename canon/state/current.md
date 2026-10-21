@@ -15,10 +15,13 @@ The approved vNext S1–S6 vertical slice is integrated into `main`: source-free
 D-015 records the owner-approved per-share AI-client delegation and anonymous
 OAuth connection policy, separately from Creator Google login. The issuer,
 scoped server and inline original-review widget foundation is integrated and
-verified locally. Authorized synthetic activation is in progress: metadata schema
-012, a restricted DB role and separate MCP project keys are provisioned. Exact
-ChatGPT client/callback, cleanup schedule and deployed-host acceptance remain
-unfinished. Only the new MCP Production uses application OAuth; its Preview,
+verified locally. Synthetic metadata schema 012, a restricted DB role and separate
+MCP project keys are provisioned. The dedicated issuer passes hosted readiness;
+its 15-minute metadata cleanup has completed a scheduled run. The actual ChatGPT
+callback is registered with owner approval. Deployed-host acceptance is still in
+progress: the initial link rejected ChatGPT's optional locale hint, and no scoped
+roundtrip is claimed. The web handover remains disabled pending acceptance.
+Only the new MCP Production uses application OAuth; its Preview,
 the existing web Alpha and fixed synthetic plugin retain their existing settings.
 The delegated widget does not call a semantic provider. T-034 evidence and next
 actions are in work/reports/t034-scoped-mcp-alpha-activation.md.
