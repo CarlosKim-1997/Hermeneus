@@ -38,8 +38,8 @@ jobs:
         if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
         run: git diff --check "${{ github.event.before }}...${{ github.sha }}"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install through scoped MCP deployment build hook
+        run: npm --prefix deploy/mcp-alpha run vercel-build
 
       - name: Governance
         run: node tooling/governance/check.mjs

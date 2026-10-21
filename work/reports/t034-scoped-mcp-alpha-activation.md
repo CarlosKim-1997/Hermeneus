@@ -111,3 +111,32 @@ hide the web handover flag; revoke the dedicated role LOGIN if necessary. Do not
 drop the additive tables, weaken the existing web authentication or replay erased
 user data. Private-key compromise needs deliberate key revocation/rotation.
 Real data, paid semantic calls and target backup/PITR readiness remain separate.
+
+## First hosted activation observation
+
+PR 54 head `556f1da6e252e572177d58aa9d31651bb948efdb` passed all four jobs
+in CI 39614838589 and merged normally as
+`5c6edac4f257f207a55dac2e7212b5a4cbf40cbb`.
+Vercel `dpl_GtbY1iDpQmuiHd7vYNbe2w3FtbiB` reported READY in icn1 and mapped
+the exact intended primary alias, but actual endpoint probes returned invocation
+500. This is a failed activation, not host acceptance. Build logs show that the
+nearest function package installed no root dependencies, then emitted missing
+SDK/jose/pg/Express/type errors while still marking the build READY. Runtime log
+queries returned no records and are not evidence that the failure did not occur.
+
+Correction: the nearest package now has the documented Node `vercel-build` hook
+that installs the pinned root lock with dev type dependencies and runs the scoped
+TypeScript gate. The runtime uses native IncomingMessage/Express; disable Vercel
+Node helpers explicitly to preserve its raw request-body handling. Clients remain
+empty and the web handover flag remains off during repair. Relevant reference:
+https://vercel.com/docs/functions/runtimes/node-js/advanced-node-configuration .
+Performance advisor additionally reports two new informational missing FK indexes
+on MCP approvals/tickets; these are bounded synthetic tables, not a new security
+warning. The seven mutable-search-path trigger warnings predate migration 012.
+
+The final build hook uses scripts/build-mcp-alpha.mjs and process.execPath for
+both npm and TypeScript subprocesses; it refuses runtimes other than Node22.
+This avoids Windows npm.cmd selecting its bundled Node24 despite the parent
+Node22 invocation. The final Node22.23.3 build hook exited 0. CI verify now uses
+that same deployment hook as its install step. NODEJS_HELPERS=0 was set only on
+the new MCP Production. The first hosted failure remains unaccepted evidence.

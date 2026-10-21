@@ -2,5 +2,8 @@
   "name": "hermeneus-mcp-alpha",
   "private": true,
   "type": "module",
+  "scripts": {
+    "vercel-build": "node ../../scripts/build-mcp-alpha.mjs"
+  },
   "engines": { "node": "22.x" }
 }
