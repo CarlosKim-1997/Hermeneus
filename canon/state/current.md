@@ -13,13 +13,15 @@ The approved vNext S1–S6 vertical slice is integrated into `main`: source-free
 ## Active Work
 
 D-015 records the owner-approved per-share AI-client delegation and anonymous
-OAuth connection policy, separately from Creator Google login. Its local issuer,
-scoped resource server and inline original-review widget are verified on synthetic
-fixtures. This delegated route is not integrated or deployed. Next activation
-requires separately authorized synthetic-target metadata/least-privilege role and
-key provisioning, exact ChatGPT client/callback registration, bounded cleanup and
-live-host verification. The existing web Share path and fixed synthetic plugin
-remain independent; this local widget does not call a semantic provider.
+OAuth connection policy, separately from Creator Google login. The issuer,
+scoped server and inline original-review widget foundation is integrated and
+verified locally. Authorized synthetic activation is in progress: metadata schema
+012, a restricted DB role and separate MCP project keys are provisioned. Exact
+ChatGPT client/callback, cleanup schedule and deployed-host acceptance remain
+unfinished. Only the new MCP Production uses application OAuth; its Preview,
+the existing web Alpha and fixed synthetic plugin retain their existing settings.
+The delegated widget does not call a semantic provider. T-034 evidence and next
+actions are in work/reports/t034-scoped-mcp-alpha-activation.md.
 
 Migration serialization and `/api/ready` schema-history checks are integrated,
 passed Node 22 hosted CI and deployed in synthetic Alpha. Protected readiness
@@ -33,7 +35,7 @@ its exact resulting mapping. Use only the primary domain for service access.
 Target backup/PITR
 provisioning and an actual target restore rehearsal remain outstanding.
 
-Complete authorized participant access, Share fragment survival through fresh Vercel authentication, and request-path log inspection in Seoul Supabase Free project `dzaibwrrylxlrxbgnyaw` and Vercel Hobby project `prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8`. The database has migrations 001–011, Data API disabled, and app-table/function client grants revoked. Vercel Authentication covers all deployments; unauthenticated requests to the default and deployment-specific Share URLs redirect to Vercel SSO. The owner-approved Sol external verifier is enabled for synthetic Alpha under a reduced 25-cent reservation ceiling pinned to UTC October 2026. The cited activation evidence does not establish actual-screen/provider smoke completion; no additional provider calls or target reservations were observed at activation. The separate Supabase Pro/Small target with seven-day PITR selected for real-data use remains unprovisioned.
+Complete authorized participant access, Share fragment survival through fresh Vercel authentication, and request-path log inspection in Seoul Supabase Free project `dzaibwrrylxlrxbgnyaw` and Vercel Hobby project `prj_YtYWbSBvS0AvVHiJiqbnRHcIgZA8`. The database has migrations 001–012, Data API disabled, and app-table/function client grants revoked. Vercel Authentication covers all deployments; unauthenticated requests to the default and deployment-specific Share URLs redirect to Vercel SSO. The owner-approved Sol external verifier is enabled for synthetic Alpha under a reduced 25-cent reservation ceiling pinned to UTC October 2026. The cited activation evidence does not establish actual-screen/provider smoke completion; no additional provider calls or target reservations were observed at activation. The separate Supabase Pro/Small target with seven-day PITR selected for real-data use remains unprovisioned.
 
 ## Blockers
 

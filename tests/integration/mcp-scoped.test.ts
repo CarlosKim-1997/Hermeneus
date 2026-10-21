@@ -15,8 +15,7 @@ const parsed=new URL(url);
 if(!/^mcp-db-[a-f0-9]{32}$/.test(parsed.hostname)||parsed.pathname!=="/hermeneus_mcp_local_test"||parsed.username!=="mcp_fixture")throw Error("Target database forbidden");
 const pool=new pg.Pool({connectionString:url,max:12}),repos=createPostgresRepositories(pool);
 beforeAll(async()=>{
-  await pool.query("CREATE ROLE anon; CREATE ROLE authenticated; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated");
-  await pool.query(await readFile("src/mcp/postgres-schema.sql","utf8"));
+  expect((await pool.query("SELECT 1 FROM schema_migrations WHERE filename='012_scoped_mcp_metadata.sql'")).rowCount).toBe(1);
 });
 afterAll(async()=>{await pool.end();});
 beforeEach(async()=>{await pool.query("TRUNCATE creators CASCADE; TRUNCATE mcp_web_approvals");});

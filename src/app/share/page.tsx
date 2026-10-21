@@ -18,6 +18,7 @@ export default function SharedReceiverPage() {
       <ShareFragmentEntry
         semanticModeEnabled={isReceiverSemanticModeConfigured()}
         externalVerifierEnabled={isOpenAiExternalVerifierConfigured()}
+        mcpOrigin={process.env.HERMENEUS_MCP_ALPHA_ORIGIN === "https://hermeneus-mcp-alpha.vercel.app" ? process.env.HERMENEUS_MCP_ALPHA_ORIGIN : undefined}
       />
     </section>
   );
