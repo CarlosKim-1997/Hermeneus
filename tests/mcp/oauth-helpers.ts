@@ -5,6 +5,7 @@ import type { OAuthCode, OAuthSession, OAuthStore, OAuthTransaction } from "../.
 import { createAnonymousOAuth, opaque } from "../../src/mcp/oauth.js";
 import { createAnonymousOAuthApp } from "../../src/mcp/oauth-http.js";
 import { fixture, fixtureIssuer, fixtureResource } from "./helpers.js";
+import { generateShareToken } from '../../src/share/token.js';
 
 /** Only test fixtures use an in-memory authorization server store. */
 export class TestOAuthStore implements OAuthStore {
@@ -24,7 +25,7 @@ export const oauthClientB={id:"synthetic-other-client",name:"Other synthetic con
 export const oauthResource=fixtureIssuer+"/mcp";
 export async function oauthFixture(store?:OAuthStore){
   const f=fixture(),pair=await generateKeyPair("ES256"),jwk={...await exportJWK(pair.publicKey),kid:"local-fixture-es256"};
-  const rawShare=opaque(),original=f.parents.byBearer;f.parents.byBearer=raw=>original(raw===rawShare?"fixture-share-a":raw);
+  const rawShare=generateShareToken(),original=f.parents.byBearer;f.parents.byBearer=raw=>original(raw===rawShare?"fixture-share-a":raw);
   const metadata=store??new TestOAuthStore();
   const auth=await createAnonymousOAuth({issuer:fixtureIssuer,resource:oauthResource,clients:[oauthClient,oauthClientB],signingKey:pair.privateKey,
     keyId:jwk.kid,publicJwk:jwk,inspectionKey:randomBytes(32),store:metadata,metadata:f.store,parents:f.parents,now:f.time});

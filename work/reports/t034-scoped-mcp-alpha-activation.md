@@ -195,3 +195,28 @@ registered for public client hermeneus-chatgpt-alpha; no secret/OIDC/email scope
 DCR or wildcard. The creation form has both handoff scopes and PKCE S256 set;
 final private-plugin creation/access confirmation has not yet been requested or
 performed. Existing public client configuration alone creates no Share grant.
+
+PR57 head 323884fb435dfdea74d4b57681faf39e2bbc9580 passed four required checks
+in 39626810961 and merged as 65b3808c9aa58a8f4bff4c6d707bdc283b3570bc.
+MCP dpl_G9GGLSTX1pv7YSx91PcnCB4sBQs8 now returns actual readiness 200 with that
+commit, synthetic-only, one predefined client and semanticProvider NOT_CONNECTED.
+Issuer/resource metadata and public-only JWKS return 200; unauthenticated MCP is
+401 with the exact resource challenge, unknown client is 400. CA validation was
+not weakened. Main/web release validation is observed separately from this host.
+
+Live fixture preview exposed a distinct integration bug: original Share bearers
+use hsh_ plus a secret, while the new handover had reused the 43-character OAuth
+selector/nonce validator. Earlier browser fixtures used unprefixed opaque test
+values, so those passing fixture checks did not establish original-Share format
+compatibility. No plugin or delegated grant was created by this failed attempt.
+
+Fix only the scoped bearer boundary to the existing Share prefix/format with a
+512-character request bound. Keep all OAuth selectors/nonces at 43 characters.
+Manual link paste, fragment intake and BroadcastChannel bearer checks now agree.
+Browser helpers use the actual generateShareToken function. A new restricted-role
+DB regression previews an actually issued capability, excludes raw/private fields,
+rejects a bare OAuth nonce and creates no delegation. Local units 212 PASS;
+isolated scoped DB 9 + OAuth DB 9 + browser 10 PASS, types PASS. Exact logs:
+dist/t034-prefixed-unit.log and dist/t034-issued-share-regression.log.
+The initial named live fixture has not been delegated; its invalid test capability
+will be revoked and replaced using the actual app token format for acceptance.
