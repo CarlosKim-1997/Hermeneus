@@ -140,3 +140,25 @@ This avoids Windows npm.cmd selecting its bundled Node24 despite the parent
 Node22 invocation. The final Node22.23.3 build hook exited 0. CI verify now uses
 that same deployment hook as its install step. NODEJS_HELPERS=0 was set only on
 the new MCP Production. The first hosted failure remains unaccepted evidence.
+
+## 2026-10-22 continuation
+
+Owner supplied the action-time cleanup confirmation. The staged SQL UI executed
+successfully; cron job 1 hermeneus-mcp-metadata-cleanup is active at */15 * * * *.
+Its first scheduled-run evidence is still pending. Screenshot in local ignored
+dist/t034-cleanup-scheduled.png corroborates schedule creation, not a completed run.
+
+PR55 exact head 9e2fc51a2cbd81a6c7f68beb4b4a8e47308b5e5d passed all four required
+jobs in 39616348040. Auto-review initially used stale queued evidence; fresh
+required-check reads proved PASS, then normal merge succeeded as
+25d62a3d15ea2705c2d7cc96dfd56f6c9b2b1443. No protection bypass or change.
+MCP deployment dpl_4k671tSFmqAanueN1kGfD9Nju4BM builds without the former missing
+module/type errors and serves the correct primary alias in icn1. Actual probes now
+return the application's generic 503, so initialization is not yet accepted.
+All nine expected new-project Production variables are present; sensitive values
+were not retrieved. Client allowlist remains empty; web handover stays disabled.
+
+To resolve the actual startup failure, add fixed stage and whitelisted cause
+categories to operational logs, never an exception message, URL, SQL, key or
+request body. Failed initialization closes its DB pool. Focused runtime tests
+include arbitrary-detail redaction and generic failure behavior; 9/9 PASS.
