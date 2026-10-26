@@ -27,7 +27,7 @@ test.describe("Receiver flow", () => {
     await page.getByRole("button", { name: "초안 저장" }).click();
     await expect(page.getByText(/초안 수정 \d+을 저장했습니다/)).toBeVisible();
     await page.getByRole("button", { name: "전달본으로 확정" }).click();
-    await expect(page.getByRole("heading", { name: "이제 맥락을 건네세요." })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: "전달본 공유" })).toBeVisible({ timeout: 30_000 });
 
     await page.goto(`/receiver/${handoffId}/1`);
     await expect(page.getByRole("heading", { name: "확정한 맥락을 다시 살펴보세요.", exact: true })).toBeVisible();

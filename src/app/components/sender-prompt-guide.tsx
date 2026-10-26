@@ -10,7 +10,7 @@ export function SenderPromptGuide() {
   async function copyPrompt() {
     try {
       await navigator.clipboard.writeText(SENDER_BOOTSTRAP_PROMPT);
-      setCopyMessage("안내문을 복사했습니다. 생각을 정리하던 내 AI 대화에 붙여넣으세요.");
+      setCopyMessage("복사했습니다. 내 AI 대화에 붙여넣으세요.");
     } catch {
       setShowPrompt(true);
       setCopyMessage("자동 복사를 사용할 수 없습니다. 펼쳐진 안내문을 직접 선택해 복사하세요.");
@@ -25,8 +25,8 @@ export function SenderPromptGuide() {
         <button type="button" aria-expanded={showPrompt} aria-controls="sender-prompt-content" onClick={() => setShowPrompt(!showPrompt)}>{showPrompt ? "안내문 접기" : "안내문 직접 보기"}</button>
       </div>
       {copyMessage ? <p className="inline-feedback" role="status">{copyMessage}</p> : null}
-      <p className="prompt-next">복사 → 내 AI 대화에 붙여넣기 → AI가 만든 JSON 가져오기</p>
-      <p className="field-help">AI는 해당 대화에 있는 맥락만 사용할 수 있습니다. AI의 제안은 아직 승인된 전달본이 아닙니다. 이 경로에서는 대화 원문을 Hermeneus에 수집하지 않습니다.</p>
+
+      <p className="field-help">AI는 그 대화에 있는 내용으로 초안을 만듭니다. 원래 대화는 Hermeneus에 저장되지 않습니다.</p>
       <div id="sender-prompt-content" hidden={!showPrompt}>
         <label htmlFor="sender-prompt-text">AI에 줄 안내문</label>
         <textarea id="sender-prompt-text" readOnly rows={12} value={SENDER_BOOTSTRAP_PROMPT} />

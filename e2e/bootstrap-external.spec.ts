@@ -9,7 +9,7 @@ test("Bootstrap notes disappear, title stays private, and shared packet is sourc
   await creator.setViewportSize({ width: 390, height: 844 });
   await devSignIn(creator);
   await creator.goto("/new");
-  await expect(creator.getByRole("heading", { name: "정리하던 대화를 전달 초안으로" })).toBeVisible();
+  await expect(creator.getByRole("heading", { name: "내 AI에 안내문 보내기" })).toBeVisible();
   await creator.getByRole("button", { name: "안내문 직접 보기", exact: true }).click();
   const senderPrompt = creator.getByLabel("AI에 줄 안내문", { exact: true });
   await expect(senderPrompt).toBeVisible();
@@ -32,7 +32,7 @@ test("Bootstrap notes disappear, title stays private, and shared packet is sourc
     reviewNotes: ["Ask Sender before publishing."],
   }));
   await creator.getByRole("button", { name: "초안 미리보기" }).click();
-  await expect(creator.getByRole("heading", { name: "3. 저장 전, 빠진 맥락 확인" })).toBeInViewport();
+  await expect(creator.getByRole("heading", { name: "가져온 초안 확인" })).toBeInViewport();
   await expect(creator.getByRole("listitem").filter({ hasText: "Ask Sender before publishing." })).toBeVisible();
   await expect(creator.getByRole("button", { name: "초안 만들고 검토하기" })).toBeDisabled();
   await creator.getByLabel(/“Private bootstrap title”을 내 전달함/).check();
@@ -47,7 +47,7 @@ test("Bootstrap notes disappear, title stays private, and shared packet is sourc
   await expect(creator.getByText("원문이 삭제되어 근거를 확인할 수 없습니다.")).toHaveCount(0);
   await expect(creator.getByText("Ask Sender before publishing.")).toHaveCount(0);
   await creator.getByRole("button", { name: "전달본으로 확정" }).click();
-  await expect(creator.getByRole("heading", { name: "이제 맥락을 건네세요." })).toBeVisible({ timeout: 30_000 });
+  await expect(creator.getByRole("heading", { name: "전달본 공유" })).toBeVisible({ timeout: 30_000 });
   await creator.getByRole("button", { name: "이 버전의 공유 링크 만들기" }).click();
   const linkText = await creator.locator("code").filter({ hasText: "/share#hsh_" }).first().textContent();
   expect(linkText).toBeTruthy();

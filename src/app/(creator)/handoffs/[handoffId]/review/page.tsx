@@ -14,10 +14,10 @@ export default async function ReviewPage({ params }: { params: Promise<{ handoff
   return (
     <section className="review-page">
       <header className="page-heading">
-      <p className="eyebrow">전달 내용 검토</p>
-      <h2>내 뜻대로 전달될지 확인하세요.</h2>
-      <p className="page-lead">요청과 배경이 충분한지, 확정한 내용과 미정인 내용이 구분되는지 검토하세요.</p>
-      <p className="record-id">관리 번호: {handoffId}</p>
+
+      <h2>보낼 내용 검토</h2>
+      <p className="page-lead">빠진 내용은 추가하고, 확정한 것과 미정인 것을 구분해주세요.</p>
+      <details className="record-id"><summary>관리 정보</summary><p>관리 번호: {handoffId}</p></details>
       </header>
       <HandoffSteps current={2} />
       <ReviewEditor

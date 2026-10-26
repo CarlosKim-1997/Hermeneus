@@ -23,14 +23,14 @@ test("creation keeps notes local, title opt-in and source import secondary",asyn
   await page.getByLabel("AI가 만든 전달 초안(JSON)",{exact:true}).fill("```json\n{}\n```");await page.getByRole('button',{name:'초안 미리보기',exact:true}).click();
   await expect(page.getByRole('alert')).toBeInViewport();
   await page.getByLabel("AI가 만든 전달 초안(JSON)",{exact:true}).fill(JSON.stringify(proposal));await page.getByRole('button',{name:'초안 미리보기',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'3. 저장 전, 빠진 맥락 확인'})).toBeInViewport();
+  await expect(page.getByRole('heading',{name:'가져온 초안 확인'})).toBeInViewport();
   await expect(page.getByLabel(/비공개 시험 이름/)).not.toBeChecked();await expect(page.getByRole('button',{name:'초안 만들고 검토하기'})).toBeDisabled();
   let sent:any;await page.route('**/__preview/action',async route=>{sent=route.request().postDataJSON();await route.fulfill({json:{ok:true,handoffId:'hd_ux_synthetic'}});});
   await page.getByLabel(/검토 메모를 확인했고/).check();await page.getByRole('button',{name:'초안 만들고 검토하기'}).click();await expect(page).toHaveURL(/\/review$/);
   expect(sent.action).toBe('bootstrap');expect(sent.args[0]).not.toHaveProperty('reviewNotes');expect(sent.args[0]).not.toHaveProperty('title');expect(sent.args[0].saveTitle).toBe(false);
 });
 test("draft save status, readable enum labels and empty recovery remain usable",async({page})=>{
-  await page.goto('/review?state=empty');await expect(page.getByRole('heading',{name:'전할 내용을 하나씩 담아보세요'})).toBeVisible();await page.getByRole('button',{name:'첫 항목 추가'}).click();
+  await page.goto('/review?state=empty');await expect(page.getByRole('heading',{name:'아직 작성한 항목이 없습니다'})).toBeVisible();await page.getByRole('button',{name:'첫 항목 추가'}).click();
   await page.getByLabel('전달할 내용',{exact:true}).fill('합성 요청입니다.');await page.getByLabel('내용 분류').selectOption('OPEN');await expect(page.getByLabel('내용 분류')).toHaveValue('OPEN');
   await expect(page.getByRole('status')).toContainText('저장하지 않은 변경');await page.getByRole('button',{name:'초안 저장',exact:true}).click();await expect(page.getByText('초안 수정 3을 저장했습니다.')).toBeVisible();
 });
@@ -83,6 +83,11 @@ for(const width of [390,820,1280])test(`all screens at ${width}px have readable 
     expect(await page.locator('input:not([type="hidden"]),select,textarea').evaluateAll(elements=>elements.every(element=>(element as HTMLElement).offsetParent===null||Boolean(element.id&&document.querySelector(`label[for="${element.id}"]`))||Boolean(element.closest('label')))),route).toBe(true);
   }
   expect(errors).toEqual([]);
+  await page.goto('/shared');
+  const documentBox=await page.locator('.canon-document').boundingBox(),choicesBox=await page.locator('.receiver-route-choice').boundingBox();
+  expect(documentBox).not.toBeNull();expect(choicesBox).not.toBeNull();
+  if(width>=1100)expect(Math.abs(documentBox!.y-choicesBox!.y),'reading and actions share the top row').toBeLessThan(2);
+  else expect(documentBox!.y,'read the document before supplementary routes').toBeLessThan(choicesBox!.y);
   await page.goto('/new');await page.screenshot({path:`test-results/ux/new-${width}.png`,fullPage:true});await page.goto('/shared');await page.screenshot({path:`test-results/ux/shared-${width}.png`,fullPage:true});await page.goto('/library');await page.screenshot({path:`test-results/ux/library-${width}.png`,fullPage:true});
 });
 

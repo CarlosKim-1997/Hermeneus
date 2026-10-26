@@ -83,7 +83,7 @@ export function BootstrapForm() {
   return (
     <div className="bootstrap-form">
       <label htmlFor="portable-proposal">AI가 만든 전달 초안(JSON)</label>
-      <p className="field-help" id="proposal-help">AI 답변에서 JSON 내용만 붙여넣으세요. 미리보기 단계에서는 아직 서버에 초안을 만들지 않습니다.</p>
+      <p className="field-help" id="proposal-help">JSON 부분만 붙여넣으세요. 미리보기만으로는 저장되지 않습니다.</p>
       <textarea
         id="portable-proposal"
         aria-describedby="proposal-help"
@@ -95,7 +95,7 @@ export function BootstrapForm() {
       <div ref={feedbackRef} tabIndex={-1} aria-live="polite">
         {proposal ? (
           <section className="proposal-preview" aria-label="가져온 초안 미리보기">
-            <h3>3. 저장 전, 빠진 맥락 확인</h3>
+            <h3>가져온 초안 확인</h3>
             <p>아직 AI의 제안입니다. 다음 단계에서 내용을 편집한 뒤 직접 확정할 수 있습니다.</p>
             <ol>{proposal.items.map((item) => <li key={item.proposalId}><strong>{ITEM_LABELS[item.type]}</strong> · {PRIORITY_LABELS[item.priority]}<p>{item.statement}</p></li>)}</ol>
             {proposal.title ? (
@@ -112,7 +112,7 @@ export function BootstrapForm() {
               검토 메모를 확인했고, 메모가 저장되지 않는다는 점을 이해했습니다.
             </label>
             <div className="actions"><button className="primary" type="button" disabled={!acknowledged || pending} onClick={create}>{pending ? "초안 만드는 중…" : "초안 만들고 검토하기"}</button></div>
-            {!acknowledged ? <p className="field-help">검토 메모를 확인하고 위 항목에 체크하면 다음 단계로 이동할 수 있습니다.</p> : null}
+            {!acknowledged ? <p className="field-help">검토 메모를 확인한 뒤 체크해주세요.</p> : null}
           </section>
         ) : null}
         {error ? <p className="error" role="alert">{error}</p> : null}

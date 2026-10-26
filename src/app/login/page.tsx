@@ -9,12 +9,12 @@ export default function LoginPage() {
 
   return (
     <section className="panel login-panel">
-      <p className="eyebrow">맥락을 이어주는 전달</p>
-      <h2>설명을 반복하는 일을 줄여보세요.</h2>
-      <p className="login-intro">내 AI와 정리하고, 내가 확인한 의미를 전하세요.</p>
+
+      <h2>Hermeneus에 로그인</h2>
+
       {externalAllowed ? (
         <>
-          <p>Google로 로그인하면 전달 초안을 만들고, 검토한 전달본을 링크로 공유할 수 있습니다.</p>
+          <p>전달할 내용을 정리하고 공유 링크를 만들 수 있습니다.</p>
           <GoogleSignInForm />
         </>
       ) : null}

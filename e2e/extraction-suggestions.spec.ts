@@ -23,6 +23,6 @@ test.describe("Creator extraction UI", () => {
     await page.getByRole("button", { name: "초안 저장" }).click();
     await expect(page.getByText(/초안 수정 \d+을 저장했습니다/)).toBeVisible();
     await page.getByRole("button", { name: "전달본으로 확정" }).click();
-    await expect(page.getByRole("heading", { name: "이제 맥락을 건네세요." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "전달본 공유" })).toBeVisible();
   });
 });

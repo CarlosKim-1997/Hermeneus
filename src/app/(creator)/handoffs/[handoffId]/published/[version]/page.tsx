@@ -25,9 +25,9 @@ export default async function PublishedPage({
 
   return (
     <section className="published-page">
-      <header className="page-heading"><p className="eyebrow">전달본 확정·공유</p>
-      <h2>이제 맥락을 건네세요.</h2>
-      <p className="page-lead">전달 내용이 확정되었습니다. 이 버전의 링크를 만들어 원하는 상대에게 보내세요.</p>
+      <header className="page-heading">
+      <h2>전달본 공유</h2>
+      <p className="page-lead">내용이 확정되었습니다. 공유 링크를 만들어 상대에게 보내세요.</p>
       <p className="version-line">
         버전 <strong>{published.version}</strong> · 확정 {formatDateTimeUtc(published.publishedAt)}
       </p>

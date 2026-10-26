@@ -240,7 +240,7 @@ export function ReviewEditor({
             ))}
           </div>
         ) : (
-          <p className="notice">{sourceErased
+          <p className="field-help">{sourceErased
             ? "원문 근거가 삭제되어 원문에서 AI 제안을 만들 수 없습니다."
             : "대화 원문을 수집하지 않은 경로입니다. 내 AI의 제안을 직접 검토하세요."}</p>
         )}
@@ -250,7 +250,7 @@ export function ReviewEditor({
         <p className={`draft-save-state ${hasUnsavedChanges ? "draft-save-state-dirty" : ""}`} role="status">
           {hasUnsavedChanges ? "저장하지 않은 변경이 있습니다. 초안을 저장하거나 전달본으로 확정하세요." : "저장된 초안을 보고 있습니다."}
         </p>
-        {items.length === 0 ? <div className="editor-empty"><h3>전할 내용을 하나씩 담아보세요</h3><p>부탁할 일이나 배경부터 한 항목씩 추가할 수 있습니다.</p><button type="button" onClick={addItem}>첫 항목 추가</button></div> : null}
+        {items.length === 0 ? <div className="editor-empty"><h3>아직 작성한 항목이 없습니다</h3><p>부탁할 일이나 필요한 배경을 추가해주세요.</p><button type="button" onClick={addItem}>첫 항목 추가</button></div> : null}
         {conflict ? (
           <p className="error" role="alert">
             다른 곳에서 초안이 변경되었습니다. 현재 입력을 따로 보관하고 새로고침해 최신 초안을 확인하세요.
@@ -268,6 +268,7 @@ export function ReviewEditor({
               value={item.statement}
               onChange={(event) => updateItem(index, { statement: event.target.value })}
             />
+            <div className="draft-fields"><div>
             <label htmlFor={`type-${item.id}`}>내용 분류</label>
             <select
               id={`type-${item.id}`}
@@ -280,6 +281,7 @@ export function ReviewEditor({
                 </option>
               ))}
             </select>
+            </div><div>
             <label htmlFor={`priority-${item.id}`}>중요도</label>
             <select
               id={`priority-${item.id}`}
@@ -292,6 +294,8 @@ export function ReviewEditor({
                 </option>
               ))}
             </select>
+
+            </div></div>
 
             {sourceRetained ? (
             <fieldset style={{ marginTop: "0.75rem", border: "1px solid #e5e7eb", borderRadius: 6, padding: "0.75rem" }}>

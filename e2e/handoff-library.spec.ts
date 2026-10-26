@@ -23,9 +23,12 @@ test.describe("Creator Handoff Library", () => {
 
     await creatorA.goto("/handoffs");
     await expect(creatorA.getByRole("heading", { name: "내 전달함" })).toBeVisible();
-    await expect(creatorA.getByRole("heading", { name: handoffA!, exact: true })).toBeVisible();
-    await creatorA.getByRole("link", { name: "초안 이어서 검토" }).first().click();
-    await expect(creatorA.getByRole("heading", { name: "내 뜻대로 전달될지 확인하세요." })).toBeVisible();
+    const createdRow = creatorA.locator(".handoff-library-item").filter({ hasText: handoffA! });
+    await expect(createdRow.getByRole("heading", { name: "이름 없는 전달", exact: true })).toBeVisible();
+    await createdRow.getByText("관리 정보 보기", { exact: true }).click();
+    await expect(createdRow.getByText(`관리 번호 ${handoffA}`, { exact: true })).toBeVisible();
+    await creatorA.getByRole("link", { name: "초안 편집" }).first().click();
+    await expect(creatorA.getByRole("heading", { name: "보낼 내용 검토" })).toBeVisible();
 
     await creatorA.goto(`/handoffs/${handoffA}/review`);
     await creatorA.getByRole("button", { name: "항목 추가", exact: true }).click();
@@ -36,13 +39,13 @@ test.describe("Creator Handoff Library", () => {
     await creatorA.getByRole("button", { name: "초안 저장" }).click();
     await expect(creatorA.getByText(/초안 수정 \d+을 저장했습니다/)).toBeVisible();
     await creatorA.getByRole("button", { name: "전달본으로 확정" }).click();
-    await expect(creatorA.getByRole("heading", { name: "이제 맥락을 건네세요." })).toBeVisible({ timeout: 30_000 });
+    await expect(creatorA.getByRole("heading", { name: "전달본 공유" })).toBeVisible({ timeout: 30_000 });
 
     await creatorA.goto("/handoffs");
     const rowA = creatorA.locator(".handoff-library-item").filter({ hasText: handoffA! });
     await expect(rowA.getByText("버전 1", { exact: true })).toBeVisible();
-    await rowA.getByRole("link", { name: "확정 전달본 보기" }).click();
-    await expect(creatorA.getByRole("heading", { name: "이제 맥락을 건네세요." })).toBeVisible();
+    await rowA.getByRole("link", { name: "전달본 보기" }).click();
+    await expect(creatorA.getByRole("heading", { name: "전달본 공유" })).toBeVisible();
 
     await devSignIn(creatorB, "secondary");
     await creatorB.goto("/new");

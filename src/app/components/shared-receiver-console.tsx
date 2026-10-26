@@ -208,22 +208,22 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
 
   return (
     <div className="receiver-layout">
-      <p className="receiver-notice receiver-reading-intro">먼저 전달본을 읽어보세요. 더 필요한 설명은 내가 쓰는 AI와 이어갈 수 있습니다.</p>
+
       <p className="receiver-pin">이 링크는 항상 버전 {version}을 엽니다. 이후 새 버전으로 자동 변경되지 않습니다.</p>
 
       <PublishedDocument items={items} version={version} publishedAt={publishedAt}/>
 
       <nav className="receiver-route-choice" aria-label="전달 내용을 더 알아보는 방법">
         <div>
-          <span className="route-symbol" aria-hidden="true">↗</span><p className="eyebrow">내용을 읽은 다음</p>
-          <h2>내 맥락으로<br />더 알아보기</h2>
+
+          <h2>더 설명이 필요할 때</h2>
           <button className="primary" type="button" onClick={() => focusReceiverSection(myAiPathRef.current)}>내 AI로 설명받기</button>
           <p>전달본과 안내문을 내 AI의 새 대화에 가져가 설명받으세요.</p>
           <p className="field-help">{mcpOrigin ? "ChatGPT 플러그인으로 이 공유 건을 연결하거나, 설명 자료를 직접 복사할 수 있습니다." : "현재는 자료를 복사해 옮깁니다. ChatGPT 자동 연결은 이 화면에 아직 통합되지 않았습니다."}</p>
-          <button className="route-check" type="button" onClick={() => focusReceiverSection(verificationRef.current)}>가져온 답변 검사로 이동 <span aria-hidden="true">↓</span></button>
+          <button className="route-check" type="button" onClick={() => focusReceiverSection(verificationRef.current)}>가져온 답변 검사로 이동</button>
         </div>
         <div>
-          <p className="eyebrow">보조 경로</p>
+
           <button type="button" onClick={() => focusReceiverSection(onsiteQuestionsRef.current)}>이 화면에서 질문하기</button>
           <p>다른 AI로 옮기지 않고 이 화면의 제한된 질문 기능을 사용합니다.</p>
         </div>
@@ -231,18 +231,18 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
 
       <section id="use-my-ai" ref={myAiPathRef} tabIndex={-1} className="receiver-ai-path" aria-labelledby="my-ai-heading">
         <header>
-          <p className="eyebrow">내 AI로 맥락 따라가기</p>
+
           <h2 id="my-ai-heading">내 AI로 설명받기</h2>
           <p>설명 자료를 내 AI로 가져가 대화한 뒤, 확인하고 싶은 답변 원문만 이곳에 붙여넣으세요.</p>
         </header>
       <section className="panel panel-transfer">
-        <p className="eyebrow">01 / 내 AI에 설명 자료 전달</p>
+
         <h3>내 AI에 가져갈 자료 준비</h3>
         <p>전달본에 민감한 정보가 포함될 수 있습니다. 복사한 내용을 외부 AI에 붙여넣으면 해당 서비스의 처리 조건이 적용됩니다. 이 링크를 해제해도 외부에 만든 사본은 지워지지 않습니다.</p>
         <label><input type="checkbox" checked={externalDisclosure} onChange={(event) => { copyGeneration.current += 1; verificationGeneration.current += 1; setExternalDisclosure(event.target.checked); setPacket(null); setVerdict(null); setExternalVerificationConsent(false); setCopyMessage(""); }} /> 전달본을 외부 AI로 옮길 때의 공개 범위를 이해했습니다.</label>
         {mcpOrigin ? <aside className="receiver-notice">
           <strong>내 ChatGPT 플러그인으로 이 전달본 연결</strong>
-          <p>새 Hermeneus 연결 화면에서 범위를 확인하고 공유 건별 권한을 승인합니다. 이 화면의 공유 비밀을 ChatGPT 주소나 프롬프트에 넣지 않습니다.</p>
+          <p>다음 화면에서 이 전달본에 대한 접근을 승인합니다. 공유 링크의 비밀 토큰은 ChatGPT 주소나 프롬프트로 보내지 않습니다.</p>
           <p>연결은 최대 60분, 공유 건별 권한은 최대 30분입니다. 위젯은 선택한 답변의 구조만 확인하며 의미 검증 API를 호출하지 않습니다.</p>
           <button type="button" disabled={!externalDisclosure} onClick={() => { if (mcpOrigin !== "https://hermeneus-mcp-alpha.vercel.app") return; window.open(mcpOrigin + "/handoff#" + token, "_blank", "noopener,noreferrer"); }}>내 ChatGPT에 이 공유 건 연결</button>
         </aside> : null}
@@ -250,7 +250,7 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
         {!externalDisclosure ? <p className="field-help">위 내용을 확인하고 체크하면 설명 자료를 준비할 수 있습니다.</p> : null}
         {error && errorContext === "packet" ? <p className="form-error" role="alert">{error}</p> : null}
         {packet ? <>
-          <p>기준 버전 {packet.version} · 연결 식별값 {packet.canonicalDigest}</p>
+          <details className="record-id"><summary>자료의 버전·식별 정보</summary><p>기준 버전 {packet.version} · 연결 식별값 {packet.canonicalDigest}</p></details>
           <p>내 AI의 새 대화에 자료를 붙여넣으세요. 확정 사항·미정 사항·외부 지식을 구분해 설명하도록 요청하세요. AI의 인용 표시는 검증의 증거가 아닙니다.</p>
           <button type="button" disabled={copyPending} onClick={copyPacket}>{copyPending ? "복사 중…" : "내 AI용 자료 복사"}</button>
           {copyMessage ? <p className="inline-feedback" role="status">{copyMessage}</p> : null}
@@ -260,15 +260,15 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
       </section>
 
       <section ref={verificationRef} tabIndex={-1} className="panel panel-verification" aria-labelledby="verification-heading">
-        <p className="eyebrow">02 / 선택한 답변만 검사</p>
-        <h3 id="verification-heading">AI의 설명이 전달본과 맞는지 확인</h3>
+
+        <h3 id="verification-heading">가져온 답변 검사</h3>
         {!externalVerifierEnabled ? (
           <div className="receiver-notice" id="verification-availability">
             <strong>현재 의미 검증이 꺼져 있습니다.</strong>
-            <p>답변을 보내도 결과는 INDETERMINATE(판정할 수 없음)입니다. 이 환경에서는 전달본과 의미가 일치하는지 검사하지 않습니다.</p>
+            <p>지금은 구조와 버전만 확인합니다. 답변이 전달본과 같은 뜻인지는 판단하지 않으며, 결과는 INDETERMINATE(판정할 수 없음)로 표시됩니다.</p>
           </div>
         ) : null}
-        <p>의미 검증이 켜진 경우, 제출한 답변만 이 버전의 전달본과 비교합니다. AI와 나눈 전체 대화나 사람의 이해 여부를 검사하지 않습니다.</p>
+        {externalVerifierEnabled ? <p>붙여넣은 답변을 이 전달본과 비교합니다. 대화 전체나 사람의 이해 여부를 검사하지는 않습니다.</p> : null}
         <p>Hermeneus에 전달해도 괜찮은 답변만 붙여넣으세요. 개인적인 맥락이 포함되어 있는지 먼저 확인하세요.</p>
         <label htmlFor="external-question">그때 물어본 질문 · 선택 사항</label>
         <textarea id="external-question" value={externalQuestion} placeholder="예: 모바일 화면도 이번 요청에 포함되나요?" onChange={(event) => { verificationGeneration.current += 1; setExternalQuestion(event.target.value); setExternalVerificationConsent(false); setVerdict(null); }} />
@@ -276,7 +276,7 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
         <textarea id="external-answer" aria-describedby={!externalVerifierEnabled ? "verification-availability" : undefined} value={externalAnswer} placeholder="대화 전체 대신, 확인하고 싶은 답변의 원문만 붙여넣으세요." onChange={(event) => { verificationGeneration.current += 1; setExternalAnswer(event.target.value); setExternalVerificationConsent(false); setVerdict(null); }} />
         {externalVerifierEnabled ? <label>
           <input type="checkbox" checked={externalVerificationConsent} onChange={(event) => setExternalVerificationConsent(event.target.checked)} />
-          이번 검사에 한해 현재 버전의 전달 내용·질문·답변을 OpenAI로 보내는 데 동의합니다. OpenAI의 기본 API 오용 모니터링 로그에는 제한적인 예외를 제외하고 최대 30일간 내용이 포함될 수 있습니다. Hermeneus는 답변이나 동의 선택을 영속 저장하지 않습니다.
+          이번 검사에 한해 현재 버전의 전달 내용·질문·답변을 OpenAI로 보내는 데 동의합니다. OpenAI의 기본 API 오용 모니터링 로그에는 제한적인 예외를 제외하고 최대 30일간 내용이 포함될 수 있습니다. Hermeneus는 답변이나 동의 선택을 저장하지 않습니다.
         </label> : null}
         <button type="button" disabled={!packet || !externalAnswer.trim() || verificationPending || (externalVerifierEnabled && !externalVerificationConsent)} onClick={verifyPastedAnswer}>{verificationPending ? "검사 중…" : "이 답변 검사"}</button>
         {!packet ? <p className="field-help">먼저 위에서 설명 자료를 준비하세요. 같은 버전에 연결된 답변만 검사합니다.</p>
@@ -288,7 +288,7 @@ export function SharedReceiverConsole({ token, version, publishedAt, items, sema
       </section>
 
       <section id="ask-here" ref={onsiteQuestionsRef} tabIndex={-1} className="panel panel-receiver-qa" aria-labelledby="ask-here-heading">
-        <p className="eyebrow">보조 경로 / 이 화면의 질문</p>
+
         <h2 id="ask-here-heading">이 화면에서 질문하기</h2>
         <p>이 전달본에 직접 질문합니다. 내 AI가 만든 답변을 검사하는 기능과는 별개입니다.</p>
         <p className="field-help">{semanticModeEnabled ? "현재 설정된 AI 해석 기능으로 질문을 처리합니다." : "이 환경에서는 정해진 규칙으로 질문을 해석합니다. 자유로운 대화형 설명은 제공하지 않습니다."}</p>

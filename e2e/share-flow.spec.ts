@@ -29,7 +29,7 @@ test.describe("상대에게 보낼 링크 flow", () => {
     await creator.getByRole("button", { name: "초안 저장" }).click();
     await expect(creator.getByText(/초안 수정 \d+을 저장했습니다/)).toBeVisible();
     await creator.getByRole("button", { name: "전달본으로 확정" }).click();
-    await expect(creator.getByRole("heading", { name: "이제 맥락을 건네세요." })).toBeVisible({ timeout: 30_000 });
+    await expect(creator.getByRole("heading", { name: "전달본 공유" })).toBeVisible({ timeout: 30_000 });
 
     await creator.getByRole("button", { name: "이 버전의 공유 링크 만들기" }).click();
     await expect(creator.getByText(/버전 1의 공유 링크를 만들었습니다/)).toBeVisible();
@@ -45,7 +45,7 @@ test.describe("상대에게 보낼 링크 flow", () => {
     await receiver.goto("/share");
     await expect(receiver.getByText("이 공유 링크를 열 수 없습니다. 보낸 사람에게 새 링크를 요청해주세요.")).toBeVisible();
     await receiver.goto(sharePath);
-    await expect(receiver.getByRole("heading", { name: "전달할 맥락이 도착했어요." })).toBeVisible();
+    await expect(receiver.getByRole("heading", { name: "공유받은 전달본" })).toBeVisible();
     await expect(receiver).toHaveURL(/\/share$/);
     expect(requestPaths).not.toContain(`/share/${token}`);
     expect(requestPaths.every((path) => !path.includes(token))).toBe(true);
