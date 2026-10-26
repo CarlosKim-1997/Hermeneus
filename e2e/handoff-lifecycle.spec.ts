@@ -36,7 +36,7 @@ test.describe("원문·전달 데이터 관리 destructive UX", () => {
     await importTranscript(page, transcript);
     await page.getByRole("button", { name: "전달 삭제 범위 확인" }).click();
     await page.getByRole("button", { name: "취소" }).click();
-    await expect(page.getByRole("heading", { name: "내 뜻대로 전달될지 확인하세요." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "보낼 내용 검토" })).toBeVisible();
 
     await page.getByRole("button", { name: "전달 삭제 범위 확인" }).click();
     await page.getByRole("button", { name: "전달 전체 영구 삭제" }).click();

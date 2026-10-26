@@ -146,7 +146,6 @@ pre { white-space: pre-wrap; }
   .review-with-source { grid-template-columns: minmax(0,.8fr) minmax(0,1.3fr); }
   .receiver-layout:has(> .receiver-route-choice) { grid-template-columns: minmax(0,1.65fr) minmax(260px,1fr); }
   .receiver-layout > .receiver-route-choice { grid-column: 2; grid-row: 3; grid-template-columns: minmax(0,1fr); align-self: start; margin-top: 0; }
-  .receiver-layout:has(> .receiver-route-choice) > .panel-receiver { grid-column: 1; grid-row: 3; }
   .receiver-layout:has(> .receiver-route-choice) > :is(.receiver-notice,.receiver-pin,.receiver-ai-path,#ask-here) { grid-column: 1 / -1; }
 }
 @media (max-width: 760px) {

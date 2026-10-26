@@ -1,12 +1,12 @@
+import { receiverStyles } from "./presentation.js";
 export const REVIEW_URI = "ui://hermeneus/scoped-review-v1.html";
 /** Ephemeral UI only. Server reauthorizes all inspection calls; this checkbox is no identity attestation. */
-export function scopedWidgetHtml() { return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><style>
-body{font:16px/1.7 system-ui;color:#202838;margin:0;padding:20px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f5f9;padding:16px;max-height:270px;overflow:auto}label{display:block;margin:16px 0}button{font:inherit;padding:10px 18px}small{display:block;overflow-wrap:anywhere}[hidden]{display:none!important}</style></head><body>
-<h2>선택한 답변 확인</h2><p id="version"></p><p>선택한 답변과 줄바꿈·인용을 직접 비교하세요. 위젯은 원래 Chat과 자동 비교하지 않습니다.</p>
-<pre id="answer"></pre><small id="digest"></small><details><summary>기준 Canon 보기</summary><pre id="canon"></pre></details>
-<p>의미 검증 제공자 미연결 · 원문 전달과 구조·고정 버전만 확인합니다. 답변·동의는 Hermeneus에 영속 저장하지 않습니다. ChatGPT 보관은 별도입니다.</p>
-<label><input id="confirm" type="checkbox" disabled> 위 답변이 내가 선택한 원문인지 확인했습니다.</label><button id="check" disabled>확인한 원문 검사</button>
-<p id="status" role="status">원문 연결 확인 중…</p><pre id="result" role="status" hidden></pre><script>${scopedWidgetScript}</script></body></html>`; }
+export function scopedWidgetHtml() { return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><style>${receiverStyles}</style></head><body><main>
+<header class="brand">Hermeneus</header><section class="card"><h2>가져온 답변 확인</h2><p id="version"></p>
+<div class="notice" id="semantic-notice"><strong>현재 의미 검증이 꺼져 있습니다.</strong><br>원문 전달과 구조·버전만 확인합니다. 답변이 전달본과 같은 뜻인지는 판단하지 않습니다.</div>
+<p>선택한 답변과 줄바꿈·인용을 직접 비교하세요. 위젯은 원래 Chat과 자동 비교하지 않습니다.</p><pre id="answer"></pre><details><summary>기준 전달본·식별 정보</summary><pre id="canon"></pre><small id="digest"></small></details>
+<label><input id="confirm" type="checkbox" disabled> 위 답변이 내가 선택한 원문인지 확인했습니다.</label><button id="check" disabled>확인한 원문 검사</button><p id="status" role="status">원문 연결 확인 중…</p><pre id="result" role="status" hidden></pre>
+<p class="muted">Hermeneus는 답변과 동의 선택을 저장하지 않습니다. ChatGPT의 보관 정책은 별도로 적용됩니다.</p></section></main><script>${scopedWidgetScript}</script></body></html>`; }
 
 export const scopedWidgetScript = String.raw`"use strict";
 (()=>{

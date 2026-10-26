@@ -20,19 +20,19 @@ export function HandoffLibrary({ handoffs }: { handoffs: readonly CreatorHandoff
     <section className="panel handoff-library" aria-labelledby="library-title">
       <header className="library-header">
         <div>
-          <p className="library-eyebrow">내 작업 공간</p>
+
           <h2 id="library-title">내 전달함</h2>
-          <p className="library-description">정리하던 생각을 이어가거나, 확정한 전달본을 다시 공유하세요.</p>
+          <p className="library-description">작성 중인 초안과 공유할 전달본을 관리합니다.</p>
         </div>
         <Link className="button-link library-create" href="/new">새 전달 만들기 <span aria-hidden="true">＋</span></Link>
       </header>
 
       {handoffs.length === 0 ? (
         <div className="library-empty">
-          <span className="library-empty-icon" aria-hidden="true">↗</span>
-          <h3>첫 번째 전달을 준비해볼까요?</h3>
-          <p>내 AI와 나눈 생각을 가져와 요청과 배경을 정리하세요. 직접 확인한 전달본을 링크로 공유할 수 있습니다.</p>
-          <Link className="button-link" href="/new">첫 전달 만들기</Link>
+
+          <h3>아직 만든 전달이 없습니다</h3>
+          <p>동료에게 부탁할 일이나 설명할 배경을 정리해보세요. 내용을 확인한 뒤 링크로 보낼 수 있습니다.</p>
+
           <p className="library-empty-hint">초안은 나만 볼 수 있습니다. 내용을 검토하고 확정한 뒤 공유하세요.</p>
         </div>
       ) : (
@@ -45,7 +45,7 @@ export function HandoffLibrary({ handoffs }: { handoffs: readonly CreatorHandoff
             </div>
             <div className="library-search"><UiIcon name="search"/><label className="sr-only" htmlFor="handoff-search">전달 이름 또는 관리 번호 검색</label><input id="handoff-search" type="search" placeholder="이름 또는 관리 번호로 찾기" value={query} onChange={(event) => setQuery(event.target.value)}/></div>
           </div>
-          <p className="library-count" role="status">{visibleHandoffs.length} 전달 <span>· 날짜 기준 UTC · 이름은 나에게만 표시</span></p>
+          <p className="library-count" role="status">{visibleHandoffs.length}건 <span>· 날짜 기준 UTC · 이름은 나에게만 표시</span></p>
           {visibleHandoffs.length === 0 ? <div className="library-no-results"><h3>조건에 맞는 전달이 없어요.</h3><p>다른 이름으로 검색하거나 필터를 바꿔보세요.</p><button type="button" onClick={() => { setQuery(""); setFilter("all"); }}>검색·필터 초기화</button></div> : null}
           <ul className="handoff-library-list">
             {visibleHandoffs.map((handoff) => {
@@ -55,8 +55,8 @@ export function HandoffLibrary({ handoffs }: { handoffs: readonly CreatorHandoff
                   <div className="library-card-header">
                     <span className="library-document-icon" aria-hidden="true"><UiIcon name="document"/></span>
                     <div className="library-record-title">
-                    <h3>{handoff.displayTitle ?? handoff.handoffId}</h3>
-                    {handoff.displayTitle ? <p className="library-id">나에게만 보이는 이름</p> : null}
+                    <h3>{handoff.displayTitle ?? "이름 없는 전달"}</h3>
+
                     </div>
                     <span className={`library-status ${published ? "library-status-published" : "library-status-draft"}`}>
                       {published ? "전달본 확정" : "초안"}
@@ -74,8 +74,8 @@ export function HandoffLibrary({ handoffs }: { handoffs: readonly CreatorHandoff
                     {handoff.latestPublishedAt ? <p>최근 확정 <time dateTime={handoff.latestPublishedAt}>{formatDateUtc(handoff.latestPublishedAt)}</time></p> : null}
                   </details>
                   <div className="library-card-actions">
-                    <Link className="library-action" href={`/handoffs/${handoff.handoffId}/review`}>초안 이어서 검토 <span aria-hidden="true">→</span></Link>
-                    {published ? <Link className="library-action library-action-published" href={`/handoffs/${handoff.handoffId}/published/${handoff.latestPublishedVersion}`}>확정 전달본 보기 <span aria-hidden="true">↗</span></Link> : null}
+                    <Link className="library-action" href={`/handoffs/${handoff.handoffId}/review`}>초안 편집</Link>
+                    {published ? <Link className="library-action library-action-published" href={`/handoffs/${handoff.handoffId}/published/${handoff.latestPublishedVersion}`}>전달본 보기</Link> : null}
                   </div>
                 </li>
               );

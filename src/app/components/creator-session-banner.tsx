@@ -9,7 +9,7 @@ export async function CreatorSessionBanner() {
   if (config.mode === "external" && principal) {
     return (
       <div className="creator-session">
-        <div><p>내 계정으로 작업 중</p><details className="session-id"><summary>계정 식별 정보</summary><code>{principal.creatorId}</code></details></div>
+        <div><p>로그인됨</p><details className="session-id"><summary>계정 식별 정보</summary><code>{principal.creatorId}</code></details></div>
         <form action={signOutAction}>
           <button type="submit">로그아웃</button>
         </form>

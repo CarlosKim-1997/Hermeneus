@@ -26,7 +26,7 @@ test.describe("Creator ownership IDOR", () => {
     await creatorA.getByRole("button", { name: "초안 저장" }).click();
     await expect(creatorA.getByText(/초안 수정 \d+을 저장했습니다/)).toBeVisible();
     await creatorA.getByRole("button", { name: "전달본으로 확정" }).click();
-    await expect(creatorA.getByRole("heading", { name: "이제 맥락을 건네세요." })).toBeVisible();
+    await expect(creatorA.getByRole("heading", { name: "전달본 공유" })).toBeVisible();
     await creatorA.getByRole("button", { name: "이 버전의 공유 링크 만들기" }).click();
     await expect(creatorA.getByText(/버전 1의 공유 링크를 만들었습니다/)).toBeVisible();
     const linkText = await creatorA.locator("code").filter({ hasText: "/share#hsh_" }).first().textContent();
@@ -34,17 +34,17 @@ test.describe("Creator ownership IDOR", () => {
 
     await devSignIn(creatorB, "secondary");
     await creatorB.goto(`/handoffs/${handoffId}/review`);
-    await expect(creatorB.getByRole("heading", { name: "주소를 다시 확인해주세요." })).toBeVisible();
+    await expect(creatorB.getByRole("heading", { name: "페이지를 찾을 수 없습니다" })).toBeVisible();
     await expect(creatorB.getByRole("button", { name: "초안 저장" })).toHaveCount(0);
     await creatorB.goto(`/handoffs/${handoffId}/published/1`);
-    await expect(creatorB.getByRole("heading", { name: "주소를 다시 확인해주세요." })).toBeVisible();
+    await expect(creatorB.getByRole("heading", { name: "페이지를 찾을 수 없습니다" })).toBeVisible();
     await expect(creatorB.getByRole("button", { name: "이 버전의 공유 링크 만들기" })).toHaveCount(0);
     await creatorB.goto(`/receiver/${handoffId}/1`);
-    await expect(creatorB.getByRole("heading", { name: "주소를 다시 확인해주세요." })).toBeVisible();
+    await expect(creatorB.getByRole("heading", { name: "페이지를 찾을 수 없습니다" })).toBeVisible();
     await expect(creatorB.getByLabel("궁금한 점")).toHaveCount(0);
 
     await receiver.goto(sharePath!);
-    await expect(receiver.getByRole("heading", { name: "전달할 맥락이 도착했어요." })).toBeVisible();
+    await expect(receiver.getByRole("heading", { name: "공유받은 전달본" })).toBeVisible();
     await receiver.getByLabel("궁금한 점").fill("Are we web first?");
     await receiver.getByRole("button", { name: "질문하기", exact: true }).click();
     await expect(receiver.locator(".answerability-label", { hasText: "SUPPORTED" })).toBeVisible();

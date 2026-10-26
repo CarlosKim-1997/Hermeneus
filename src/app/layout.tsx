@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <header className="app-brand">
             <span className="brand-symbol" aria-hidden="true">H</span>
             <h1>Hermeneus</h1>
-            <span className="brand-caption">생각은 분명하게. 맥락은 이어지게.</span>
+
           </header>
           {children}
         </main>

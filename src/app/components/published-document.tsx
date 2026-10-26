@@ -17,11 +17,11 @@ export function PublishedDocument({ items, version, publishedAt, heading = "보�
     <header className="document-heading">
       <div className="document-stamp"><span>확정 전달본</span><span>버전 {version} · {items.length}개 항목</span></div>
       <h2 id="canon-document-title">{heading}</h2>
-      <p className="field-help">확정 {formatDateTimeUtc(publishedAt)} · 보낸 사람이 확정한 전달 내용입니다.</p>
+      <p className="field-help">확정일 {formatDateTimeUtc(publishedAt)}</p>
     </header>
     <div className="document-layout">
       <nav className="document-outline" aria-label="전달본 목차">
-        <p className="eyebrow">이 전달본에서</p>
+        <p className="eyebrow">목차</p>
         <ol>{items.map((item, index) => <li key={item.id}><a href={`#canon-item-${index}`}><span className="outline-number">{String(index + 1).padStart(2, "0")}</span><span>{ITEM_LABELS[item.type]}<small>{excerpt(item.statement)}</small></span></a></li>)}</ol>
       </nav>
       <div className="document-body">{items.map((item, index) => <article key={item.id} id={`canon-item-${index}`} tabIndex={-1} className="item-card canon-entry">

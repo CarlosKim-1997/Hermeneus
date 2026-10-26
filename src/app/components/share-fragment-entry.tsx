@@ -23,10 +23,9 @@ export function ShareFragmentEntry({ semanticModeEnabled, externalVerifierEnable
 
   return <>
     <header className="page-heading">
-    <p className="eyebrow">공유받은 전달</p>
-    <h2>전달할 맥락이 도착했어요.</h2>
+
+    <h2>공유받은 전달본</h2>
     </header>
-    <p className="receiver-notice">이 링크로 공유된 전달본을 볼 수 있습니다. 아래 내용이 보낸 사람이 확정한 기준입니다.</p>
     <SharedReceiverConsole
       key={entry.token}
       token={entry.token}
